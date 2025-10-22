@@ -89,7 +89,8 @@ describe("a public user's experience", () => {
     await stagehand.page.act(`Click view details button`);
 
     const { entryTitle, entryNumber } = await stagehand.page.extract({
-      instruction: "get some of the entry info",
+      modelName: "openai/gpt-5",
+      instruction: "get some of the entry info from the page",
       schema: z.object({
         entryTitle: z.string(),
         entryNumber: z.string(),
