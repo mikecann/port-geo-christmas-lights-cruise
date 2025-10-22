@@ -1,7 +1,8 @@
 import schema from "../schema";
-import { testingMutation } from "./lib";
+import { testingMutation, testingQuery } from "./lib";
 import { v } from "convex/values";
 import { entries } from "../features/entries/model";
+import { ensure } from "../../shared/ensure";
 
 export const clearAll = testingMutation({
   handler: async ({ db, scheduler, storage }) => {
@@ -75,5 +76,29 @@ export const authenticateMe = testingMutation({
       sessionId,
       token,
     };
+  },
+});
+
+export const findEntryForUser = testingMutation({
+  args: {
+    userId: v.id("users"),
+  },
+
+  handler: async (ctx, args) => {
+    return await entries.forUser(args.userId).find(ctx.db);
+  },
+});
+
+export const getUserByEmail = testingQuery({
+  args: {
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .unique();
+
+    return ensure(user, `User with email ${args.email} not found`);
   },
 });

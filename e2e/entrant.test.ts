@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { setupE2E } from "./lib";
 import { routes } from "../src/routes";
 import z from "zod";
+import { api } from "../convex/_generated/api";
 
 describe("an entrant's experience", () => {
   const { auth, backend, frontend, stagehand, goto } = setupE2E();
@@ -9,7 +10,7 @@ describe("an entrant's experience", () => {
   it("should allow a user to submit an entry", async () => {
     await goto();
 
-    await auth.signInAs({
+    const me = await auth.signInAs({
       email: "test@example.com",
       name: "Test User",
       isSystemAdmin: false,
@@ -30,13 +31,15 @@ describe("an entrant's experience", () => {
 
     await stagehand.page.act(`Click the submit button`);
 
-    const { status } = await stagehand.page.extract({
-      instruction: "get the entry status in the right hand side",
-      schema: z.object({
-        status: z.string(),
-      }),
-    });
+    const entry = await backend.client.mutation(
+      api.testing.testing.findEntryForUser,
+      {
+        userId: me?._id,
+      },
+    );
 
-    expect(status).toEqual("SUBMITTED");
+    if (!entry) throw new Error("Entry not found");
+
+    expect(entry.status).toBe("submitted");
   });
 });

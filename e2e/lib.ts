@@ -60,8 +60,73 @@ export const setupE2E = () => {
     frontend,
     stagehand,
     auth: {
-      signInAs: (options: AuthenticateOptions) => {
-        return authenticateTestUser(stagehand, frontend.frontendUrl!, options);
+      signInAs: async (options: AuthenticateOptions) => {
+        // Navigate to the test auth page
+        await stagehand.page.goto(
+          `${frontend.frontendUrl}${routes.testAuth().href}`,
+        );
+
+        // Fill in the email
+        if (options.email) {
+          const emailInput = await stagehand.page.$(
+            '[data-testid="test-auth-email"]',
+          );
+          if (emailInput) {
+            await emailInput.fill(options.email);
+          }
+        }
+
+        // Fill in the name
+        if (options.name) {
+          const nameInput = await stagehand.page.$(
+            '[data-testid="test-auth-name"]',
+          );
+          if (nameInput) {
+            await nameInput.fill(options.name);
+          }
+        }
+
+        // Set system admin checkbox
+        if (options.isSystemAdmin) {
+          const checkbox = await stagehand.page.$(
+            '[data-testid="test-auth-system-admin"]',
+          );
+          if (checkbox) {
+            await checkbox.check();
+          }
+        }
+
+        // Set competition admin checkbox
+        if (options.isCompetitionAdmin) {
+          const checkbox = await stagehand.page.$(
+            '[data-testid="test-auth-competition-admin"]',
+          );
+          if (checkbox) {
+            await checkbox.check();
+          }
+        }
+
+        // Click the authenticate button
+        const submitButton = await stagehand.page.$(
+          '[data-testid="test-auth-submit"]',
+        );
+        if (submitButton) {
+          await submitButton.click();
+        }
+
+        // Wait for authentication to complete
+        await stagehand.page.waitForSelector(
+          '[data-testid="test-auth-status"]',
+        );
+
+        const user = await backend.client.query(
+          api.testing.testing.getUserByEmail,
+          {
+            email: options.email,
+          },
+        );
+
+        return user;
       },
     },
     goto: (route?: Route<typeof routes>) => {
@@ -77,73 +142,6 @@ type AuthenticateOptions = {
   isSystemAdmin?: boolean;
   isCompetitionAdmin?: boolean;
 };
-
-/**
- * Helper to authenticate a test user in E2E tests using Stagehand.
- * Uses the testing-only ConvexCredentials provider via the /test-auth page.
- *
- * @param stagehand - The Stagehand instance
- * @param frontendUrl - The base URL of the frontend
- * @param options - User details for authentication
- * @returns Promise that resolves when authentication is complete
- */
-export async function authenticateTestUser(
-  stagehand: Stagehand,
-  frontendUrl: string,
-  options: AuthenticateOptions,
-): Promise<void> {
-  // Navigate to the test auth page
-  await stagehand.page.goto(`${frontendUrl}${routes.testAuth().href}`);
-
-  // Fill in the email
-  if (options.email) {
-    const emailInput = await stagehand.page.$(
-      '[data-testid="test-auth-email"]',
-    );
-    if (emailInput) {
-      await emailInput.fill(options.email);
-    }
-  }
-
-  // Fill in the name
-  if (options.name) {
-    const nameInput = await stagehand.page.$('[data-testid="test-auth-name"]');
-    if (nameInput) {
-      await nameInput.fill(options.name);
-    }
-  }
-
-  // Set system admin checkbox
-  if (options.isSystemAdmin) {
-    const checkbox = await stagehand.page.$(
-      '[data-testid="test-auth-system-admin"]',
-    );
-    if (checkbox) {
-      await checkbox.check();
-    }
-  }
-
-  // Set competition admin checkbox
-  if (options.isCompetitionAdmin) {
-    const checkbox = await stagehand.page.$(
-      '[data-testid="test-auth-competition-admin"]',
-    );
-    if (checkbox) {
-      await checkbox.check();
-    }
-  }
-
-  // Click the authenticate button
-  const submitButton = await stagehand.page.$(
-    '[data-testid="test-auth-submit"]',
-  );
-  if (submitButton) {
-    await submitButton.click();
-  }
-
-  // Wait for authentication to complete
-  await stagehand.page.waitForSelector('[data-testid="test-auth-status"]');
-}
 
 /**
  * Generates RSA key pair for testing purposes.
