@@ -7,6 +7,77 @@ import { ConvexBackend } from "./lib/ConvexBackend";
 import { ViteFrontend } from "./lib/ViteFrontend";
 import { exportJWK, exportPKCS8, generateKeyPair } from "jose";
 
+interface LogLine {
+  category?: string;
+  message: string;
+  level?: 0 | 1 | 2;
+  timestamp?: string;
+  auxiliary?: {
+    executionTime?: { value: string; unit: string };
+    sessionId?: string;
+    url?: string;
+    [key: string]: any;
+  };
+}
+
+const createDetailedStagehandLogger = () => {
+  const colors: Record<string, string> = {
+    browser: "\x1b[34m", // blue
+    action: "\x1b[32m", // green
+    llm: "\x1b[35m", // magenta
+    error: "\x1b[31m", // red
+    stagehand: "\x1b[36m", // cyan
+    cache: "\x1b[33m", // yellow
+  };
+  const reset = "\x1b[0m";
+
+  return (logLine: LogLine) => {
+    const category = logLine.category || "unknown";
+    const color = colors[category] || reset;
+
+    // Main log message
+    console.log(`${color}[${category}]${reset} ${logLine.message}`);
+
+    // Log auxiliary information if present
+    if (logLine.auxiliary && Object.keys(logLine.auxiliary).length > 0) {
+      const aux = logLine.auxiliary;
+
+      // Log execution time if available
+      if (aux.executionTime) {
+        console.log(
+          `  ⏱️  ${aux.executionTime.value}${aux.executionTime.unit}`,
+        );
+      }
+
+      // Log URL if available
+      if (aux.url) {
+        const urlStr =
+          typeof aux.url === "string"
+            ? aux.url
+            : JSON.stringify(aux.url, null, 2);
+        console.log(`  🔗 ${urlStr}`);
+      }
+
+      // Log session ID if available
+      if (aux.sessionId) {
+        console.log(`  📍 Session: ${aux.sessionId}`);
+      }
+
+      // Log all other auxiliary data
+      const otherKeys = Object.keys(aux).filter(
+        (key) => !["executionTime", "url", "sessionId"].includes(key),
+      );
+      if (otherKeys.length > 0) {
+        const otherData: Record<string, any> = {};
+        for (const key of otherKeys) {
+          otherData[key] = aux[key];
+        }
+        console.log(`  📋 ${JSON.stringify(otherData, null, 2)}`);
+      }
+    }
+  };
+};
+
 export const logExpenseEstimate = (stagehand: Stagehand) => {
   console.log("--- run finished ---");
   console.log({
@@ -33,6 +104,7 @@ export const setupE2E = () => {
     },
     domSettleTimeoutMs: 60000,
     verbose: 2,
+    logger: createDetailedStagehandLogger(),
   });
 
   beforeAll(async () => {
