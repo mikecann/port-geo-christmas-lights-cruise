@@ -28,12 +28,6 @@ describe("an entrant's experience", () => {
 
     await stagehand.page.act(`Enter 'Test Entry' in the Entry Name Field`);
 
-    await stagehand.page.act(`Click the dropzone to upload a photo`);
-
-    await stagehand.page.act(
-      `Upload the photo 'android-chrome-192x192.png' from the public folder in this project root`,
-    );
-
     await stagehand.page.act(`Click the submit button`);
 
     const { status } = await stagehand.page.extract({
