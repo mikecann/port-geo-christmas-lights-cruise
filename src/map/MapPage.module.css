@@ -1,0 +1,9 @@
+/* Marker icon styles are now inline since CSS modules can't be used in HTML strings */
+
+.loading-container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+}

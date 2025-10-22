@@ -1,0 +1,9 @@
+blueprint-templates
+dist
+node_modules
+convex/_generated
+coverage
+.vite
+.convex
+build
+

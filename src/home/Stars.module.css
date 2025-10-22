@@ -1,0 +1,48 @@
+/* Star and moon styling */
+.stars :global(.star),
+.stars :global(.moon) {
+  fill: #fbaf5d;
+}
+
+/* Star twinkling animations with different timing */
+.stars :global(.star:nth-child(5n)) {
+  animation: twinkle 2.5s 0s infinite;
+}
+
+.stars :global(.star:nth-child(5n + 1)) {
+  animation: twinkle 2s 0.2s infinite;
+}
+
+.stars :global(.star:nth-child(5n + 2)) {
+  animation: twinkle 2.5s 2s infinite;
+}
+
+.stars :global(.star:nth-child(5n + 3)) {
+  animation: twinkle 1.5s 1s infinite;
+}
+
+.stars :global(.star:nth-child(5n + 4)) {
+  animation: twinkle 4s 1s infinite;
+}
+
+/* Twinkle animation keyframes */
+@keyframes twinkle {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 767px) {
+  .stars {
+    width: 160vw;
+    left: -26vw;
+    top: 20px;
+  }
+}
