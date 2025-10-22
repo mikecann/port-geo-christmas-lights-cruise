@@ -123,12 +123,12 @@ describe("a public user's experience", () => {
       instruction: "get some of the entry info",
       schema: z.object({
         entryTitle: z.string(),
-        entryNumber: z.string(),
+        entryNumber: z.number(),
       }),
     });
 
     expect(entryTitle).toBe(firstEntry.entryName);
-    expect(entryNumber).toBe(firstEntry.entryNumber);
+    expect(entryNumber).toBe(Number(firstEntry.entryNumber));
   });
 
   it("should allow the user to sign in to vote from the entry page", async () => {
