@@ -13,15 +13,18 @@ export class ViteFrontend {
 
     this.port = findUnusedPort();
 
+    const env = {
+      ...process.env,
+      VITE_CONVEX_URL: convexUrl,
+      CLOUDFLARE_ENV: "dev",
+    };
+    console.log(`env`, env);
+
     this.process = spawn(
       "bunx",
       ["vite", "--port", String(this.port), "--strictPort"],
       {
-        env: {
-          ...process.env,
-          VITE_CONVEX_URL: convexUrl,
-          CLOUDFLARE_ENV: "dev",
-        },
+        env,
         stdio: "ignore",
         detached: false,
       },
