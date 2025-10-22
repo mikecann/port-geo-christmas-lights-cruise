@@ -94,23 +94,18 @@ export const getUserByEmail = testingQuery({
     email: v.string(),
   },
   handler: async (ctx, args) => {
-    const users = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .collect();
-
-    console.log(
-      "users",
-      users.map((u) => u.email),
-    );
-
     const user = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .unique();
 
-    console.log("user", user);
-
     return ensure(user, `User with email ${args.email} not found`);
+  },
+});
+
+export const listVotes = testingQuery({
+  args: {},
+  handler: async (ctx, args) => {
+    return await ctx.db.query("votes").collect();
   },
 });

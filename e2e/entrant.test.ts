@@ -7,7 +7,7 @@ import { api } from "../convex/_generated/api";
 describe("an entrant's experience", () => {
   const { auth, backend, frontend, stagehand, goto } = setupE2E();
 
-  it("should allow a user to submit an entry", async () => {
+  it("should allow voting on an entry", async () => {
     await goto();
 
     const me = await auth.signInAs({

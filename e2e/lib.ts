@@ -31,6 +31,7 @@ export const setupE2E = () => {
     localBrowserLaunchOptions: {
       headless: Boolean(process.env.CI),
     },
+    domSettleTimeoutMs: 30000,
   });
 
   beforeAll(async () => {

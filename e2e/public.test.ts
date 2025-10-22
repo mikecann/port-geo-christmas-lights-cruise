@@ -86,10 +86,11 @@ describe("a public user's experience", () => {
       `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
     );
 
-    await stagehand.page.act(`Click view details button`);
+    await stagehand.page.act(
+      `Click view details button in the popup that opens`,
+    );
 
     const { entryTitle, entryNumber } = await stagehand.page.extract({
-      modelName: "openai/gpt-5",
       instruction: "get some of the entry info from the page",
       schema: z.object({
         entryTitle: z.string(),
