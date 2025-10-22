@@ -81,15 +81,15 @@ const { auth, backend, frontend, stagehand, goto } = setupE2E();
 // });
 
 describe("a public user's experience", () => {
-  it("should allow a user to buy tickets from the homepage", async () => {
-    await goto();
+  // it("should allow a user to buy tickets from the homepage", async () => {
+  //   await goto();
 
-    await stagehand.page.act("Click the book tickets now button");
+  //   await stagehand.page.act("Click the book tickets now button");
 
-    const button = await stagehand.page.observe("find the Buy Tickets button");
+  //   const button = await stagehand.page.observe("find the Buy Tickets button");
 
-    expect(button.length).toBeGreaterThan(0);
-  });
+  //   expect(button.length).toBeGreaterThan(0);
+  // });
 
   // it("should allow a user to navigate to the entries page and view the entries", async () => {
   //   await goto();
@@ -144,28 +144,28 @@ describe("a public user's experience", () => {
   //   expect(stagehand.page.url()).toContain(routes.signin().href);
   // });
 
-  // it("should allow a user to navigate to the map page and open an entry marker popup", async () => {
-  //   await goto();
+  it("should allow a user to navigate to the map page and open an entry marker popup", async () => {
+    await goto();
 
-  //   const mockEntries = await backend.client.mutation(
-  //     api.testing.testing.createMockEntries,
-  //     {
-  //       count: 9,
-  //     },
-  //   );
+    const mockEntries = await backend.client.mutation(
+      api.testing.testing.createMockEntries,
+      {
+        count: 9,
+      },
+    );
 
-  //   await stagehand.page.act("Click the map button from the top bar");
+    await stagehand.page.act("Click the map button from the top bar");
 
-  //   await stagehand.page.act(
-  //     `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
-  //   );
+    await stagehand.page.act(
+      `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
+    );
 
-  //   await stagehand.page.act(
-  //     `Click view details button in the popup that opens`,
-  //   );
+    await stagehand.page.act(
+      `Click view details button in the popup that opens`,
+    );
 
-  //   expect(stagehand.page.url()).toContain(
-  //     routes.entry({ entryId: mockEntries[0].id }).href,
-  //   );
-  // });
+    expect(stagehand.page.url()).toContain(
+      routes.entry({ entryId: mockEntries[0].id }).href,
+    );
+  });
 });

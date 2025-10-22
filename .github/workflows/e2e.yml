@@ -41,6 +41,7 @@ jobs:
         run: bun run test
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ vars.VITE_GOOGLE_MAPS_API_KEY }}
 
       - name: Upload test results
         if: ${{ !cancelled() }}
