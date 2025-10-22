@@ -41,5 +41,7 @@ describe("an entrant's experience", () => {
     if (!entry) throw new Error("Entry not found");
 
     expect(entry.status).toBe("submitted");
+    expect(entry.name).toBe("Test Entry");
+    expect(entry.houseAddress?.address).toBe("35 Keel Retreat");
   });
 });

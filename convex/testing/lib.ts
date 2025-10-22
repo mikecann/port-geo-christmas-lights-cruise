@@ -4,9 +4,6 @@ import {
   customQuery,
 } from "convex-helpers/server/customFunctions";
 import { action, mutation, query } from "../_generated/server";
-import { TableNames } from "../_generated/dataModel";
-import schema from "../schema";
-import { createMockEntries } from "../features/entries/testing";
 
 // Wrappers to use for function that should only be called from tests
 export const testingQuery = customQuery(query, {
@@ -44,4 +41,3 @@ export const testingAction = customAction(action, {
     return { ctx: {}, args: {} };
   },
 });
-

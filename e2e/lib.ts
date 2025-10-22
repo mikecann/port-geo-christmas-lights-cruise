@@ -21,7 +21,7 @@ export const logExpenseEstimate = (stagehand: Stagehand) => {
 export const setupE2E = () => {
   const backend = new ConvexBackend({
     projectDir: process.cwd(),
-    stdio: "ignore",
+    stdio: "inherit",
   });
   const frontend = new ViteFrontend();
 
