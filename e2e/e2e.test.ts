@@ -38,141 +38,141 @@ const { auth, backend, frontend, stagehand, goto } = setupE2E();
 //   });
 // });
 
-// describe("an entrant's experience", () => {
-//   it("should allow voting on an entry", async () => {
-//     await goto();
-
-//     const me = await auth.signInAs({
-//       email: "test@example.com",
-//       name: "Test User",
-//       isSystemAdmin: false,
-//       isCompetitionAdmin: false,
-//     });
-
-//     await goto(routes.myEntries());
-
-//     await stagehand.page.act(`Click to enter the competition`);
-
-//     await stagehand.page.act(
-//       `Enter '35 Keel Retreat in the House Address Field'`,
-//     );
-
-//     await stagehand.page.act(`Select 35 Keel Retreat from the autocomplete`);
-
-//     await stagehand.page.act(`Enter 'Test Entry' in the Entry Name Field`);
-
-//     await stagehand.page.act(`Click the submit button`);
-
-//     const entry = await backend.client.mutation(
-//       api.testing.testing.findEntryForUser,
-//       {
-//         userId: me?._id,
-//       },
-//     );
-
-//     if (!entry) throw new Error("Entry not found");
-
-//     expect(entry.status).toBe("submitted");
-//     expect(entry.name).toBe("Test Entry");
-//     expect(entry.houseAddress?.address).toBe(
-//       "35 Keel Retreat, Geographe WA, Australia",
-//     );
-//   });
-// });
-
-describe("a public user's experience", () => {
-  // it("should allow a user to buy tickets from the homepage", async () => {
-  //   await goto();
-
-  //   await stagehand.page.act("Click the book tickets now button");
-
-  //   const button = await stagehand.page.observe("find the Buy Tickets button");
-
-  //   expect(button.length).toBeGreaterThan(0);
-  // });
-
-  // it("should allow a user to navigate to the entries page and view the entries", async () => {
-  //   await goto();
-  //   await backend.client.mutation(api.testing.testing.createMockEntries, {
-  //     count: 9,
-  //   });
-
-  //   await stagehand.page.act("Click the vote button from the top bar");
-
-  //   const { entries } = await stagehand.page.extract({
-  //     instruction: "find the entries listed",
-  //     schema: z.object({
-  //       entries: z.array(
-  //         z.object({
-  //           entryName: z.string(),
-  //           entryNumber: z.string(),
-  //         }),
-  //       ),
-  //     }),
-  //   });
-
-  //   expect(entries.length).toBe(9);
-
-  //   const firstEntry = entries[0];
-
-  //   await stagehand.page.act(
-  //     `Click the entry with the name "${firstEntry.entryName}"`,
-  //   );
-
-  //   const { entryTitle, entryNumber } = await stagehand.page.extract({
-  //     instruction: "get some of the entry info",
-  //     schema: z.object({
-  //       entryTitle: z.string(),
-  //       entryNumber: z.string(),
-  //     }),
-  //   });
-
-  //   expect(entryTitle).toBe(firstEntry.entryName);
-  //   expect(entryNumber).toBe(firstEntry.entryNumber);
-  // });
-
-  // it("should allow the user to sign in to vote from the entry page", async () => {
-  //   const mockEntries = await backend.client.mutation(
-  //     api.testing.testing.createMockEntries,
-  //     { count: 3 },
-  //   );
-
-  //   await goto(routes.entry({ entryId: mockEntries[0].id }));
-
-  //   await stagehand.page.act("Click the sign in to vote button");
-
-  //   expect(stagehand.page.url()).toContain(routes.signin().href);
-  // });
-
-  it("should allow a user to navigate to the map page and open an entry marker popup", async () => {
+describe("an entrant's experience", () => {
+  it("should allow voting on an entry", async () => {
     await goto();
 
-    const mockEntries = await backend.client.mutation(
-      api.testing.testing.createMockEntries,
+    const me = await auth.signInAs({
+      email: "test@example.com",
+      name: "Test User",
+      isSystemAdmin: false,
+      isCompetitionAdmin: false,
+    });
+
+    await goto(routes.myEntries());
+
+    await stagehand.page.act(`Click to enter the competition`);
+
+    await stagehand.page.act(
+      `Enter '35 Keel Retreat in the House Address Field'`,
+    );
+
+    await stagehand.page.act(`Select 35 Keel Retreat from the autocomplete`);
+
+    await stagehand.page.act(`Enter 'Test Entry' in the Entry Name Field`);
+
+    await stagehand.page.act(`Click the submit button`);
+
+    const entry = await backend.client.mutation(
+      api.testing.testing.findEntryForUser,
       {
-        count: 9,
+        userId: me?._id,
       },
     );
 
-    await stagehand.page.act("Click the map button from the top bar");
+    if (!entry) throw new Error("Entry not found");
 
-    await stagehand.page.act(
-      `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
+    expect(entry.status).toBe("submitted");
+    expect(entry.name).toBe("Test Entry");
+    expect(entry.houseAddress?.address).toBe(
+      "35 Keel Retreat, Geographe WA, Australia",
     );
-
-    await stagehand.page.act(
-      `Click view details button in the popup that opens`,
-    );
-
-    const { entryTitle, entryNumber } = await stagehand.page.extract({
-      instruction: "get some of the entry info from the page",
-      schema: z.object({
-        entryTitle: z.string(),
-        entryNumber: z.string(),
-      }),
-    });
-
-    expect(entryTitle).toBe(mockEntries[0].name);
-    expect(entryNumber).toBe(mockEntries[0].entryNumber.toString());
   });
 });
+
+// describe("a public user's experience", () => {
+//   it("should allow a user to buy tickets from the homepage", async () => {
+//     await goto();
+
+//     await stagehand.page.act("Click the book tickets now button");
+
+//     const button = await stagehand.page.observe("find the Buy Tickets button");
+
+//     expect(button.length).toBeGreaterThan(0);
+//   });
+
+//   it("should allow a user to navigate to the entries page and view the entries", async () => {
+//     await goto();
+//     await backend.client.mutation(api.testing.testing.createMockEntries, {
+//       count: 9,
+//     });
+
+//     await stagehand.page.act("Click the vote button from the top bar");
+
+//     const { entries } = await stagehand.page.extract({
+//       instruction: "find the entries listed",
+//       schema: z.object({
+//         entries: z.array(
+//           z.object({
+//             entryName: z.string(),
+//             entryNumber: z.string(),
+//           }),
+//         ),
+//       }),
+//     });
+
+//     expect(entries.length).toBe(9);
+
+//     const firstEntry = entries[0];
+
+//     await stagehand.page.act(
+//       `Click the entry with the name "${firstEntry.entryName}"`,
+//     );
+
+//     const { entryTitle, entryNumber } = await stagehand.page.extract({
+//       instruction: "get some of the entry info",
+//       schema: z.object({
+//         entryTitle: z.string(),
+//         entryNumber: z.string(),
+//       }),
+//     });
+
+//     expect(entryTitle).toBe(firstEntry.entryName);
+//     expect(entryNumber).toBe(firstEntry.entryNumber);
+//   });
+
+//   it("should allow the user to sign in to vote from the entry page", async () => {
+//     const mockEntries = await backend.client.mutation(
+//       api.testing.testing.createMockEntries,
+//       { count: 3 },
+//     );
+
+//     await goto(routes.entry({ entryId: mockEntries[0].id }));
+
+//     await stagehand.page.act("Click the sign in to vote button");
+
+//     expect(stagehand.page.url()).toContain(routes.signin().href);
+//   });
+
+//   it("should allow a user to navigate to the map page and open an entry marker popup", async () => {
+//     await goto();
+
+//     const mockEntries = await backend.client.mutation(
+//       api.testing.testing.createMockEntries,
+//       {
+//         count: 9,
+//       },
+//     );
+
+//     await stagehand.page.act("Click the map button from the top bar");
+
+//     await stagehand.page.act(
+//       `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
+//     );
+
+//     await stagehand.page.act(
+//       `Click view details button in the popup that opens`,
+//     );
+
+//     const { entryTitle, entryNumber } = await stagehand.page.extract({
+//       instruction: "get some of the entry info from the page",
+//       schema: z.object({
+//         entryTitle: z.string(),
+//         entryNumber: z.string(),
+//       }),
+//     });
+
+//     expect(entryTitle).toBe(mockEntries[0].name);
+//     expect(entryNumber).toBe(mockEntries[0].entryNumber.toString());
+//   });
+// });
