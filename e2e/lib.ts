@@ -115,8 +115,14 @@ export const setupE2E = () => {
         }
 
         // Wait for authentication to complete
-        await stagehand.page.waitForSelector(
-          '[data-testid="test-auth-status"]',
+        await stagehand.page.waitForFunction(
+          () => {
+            const statusElement = document.querySelector(
+              '[data-testid="test-auth-status"]',
+            );
+            return statusElement?.textContent === "Authenticated!";
+          },
+          { timeout: 10000 },
         );
 
         const user = await backend.client.query(

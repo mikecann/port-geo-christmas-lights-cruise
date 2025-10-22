@@ -42,6 +42,8 @@ describe("an entrant's experience", () => {
 
     expect(entry.status).toBe("submitted");
     expect(entry.name).toBe("Test Entry");
-    expect(entry.houseAddress?.address).toBe("35 Keel Retreat");
+    expect(entry.houseAddress?.address).toBe(
+      "35 Keel Retreat, Geographe WA, Australia",
+    );
   });
 });
