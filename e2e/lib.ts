@@ -21,7 +21,7 @@ export const logExpenseEstimate = (stagehand: Stagehand) => {
 export const setupE2E = () => {
   const backend = new ConvexBackend({
     projectDir: process.cwd(),
-    stdio: "inherit",
+    stdio: "ignore",
   });
   const frontend = new ViteFrontend();
 
@@ -31,7 +31,8 @@ export const setupE2E = () => {
     localBrowserLaunchOptions: {
       headless: Boolean(process.env.CI),
     },
-    domSettleTimeoutMs: 30000,
+    domSettleTimeoutMs: 60000,
+    verbose: 2,
   });
 
   beforeAll(async () => {
