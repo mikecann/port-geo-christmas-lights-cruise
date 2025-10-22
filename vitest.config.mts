@@ -10,6 +10,7 @@ export default defineConfig({
           testTimeout: 60000, // 60 seconds for e2e tests
           hookTimeout: 120000, // 2 minutes for setup/teardown
           include: ["e2e/**/*.test.ts"],
+          maxConcurrency: 1,
         },
       },
       {
