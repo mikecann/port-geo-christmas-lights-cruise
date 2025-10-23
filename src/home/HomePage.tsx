@@ -26,7 +26,7 @@ export default function HomePage() {
     >
       <Stars />
       <Title />
-      <Box style={{ position: "relative" }}>
+      <Box className="housesWrapper">
         <Houses />
         {randomEntries && randomEntries.length >= 3 && (
           <>

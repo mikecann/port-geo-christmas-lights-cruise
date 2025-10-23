@@ -7,3 +7,15 @@
     transform: rotate(360deg);
   }
 }
+
+.housesWrapper {
+  position: relative;
+  width: 100%;
+  transform: scale(1);
+  transform-origin: center top;
+
+  @media (max-width: 48em) {
+    transform: scale(1.2);
+  }
+}
+
