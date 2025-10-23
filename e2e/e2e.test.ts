@@ -92,11 +92,12 @@ describe("a public user's experience", () => {
   });
   it("should allow a user to navigate to the entries page and view the entries", async () => {
     await goto();
+
     await backend.client.mutation(api.testing.testing.createMockEntries, {
       count: 9,
     });
 
-    await stagehand.page.act("Click the vote button from the top bar");
+    await stagehand.page.act("Click the entries button from the top bar");
 
     const { entries } = await stagehand.page.extract({
       instruction: "find the entries listed",
