@@ -49,15 +49,16 @@ export const getRandomThree = query({
   args: {},
   handler: async (ctx) => {
     const allApproved = await entries.listApproved(ctx.db);
+
     if (allApproved.length === 0) return [];
-    if (allApproved.length <= 3) {
+
+    if (allApproved.length <= 3)
       return await Promise.all(
         allApproved.map(async (entry) => ({
           entry,
           photo: await photos.forEntry(entry._id).findFirst(ctx.db),
         })),
       );
-    }
 
     // Fisher-Yates shuffle and take first 3
     const shuffled = [...allApproved];

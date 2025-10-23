@@ -32,15 +32,15 @@ export default function HomePage() {
           <>
             <HomeEntryMarker
               entry={randomEntries[0]}
-              position={{ x: "32.8%", y: "20%" }}
+              position={{ x: "32.8%", y: "22%" }}
             />
             <HomeEntryMarker
               entry={randomEntries[1]}
-              position={{ x: "50.4%", y: "17%" }}
+              position={{ x: "50.4%", y: "19%" }}
             />
             <HomeEntryMarker
               entry={randomEntries[2]}
-              position={{ x: "67.5%", y: "20%" }}
+              position={{ x: "67.5%", y: "22%" }}
             />
           </>
         )}

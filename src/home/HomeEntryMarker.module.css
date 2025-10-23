@@ -1,0 +1,30 @@
+@keyframes bob {
+  0% {
+    transform: translateY(0px) scale(var(--scale));
+  }
+  50% {
+    transform: translateY(-6px) scale(var(--scale));
+  }
+  100% {
+    transform: translateY(0px) scale(var(--scale));
+  }
+}
+
+.animatedContent {
+  animation: bob 4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+/* Stagger the animations with different delays */
+.container:nth-child(1) .animatedContent {
+  animation-delay: 0s;
+}
+
+.container:nth-child(2) .animatedContent {
+  animation-delay: 0.3s;
+}
+
+.container:nth-child(3) .animatedContent {
+  animation-delay: 0.6s;
+}
+
