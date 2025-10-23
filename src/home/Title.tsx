@@ -14,10 +14,10 @@ export function Title() {
     <Box
       w={{ base: "95%", xs: "90%", sm: 700, lg: 800 }}
       mb={{ base: 0, xs: 0, sm: 0 }}
-      mt={{ base: 50, xs: 150, sm: 150, lg: 150 }}
+      mt={{ base: 50, xs: 100, sm: 100, lg: 100 }}
       mx="auto"
       style={{ position: "relative", zIndex: 5 }}
-      pt={{ base: "40%", xs: "40%", sm: 250, lg: 350 }}
+      pt={{ base: 200, xs: 200, sm: 300, lg: 300 }}
     >
       <img
         src="/title-no-year-1024.webp"
