@@ -27,13 +27,12 @@ A web application for the Port Geographe Christmas Lights competition and boat c
 # Install dependencies
 bun install
 
-# Run dev servers (in separate terminals)
-convex dev
+# Run dev servers
 bun run dev
+
+# (in a separate terminal) run typecheck
+bun run dev:ts
 
 # Run tests
 bun run test
-
-# Type checking
-bun run typecheck
 ```
