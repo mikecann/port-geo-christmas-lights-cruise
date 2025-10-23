@@ -85,7 +85,7 @@ describe("an entrant's experience", () => {
     const agent = await stagehand.agent();
 
     await agent.execute({
-      instruction: "Submit an entry for the competition",
+      instruction: "Create an entry for the competition and submit it.",
       maxSteps: 30,
     });
 

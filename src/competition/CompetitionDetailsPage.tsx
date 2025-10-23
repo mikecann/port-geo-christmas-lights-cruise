@@ -12,61 +12,58 @@ import CompetitionSignUpSection from "./CompetitionSignUpSection";
 
 export default function CompetitionDetailsPage() {
   return (
-    <Container size="md" py="xl">
+    <Container size="sm" py="xl">
       <Stack gap="xl">
         <Box>
           <Title order={1} c="#FBAF5D" mb="md">
             Competition Details
           </Title>
-          <Text size="xl" fw={600} mb="md">
+          <CompetitionSignUpSection />
+          <Text size={"2em"} fw={600} mb="md" mt="md">
             Prize pool: $20,000
           </Text>
-          <Text size="lg" mb="sm">
-            There's a category for everyone:
-          </Text>
+          <Text size="lg">There's a category for everyone:</Text>
         </Box>
 
-        <Card withBorder radius="md" p="xl" bg="rgba(251, 175, 93, 0.05)">
-          <Stack gap="md">
-            <Box>
-              <Text fw={600} size="lg" mb="xs">
-                New Entrants
-              </Text>
-              <Text c="dimmed">$1,000 each for 4 × first timers</Text>
-            </Box>
+        <Stack gap="md">
+          <Box>
+            <Text fw={600} size="lg" mb="xs">
+              New Entrants
+            </Text>
+            <Text c="dimmed">$1,000 each for 4 × first timers</Text>
+          </Box>
 
-            <Box>
-              <Text fw={600} size="lg" mb="xs">
-                Most Jolly Award
-              </Text>
-              <Text c="dimmed">$3,000 for the best festive spirit</Text>
-            </Box>
+          <Box>
+            <Text fw={600} size="lg" mb="xs">
+              Most Jolly Award
+            </Text>
+            <Text c="dimmed">$3,000 for the best festive spirit</Text>
+          </Box>
 
-            <Box>
-              <Text fw={600} size="lg" mb="xs">
-                Judges' Favourites / Participation
-              </Text>
-              <Text c="dimmed">2 × $1,000 prizes</Text>
-            </Box>
+          <Box>
+            <Text fw={600} size="lg" mb="xs">
+              Judges' Favourites / Participation
+            </Text>
+            <Text c="dimmed">2 × $1,000 prizes</Text>
+          </Box>
 
-            <Box>
-              <Text fw={600} size="lg" mb="xs">
-                People's Choice
-              </Text>
-              <Text c="dimmed">
-                $3,000 (Public online vote via Geographe targeted Facebook
-                campaign to open it up to other cruise boats)
-              </Text>
-            </Box>
+          <Box>
+            <Text fw={600} size="lg" mb="xs">
+              People's Choice
+            </Text>
+            <Text c="dimmed">
+              $3,000 (Public online vote via Geographe targeted Facebook
+              campaign to open it up to other cruise boats)
+            </Text>
+          </Box>
 
-            <Box>
-              <Text fw={600} size="lg" mb="xs">
-                Onboard Favourites (All Sea Charter passengers)
-              </Text>
-              <Text c="dimmed">1st: $5,000 | 2nd: $2,000 | 3rd: $1,000</Text>
-            </Box>
-          </Stack>
-        </Card>
+          <Box>
+            <Text fw={600} size="lg" mb="xs">
+              Onboard Favourites (All Sea Charter passengers)
+            </Text>
+            <Text c="dimmed">1st: $5,000 | 2nd: $2,000 | 3rd: $1,000</Text>
+          </Box>
+        </Stack>
 
         <Divider />
 
@@ -148,7 +145,6 @@ export default function CompetitionDetailsPage() {
             </List.Item>
           </List>
         </Box>
-        <CompetitionSignUpSection />
       </Stack>
     </Container>
   );

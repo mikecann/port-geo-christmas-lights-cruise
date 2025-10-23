@@ -6,7 +6,13 @@ import { api } from "../../convex/_generated/api";
 
 export default function CompetitionSignUpSection() {
   return (
-    <Paper withBorder p="xl" bg="rgba(251, 175, 93, 0.1)" radius="md">
+    <Paper
+      withBorder
+      p="xl"
+      bg="rgba(251, 175, 93, 0.1)"
+      radius="md"
+      style={{ maxWidth: "500px" }}
+    >
       <Authenticated>
         <AuthenticatedContent />
       </Authenticated>
@@ -36,7 +42,7 @@ function AuthenticatedContent() {
   const myEntry = useQuery(api.my.entries.find);
 
   // Show loading state while checking for entry
-  if (myEntry === undefined) {
+  if (myEntry === undefined)
     return (
       <Stack gap="md" align="center">
         <Text size="lg" fw={600} ta="center">
@@ -44,7 +50,6 @@ function AuthenticatedContent() {
         </Text>
       </Stack>
     );
-  }
 
   const hasEntry = myEntry !== null;
 
@@ -59,7 +64,7 @@ function AuthenticatedContent() {
         size="lg"
         color="#FBAF5D"
       >
-        {hasEntry ? "View My Entry" : "Sign Up for the Competition"}
+        {hasEntry ? "View My Entry" : "Enter the Competition"}
       </Button>
     </Stack>
   );
