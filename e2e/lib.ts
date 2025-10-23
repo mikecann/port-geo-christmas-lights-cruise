@@ -7,6 +7,24 @@ import { ConvexBackend } from "./lib/ConvexBackend";
 import { ViteFrontend } from "./lib/ViteFrontend";
 import { exportJWK, exportPKCS8, generateKeyPair } from "jose";
 
+const models = {
+  "google/gemini-flash-lite-latest": {
+    name: "google/gemini-flash-lite-latest",
+    inputPricePerToken: 0.1 / 1_000_000,
+    outputPricePerToken: 0.4 / 1_000_000,
+  },
+  "google/gemini-2.5-pro": {
+    name: "google/gemini-2.5-pro",
+    inputPricePerToken: 1.25 / 1_000_000,
+    outputPricePerToken: 2.5 / 1_000_000,
+  },
+  "openai/gpt-5-mini": {
+    name: "openai/gpt-5-mini",
+    inputPricePerToken: 0.25 / 1_000_000,
+    outputPricePerToken: 2 / 1_000_000,
+  },
+};
+
 export const setupE2E = () => {
   const backend = new ConvexBackend({
     projectDir: process.cwd(),
@@ -14,9 +32,11 @@ export const setupE2E = () => {
   });
   const frontend = new ViteFrontend();
 
+  const model = models["google/gemini-flash-lite-latest"];
+
   const stagehand = new Stagehand({
     env: "LOCAL",
-    modelName: "openai/gpt-5-mini",
+    modelName: model.name,
     localBrowserLaunchOptions: {
       headless: Boolean(process.env.CI),
       recordVideo: { dir: "e2e-videos/" },
@@ -41,17 +61,32 @@ export const setupE2E = () => {
     await frontend.stop();
     await backend.stop();
     await stagehand.close();
-    logExpenseEstimate(stagehand);
+    console.log("--- Run Finished ---");
+    logExpenseEstimate();
   });
 
   beforeEach(async () => {
     await backend.client.mutation(api.testing.testing.clearAll);
   });
 
+  const logExpenseEstimate = () => {
+    console.log({
+      totalPromptTokens: stagehand.metrics.totalPromptTokens,
+      totalCompletionTokens: stagehand.metrics.totalCompletionTokens,
+    });
+
+    const estimatedCost =
+      stagehand.metrics.totalPromptTokens * model.inputPricePerToken +
+      stagehand.metrics.totalCompletionTokens * model.outputPricePerToken;
+
+    console.log(`Estimated cost (${model.name}): $${estimatedCost.toFixed(5)}`);
+  };
+
   return {
     backend,
     frontend,
     stagehand,
+    logExpenseEstimate,
     auth: {
       signInAs: async (options: AuthenticateOptions) => {
         // Navigate to the test auth page
@@ -232,15 +267,4 @@ const createDetailedStagehandLogger = () => {
       }
     }
   };
-};
-
-const logExpenseEstimate = (stagehand: Stagehand) => {
-  console.log("--- run finished ---");
-  console.log({
-    totalPromptTokens: stagehand.metrics.totalPromptTokens,
-    totalCompletionTokens: stagehand.metrics.totalCompletionTokens,
-  });
-  console.log(
-    `Estimated cost: $${(stagehand.metrics.totalPromptTokens * 0.00000025 + stagehand.metrics.totalCompletionTokens * 0.000002).toFixed(5)}`,
-  );
 };

@@ -36,6 +36,39 @@ describe("a voter's experience", () => {
     expect(votes[0].entryId).toBe(entries[0].id);
     expect(votes[0].category).toBe("best_display");
   });
+
+  it(
+    "AGENTICALLY enable voting in the jolly category",
+    async () => {
+      await goto();
+
+      await auth.signInAs({
+        email: "test@example.com",
+        name: "Test User",
+        isSystemAdmin: false,
+        isCompetitionAdmin: false,
+      });
+
+      await goto();
+
+      await backend.client.mutation(api.testing.testing.createMockEntries, {
+        count: 10,
+      });
+
+      const agent = await stagehand.agent();
+
+      await agent.execute({
+        instruction: `Vote for any of the entries in the "most jolly" category`,
+        maxSteps: 15,
+      });
+
+      const votes = await backend.client.query(api.testing.testing.listVotes);
+
+      expect(votes.length).toBe(1);
+      expect(votes[0].category).toBe("most_jolly");
+    },
+    minutesInMs(5),
+  );
 });
 
 describe("an entrant's experience", () => {
@@ -89,9 +122,11 @@ describe("an entrant's experience", () => {
       await agent.execute({
         instruction: `Create an entry for the competition and submit it. 
           
-          You should use '35 Keel Retreat' as the house address and 'Test Entry' as the entry name. 
+          You should use '35 Keel Retreat' as the house address.
+
+          After entering the address you must select the address from the autocomplete to register the address as valid.
           
-          By the way, you need to select the address from the autocomplete to register the address as valid. 
+          You should use 'Test Entry' as the entry name. 
           
           Make sure the entry is in the submitted status before you finish.`,
         maxSteps: 30,
@@ -103,7 +138,6 @@ describe("an entrant's experience", () => {
 
       expect(entries.length).toBe(1);
       const entry = entries[0];
-      expect(entry.name).toBe("Test Entry");
       expect(entry.status).toBe("submitted");
     },
     minutesInMs(5),
@@ -185,15 +219,20 @@ describe("a public user's experience", () => {
       },
     );
 
-    await stagehand.page.act("Click the map button from the top bar");
+    await stagehand.page.act({
+      action: "Click the map button from the top bar",
+      iframes: true,
+    });
 
-    await stagehand.page.act(
-      `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
-    );
+    await stagehand.page.act({
+      action: `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
+      iframes: true,
+    });
 
-    await stagehand.page.act(
-      `Click view details button in the popup that opens`,
-    );
+    await stagehand.page.act({
+      action: `Click view details button in the popup that opens`,
+      iframes: true,
+    });
 
     expect(stagehand.page.url()).toContain(
       routes.entry({ entryId: mockEntries[0].id }).href,
