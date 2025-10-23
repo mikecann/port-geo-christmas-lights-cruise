@@ -45,6 +45,37 @@ export const count = query({
   },
 });
 
+export const getRandomThree = query({
+  args: {},
+  handler: async (ctx) => {
+    const allApproved = await entries.listApproved(ctx.db);
+    if (allApproved.length === 0) return [];
+    if (allApproved.length <= 3) {
+      return await Promise.all(
+        allApproved.map(async (entry) => ({
+          entry,
+          photo: await photos.forEntry(entry._id).findFirst(ctx.db),
+        })),
+      );
+    }
+
+    // Fisher-Yates shuffle and take first 3
+    const shuffled = [...allApproved];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    const selectedThree = shuffled.slice(0, 3);
+    return await Promise.all(
+      selectedThree.map(async (entry) => ({
+        entry,
+        photo: await photos.forEntry(entry._id).findFirst(ctx.db),
+      })),
+    );
+  },
+});
+
 export const get = query({
   args: { entryId: v.id("entries") },
   handler: async (ctx, args) => {
