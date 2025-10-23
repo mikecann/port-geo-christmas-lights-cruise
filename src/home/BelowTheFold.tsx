@@ -56,14 +56,6 @@ export default function BelowTheFoldCopy() {
           <Text c="gray.0" mb="lg" size="sm" fs="italic">
             *Entry must be presented at the cellar door
           </Text>
-
-          <Image
-            src="/Event-Brite-web-banner-1024x576.png"
-            alt="Port Geographe Christmas Lights Cruise"
-            pt={60}
-            loading="lazy"
-            decoding="async"
-          />
         </Box>
       </Container>
     </Box>
