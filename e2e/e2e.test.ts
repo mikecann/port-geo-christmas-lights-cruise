@@ -4,6 +4,7 @@ import { routes } from "../src/routes";
 import { api } from "../convex/_generated/api";
 import { wait } from "../shared/misc";
 import { z } from "zod";
+import { minutesInMs } from "../shared/time";
 
 const { auth, backend, frontend, stagehand, goto } = setupE2E();
 
@@ -79,22 +80,38 @@ describe("an entrant's experience", () => {
     );
   });
 
-  it("AGENTICALLY should allow voting on an entry", async () => {
-    await goto();
+  it(
+    "AGENTICALLY should allow voting on an entry",
+    async () => {
+      await goto();
 
-    const agent = await stagehand.agent();
+      const agent = await stagehand.agent();
 
-    await agent.execute({
-      instruction: "Create an entry for the competition and submit it.",
-      maxSteps: 30,
-    });
+      await agent.execute({
+        instruction: `Create an entry for the competition and submit it. 
+          
+          You should use '35 Keel Retreat' as the house address and 'Test Entry' as the entry name. 
+          
+          By the way, you need to select the address from the autocomplete to register the address as valid. 
+          
+          Make sure the entry is in the submitted status before you finish.`,
+        maxSteps: 30,
+      });
 
-    const entries = await backend.client.query(api.testing.testing.listEntries);
+      const entries = await backend.client.query(
+        api.testing.testing.listEntries,
+      );
 
-    expect(entries.length).toBe(1);
-    const entry = entries[0];
-    expect(entry.status).toBe("submitted");
-  }, 120000);
+      expect(entries.length).toBe(1);
+      const entry = entries[0];
+      expect(entry.name).toBe("Test Entry");
+      expect(entry.houseAddress?.address).toBe(
+        "35 Keel Retreat, Geographe WA, Australia",
+      );
+      expect(entry.status).toBe("submitted");
+    },
+    minutesInMs(5),
+  );
 });
 
 describe("a public user's experience", () => {

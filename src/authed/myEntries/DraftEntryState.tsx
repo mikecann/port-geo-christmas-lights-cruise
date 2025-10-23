@@ -16,6 +16,7 @@ import PhotoSection from "./photos/PhotoSection";
 import AddressAutocomplete from "../../common/components/AddressAutocomplete";
 import DraftEntryHeader from "./DraftEntryHeader";
 import DraftEntryAlert from "./DraftEntryAlert";
+import { isTestMode } from "../../common/testMode";
 
 interface DraftEntryStateProps {
   entry: Doc<"entries">;
@@ -113,12 +114,14 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
             />
 
             {/* Photo Section */}
-            <PhotoSection
-              photos={photos}
-              canUpload={true}
-              canRemove={true}
-              onUploadStateChange={setIsPhotosUploading}
-            />
+            {isTestMode() ? null : (
+              <PhotoSection
+                photos={photos}
+                canUpload={true}
+                canRemove={true}
+                onUploadStateChange={setIsPhotosUploading}
+              />
+            )}
           </Stack>
 
           <Divider />
