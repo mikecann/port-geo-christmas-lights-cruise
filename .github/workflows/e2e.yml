@@ -52,3 +52,12 @@ jobs:
             .convex-e2e-test/
           retention-days: 7
 
+      - name: Upload E2E test videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-videos
+          path: e2e-videos/
+          if-no-files-found: warn
+          retention-days: 30
+
