@@ -17,7 +17,7 @@ export function Title() {
       mt={{ base: 50, xs: 100, sm: 100, lg: 100 }}
       mx="auto"
       style={{ position: "relative", zIndex: 5 }}
-      pt={{ base: 200, xs: 200, sm: 300, lg: 300 }}
+      pt={{ base: 250, xs: 250, sm: 300, lg: 300 }}
     >
       <img
         src="/title-no-year-1024.webp"
