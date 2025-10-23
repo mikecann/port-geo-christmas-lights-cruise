@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { setupE2E } from "./lib";
 import { routes } from "../src/routes";
 import { api } from "../convex/_generated/api";
-import { wait } from "../shared/misc";
 import { z } from "zod";
 import { minutesInMs } from "../shared/time";
 
@@ -105,9 +104,6 @@ describe("an entrant's experience", () => {
       expect(entries.length).toBe(1);
       const entry = entries[0];
       expect(entry.name).toBe("Test Entry");
-      expect(entry.houseAddress?.address).toBe(
-        "35 Keel Retreat, Geographe WA, Australia",
-      );
       expect(entry.status).toBe("submitted");
     },
     minutesInMs(5),

@@ -18,7 +18,6 @@ export class ConvexBackend {
   public readonly adminKey = ADMIN_KEY;
   public backendUrl?: string;
   private _client?: ConvexHttpClient;
-  public resetDatabase?: () => Promise<void>;
 
   private readonly projectDir: string;
   private readonly stdio: "inherit" | "ignore" | ["ignore", "pipe", "pipe"];
@@ -50,11 +49,6 @@ export class ConvexBackend {
     console.log("✅ Deploy successful!");
 
     this.backendUrl = `http://localhost:${this.port}`;
-    this._client = new ConvexHttpClient(this.backendUrl);
-    this.resetDatabase = await createResetDatabase({
-      backend: this,
-      backendUrl: this.backendUrl,
-    });
 
     console.log(`✅ Convex backend ready at ${this.backendUrl}\n`);
   }
@@ -181,20 +175,14 @@ export class ConvexBackend {
       setTimeout(() => resolve(), 2000);
     });
   }
-}
 
-async function createResetDatabase({
-  backend,
-  backendUrl,
-}: {
-  backend: ConvexBackend;
-  backendUrl: string;
-}): Promise<() => Promise<void>> {
-  const adminClient = new ConvexHttpClient(backendUrl);
-  // Use internal API to set admin authentication
-  (adminClient as any).setAdminAuth(backend.adminKey);
+  async resetDatabase(): Promise<void> {
+    if (!this.backendUrl) throw new Error("Backend URL not set");
+    const adminClient = new ConvexHttpClient(this.backendUrl);
 
-  return async () => {
+    // Use internal API to set admin authentication
+    (adminClient as any).setAdminAuth(this.adminKey);
+
     console.log("🔄 Resetting database...");
 
     // Clear all scheduled functions first
@@ -312,5 +300,5 @@ async function createResetDatabase({
     console.log(
       `✅ Database reset complete (cleared ${tableNames.length} tables)`,
     );
-  };
+  }
 }
