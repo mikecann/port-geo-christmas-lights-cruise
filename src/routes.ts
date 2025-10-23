@@ -21,6 +21,7 @@ export const { RouteProvider, useRoute, routes } = createRouter({
   signin: defineRoute("/signin"),
   testAuth: defineRoute("/test-auth"),
   tickets: defineRoute("/tickets"),
+  competitionDetails: defineRoute("/competition-details"),
   settings: defineRoute("/settings"),
   myEntries: defineRoute("/my-entries"),
   myVotes: defineRoute("/my-votes"),

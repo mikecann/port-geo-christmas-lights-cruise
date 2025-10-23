@@ -80,7 +80,7 @@ export default function Footer() {
                   Port Geographe Christmas Lights Cruise
                 </Text>
                 <Text c="gray.4" size="sm">
-                  December 2024
+                  December 2025
                 </Text>
                 <Text c="gray.4" size="sm">
                   Busselton, Western Australia
@@ -120,17 +120,19 @@ export default function Footer() {
               </Group>
             </Stack>
 
-            {/* Legal */}
             <Stack gap="md">
               <Text fw={600} c="white" size="lg">
-                Legal
+                Competition
               </Text>
               <Stack gap="xs">
-                <Anchor href="#" c="gray.4" td="none" style={{ fontSize: 14 }}>
-                  Terms of Service
-                </Anchor>
-                <Anchor href="#" c="gray.4" td="none" style={{ fontSize: 14 }}>
-                  Privacy Policy
+                <Anchor
+                  component="a"
+                  {...routes.competitionDetails().link}
+                  c="gray.4"
+                  td="none"
+                  style={{ fontSize: 14 }}
+                >
+                  Competition Details
                 </Anchor>
               </Stack>
             </Stack>

@@ -5,7 +5,10 @@ import {
   LoadingOverlay,
   Loader,
   Text,
+  Button,
+  Group,
 } from "@mantine/core";
+import { IconTrophy } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useMe } from "../../auth/useMeHooks";
@@ -16,6 +19,7 @@ import SubmittedEntryState from "./SubmittedEntryState";
 import ApprovedEntryState from "./ApprovedEntryState";
 import RejectedEntryState from "./RejectedEntryState";
 import { exhaustiveCheck, iife } from "../../../shared/misc";
+import { routes } from "../../routes";
 
 export default function MyEntriesPage() {
   const me = useMe();
@@ -29,9 +33,18 @@ export default function MyEntriesPage() {
     <Container size="md" py="xl">
       <LoadingOverlay visible={isLoading} />
 
-      <Title order={1} mb="xl">
-        My Entries
-      </Title>
+      <Group justify="space-between" mb="xl">
+        <Title order={1}>My Entries</Title>
+        <Button
+          component="a"
+          {...routes.competitionDetails().link}
+          leftSection={<IconTrophy size={18} />}
+          variant="light"
+          size="sm"
+        >
+          Competition Details
+        </Button>
+      </Group>
 
       <Stack gap="md">
         {iife(() => {

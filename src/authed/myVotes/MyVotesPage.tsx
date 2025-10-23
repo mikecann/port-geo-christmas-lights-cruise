@@ -8,10 +8,11 @@ import {
   Text,
   Badge,
   SimpleGrid,
+  Button,
 } from "@mantine/core";
 import { useQuery } from "convex/react";
 import { useMemo } from "react";
-import { IconAward, IconMoodSmile } from "@tabler/icons-react";
+import { IconAward, IconMoodSmile, IconTrophy } from "@tabler/icons-react";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -20,6 +21,7 @@ import { VOTE_CATEGORIES } from "../../../convex/features/votes/schema";
 import { AuthRequired } from "../../auth/AuthRequired";
 import { useErrorCatchingMutation } from "../../common/errors";
 import MyVoteEntryCard from "./MyVoteEntryCard";
+import { routes } from "../../routes";
 
 interface CategoryConfig {
   key: VoteCategory;
@@ -77,9 +79,18 @@ export default function MyVotesPage() {
   return (
     <AuthRequired>
       <Container size="md" py="xl">
-        <Title order={1} mb="xl">
-          My Votes
-        </Title>
+        <Group justify="space-between" mb="xl">
+          <Title order={1}>My Votes</Title>
+          <Button
+            component="a"
+            {...routes.competitionDetails().link}
+            leftSection={<IconTrophy size={18} />}
+            variant="light"
+            size="sm"
+          >
+            Competition Details
+          </Button>
+        </Group>
 
         <Stack gap="md">
           {VOTE_CATEGORIES.map((category) => {

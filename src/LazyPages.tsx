@@ -22,6 +22,10 @@ export const HomePage = lazy(() => import("./home/HomePage"));
 
 export const TicketsPage = lazy(() => import("./tickets/TicketsPage"));
 
+export const CompetitionDetailsPage = lazy(
+  () => import("./competition/CompetitionDetailsPage"),
+);
+
 export const EntriesGalleryPage = lazy(
   () => import("./entries/gallery/EntriesGalleryPage"),
 );

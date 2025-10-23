@@ -1,4 +1,6 @@
-import { Stack, Group, Title, Text } from "@mantine/core";
+import { Stack, Group, Title, Text, Button } from "@mantine/core";
+import { IconTrophy } from "@tabler/icons-react";
+import { routes } from "../../routes";
 
 export default function GalleryHeader() {
   return (
@@ -12,6 +14,15 @@ export default function GalleryHeader() {
         Discover the amazing Christmas light displays participating in the Port
         Geographe Christmas Cruise 2025 competition.
       </Text>
+      <Button
+        component="a"
+        {...routes.competitionDetails().link}
+        leftSection={<IconTrophy size={18} />}
+        variant="light"
+        size="md"
+      >
+        View Competition Details & Prizes
+      </Button>
     </Stack>
   );
 }
