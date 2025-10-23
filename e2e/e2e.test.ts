@@ -29,6 +29,8 @@ describe("a voter's experience", () => {
 
     await stagehand.page.act(`Click the vote for best display`);
 
+    await stagehand.page.act(`wait for it to show the vote confirmation`);
+
     const votes = await backend.client.query(api.testing.testing.listVotes);
 
     expect(votes.length).toBe(1);
@@ -58,7 +60,9 @@ describe("a voter's experience", () => {
       const agent = await stagehand.agent();
 
       await agent.execute({
-        instruction: `Vote for any of the entries in the "most jolly" category`,
+        instruction: `Vote for any of the entries in the "most jolly" category.
+        
+        After voting, wait for the vote confirmation to appear and then finish.`,
         maxSteps: 15,
       });
 
@@ -96,6 +100,10 @@ describe("an entrant's experience", () => {
 
     await stagehand.page.act(`Click the submit button`);
 
+    await stagehand.page.act(
+      `wait for it to show the entry submission confirmation`,
+    );
+
     const entry = await backend.client.mutation(
       api.testing.testing.findEntryForUser,
       {
@@ -128,7 +136,7 @@ describe("an entrant's experience", () => {
           
           You should use 'Test Entry' as the entry name. 
           
-          Make sure the entry is in the submitted status before you finish.`,
+          After submitting the entry, wait for the entry submission confirmation to appear and then finish.`,
         maxSteps: 30,
       });
 
@@ -206,7 +214,9 @@ describe("a public user's experience", () => {
 
     await stagehand.page.act("Click the sign in to vote button");
 
-    expect(stagehand.page.url()).toContain(routes.signin().href);
+    expect(stagehand.page.url()).toContain(
+      routes.signin({ returnTo: "" }).href,
+    );
   });
 
   it("should allow a user to navigate to the map page and open an entry marker popup", async () => {

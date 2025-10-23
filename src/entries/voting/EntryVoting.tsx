@@ -57,7 +57,13 @@ export default function EntryVoting({ entryId }: Props) {
             <Button
               size="md"
               variant="light"
-              onClick={() => routes.signin().push()}
+              onClick={() =>
+                routes
+                  .signin({
+                    returnTo: window.location.pathname + window.location.search,
+                  })
+                  .push()
+              }
             >
               Sign in to Vote
             </Button>

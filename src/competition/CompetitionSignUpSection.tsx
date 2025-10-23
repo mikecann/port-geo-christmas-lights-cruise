@@ -26,7 +26,9 @@ export default function CompetitionSignUpSection() {
           </Text>
           <Button
             component="a"
-            {...routes.signin().link}
+            {...routes.signin({
+              returnTo: window.location.pathname + window.location.search,
+            }).link}
             size="lg"
             color="#FBAF5D"
           >

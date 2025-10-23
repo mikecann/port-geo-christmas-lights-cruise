@@ -11,7 +11,12 @@ export const MeOrSignIn: React.FC = () => {
         <UserAvatarDropdown />
       </Authenticated>
       <Unauthenticated>
-        <Button component="a" {...routes.signin().link}>
+        <Button
+          component="a"
+          {...routes.signin({
+            returnTo: window.location.pathname + window.location.search,
+          }).link}
+        >
           Sign In
         </Button>
       </Unauthenticated>

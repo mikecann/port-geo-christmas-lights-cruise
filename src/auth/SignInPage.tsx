@@ -10,7 +10,7 @@ import {
   Anchor,
   Box,
 } from "@mantine/core";
-import { routes } from "../routes";
+import { routes, useRoute } from "../routes";
 import { useConvexAuth } from "convex/react";
 import { useApiErrorHandler } from "../common/errors";
 import { TestAuthPage } from "./TestAuthPage";
@@ -21,11 +21,15 @@ export function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
   const onApiError = useApiErrorHandler();
   const { isAuthenticated } = useConvexAuth();
+  const route = useRoute();
+
+  const returnTo =
+    route.name === "signin" ? route.params.returnTo : routes.map().href;
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    routes.map().push();
-  }, [isAuthenticated]);
+    window.location.href = returnTo;
+  }, [isAuthenticated, returnTo]);
 
   if (isTestMode()) return <TestAuthPage />;
 
@@ -61,7 +65,7 @@ export function SignInPage() {
               mt="xl"
               onClick={() => {
                 setIsLoading(true);
-                signIn("google", { redirectTo: routes.map().href })
+                signIn("google", { redirectTo: returnTo })
                   .catch(onApiError)
                   .finally(() => setIsLoading(false));
               }}

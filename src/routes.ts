@@ -18,7 +18,7 @@ export const { RouteProvider, useRoute, routes } = createRouter({
     { entryId: param.path.string },
     (q) => `/${q.entryId}`,
   ),
-  signin: defineRoute("/signin"),
+  signin: defineRoute({ returnTo: param.query.string }, () => "/signin"),
   testAuth: defineRoute("/test-auth"),
   tickets: defineRoute("/tickets"),
   competitionDetails: defineRoute("/competition-details"),

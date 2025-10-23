@@ -14,7 +14,8 @@ export const AuthRequired: React.FC<Props> = ({ children }) => {
     if (isLoading) return;
     if (!isAuthenticated) {
       console.log("redirecting to signin");
-      routes.signin().push();
+      const currentPath = window.location.pathname + window.location.search;
+      routes.signin({ returnTo: currentPath }).push();
     }
   }, [isLoading, isAuthenticated]);
 

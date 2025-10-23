@@ -13,6 +13,11 @@ const models = {
     inputPricePerToken: 0.1 / 1_000_000,
     outputPricePerToken: 0.4 / 1_000_000,
   },
+  "google/gemini-2.5-flash": {
+    name: "google/gemini-2.5-flash",
+    inputPricePerToken: 0.3 / 1_000_000,
+    outputPricePerToken: 2.5 / 1_000_000,
+  },
   "google/gemini-2.5-pro": {
     name: "google/gemini-2.5-pro",
     inputPricePerToken: 1.25 / 1_000_000,
@@ -32,7 +37,7 @@ export const setupE2E = () => {
   });
   const frontend = new ViteFrontend();
 
-  const model = models["google/gemini-flash-lite-latest"];
+  const model = models["google/gemini-2.5-flash"];
 
   const stagehand = new Stagehand({
     env: "LOCAL",
