@@ -109,3 +109,10 @@ export const listVotes = testingQuery({
     return await ctx.db.query("votes").collect();
   },
 });
+
+export const listEntries = testingQuery({
+  args: {},
+  handler: async (ctx, args) => {
+    return await ctx.db.query("entries").collect();
+  },
+});

@@ -13,6 +13,8 @@ import {
 import { routes } from "../routes";
 import { useConvexAuth } from "convex/react";
 import { useApiErrorHandler } from "../common/errors";
+import { TestAuthPage } from "./TestAuthPage";
+import { isTestMode } from "../common/testMode";
 
 export function SignInPage() {
   const { signIn } = useAuthActions();
@@ -24,6 +26,8 @@ export function SignInPage() {
     if (!isAuthenticated) return;
     routes.map().push();
   }, [isAuthenticated]);
+
+  if (isTestMode()) return <TestAuthPage />;
 
   return (
     <Box

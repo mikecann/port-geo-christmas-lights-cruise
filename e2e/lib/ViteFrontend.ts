@@ -20,6 +20,7 @@ export class ViteFrontend {
         env: {
           ...process.env,
           VITE_CONVEX_URL: convexUrl,
+          VITE_IS_TEST_MODE: "true",
           CLOUDFLARE_ENV: "dev",
         },
         stdio: "ignore",

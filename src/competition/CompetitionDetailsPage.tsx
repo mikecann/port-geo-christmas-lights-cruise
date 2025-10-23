@@ -8,6 +8,7 @@ import {
   Box,
   Card,
 } from "@mantine/core";
+import CompetitionSignUpSection from "./CompetitionSignUpSection";
 
 export default function CompetitionDetailsPage() {
   return (
@@ -147,6 +148,7 @@ export default function CompetitionDetailsPage() {
             </List.Item>
           </List>
         </Box>
+        <CompetitionSignUpSection />
       </Stack>
     </Container>
   );

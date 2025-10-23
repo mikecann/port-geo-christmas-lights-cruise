@@ -7,7 +7,7 @@ export const SignInPage = lazy(() =>
 );
 
 export const TestAuthPage = lazy(() =>
-  import("./debug/TestAuthPage").then((module) => ({
+  import("./auth/TestAuthPage").then((module) => ({
     default: module.TestAuthPage,
   })),
 );

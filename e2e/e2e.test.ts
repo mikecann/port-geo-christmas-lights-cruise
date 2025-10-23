@@ -78,6 +78,23 @@ describe("an entrant's experience", () => {
       "35 Keel Retreat, Geographe WA, Australia",
     );
   });
+
+  it("AGENTICALLY should allow voting on an entry", async () => {
+    await goto();
+
+    const agent = await stagehand.agent();
+
+    await agent.execute({
+      instruction: "Submit an entry for the competition",
+      maxSteps: 30,
+    });
+
+    const entries = await backend.client.query(api.testing.testing.listEntries);
+
+    expect(entries.length).toBe(1);
+    const entry = entries[0];
+    expect(entry.status).toBe("submitted");
+  }, 120000);
 });
 
 describe("a public user's experience", () => {
@@ -90,6 +107,7 @@ describe("a public user's experience", () => {
 
     expect(button.length).toBeGreaterThan(0);
   });
+
   it("should allow a user to navigate to the entries page and view the entries", async () => {
     await goto();
 
