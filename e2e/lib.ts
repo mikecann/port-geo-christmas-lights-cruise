@@ -46,7 +46,6 @@ export const setupE2E = () => {
       headless: Boolean(process.env.CI),
       recordVideo: { dir: "e2e-videos/" },
     },
-    domSettleTimeoutMs: 60000,
     verbose: 2,
     logger: createDetailedStagehandLogger(),
   });

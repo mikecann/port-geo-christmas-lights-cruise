@@ -4,6 +4,7 @@ import { routes } from "../src/routes";
 import { api } from "../convex/_generated/api";
 import { z } from "zod";
 import { minutesInMs } from "../shared/time";
+import { wait } from "../shared/misc";
 
 const { auth, backend, frontend, stagehand, goto } = setupE2E();
 
@@ -65,6 +66,8 @@ describe("a voter's experience", () => {
         After voting, wait for the vote confirmation to appear and then finish.`,
         maxSteps: 15,
       });
+
+      await wait(1000);
 
       const votes = await backend.client.query(api.testing.testing.listVotes);
 
