@@ -37,7 +37,7 @@ export const setupE2E = () => {
   });
   const frontend = new ViteFrontend();
 
-  const model = models["google/gemini-2.5-flash"];
+  const model = models["openai/gpt-5-mini"];
 
   const stagehand = new Stagehand({
     env: "LOCAL",
