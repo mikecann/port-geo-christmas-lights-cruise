@@ -31,34 +31,38 @@ export default function EntryGalleryCard({
   return (
     <Card
       shadow="sm"
-      padding="md"
-      radius="md"
+      padding={0}
+      radius="lg"
       withBorder
       style={{
-        transition: "transform 0.2s ease, box-shadow 0.2s ease",
+        transition:
+          "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
         cursor: "pointer",
+        overflow: "hidden",
       }}
       onClick={() => {
         routes.entry({ entryId: entry._id }).push();
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-2px)";
-        e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.12)";
+        e.currentTarget.style.transform = "translateY(-4px)";
+        e.currentTarget.style.boxShadow = "0 12px 30px rgba(251, 175, 93, 0.2)";
+        e.currentTarget.style.borderColor = "#FBAF5D";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = "translateY(0)";
         e.currentTarget.style.boxShadow = "";
+        e.currentTarget.style.borderColor = "";
       }}
     >
-      <Stack gap="md">
-        {/* First Photo */}
-        <Box>
+      <Stack gap={0}>
+        {/* First Photo with Entry Number Overlay */}
+        <Box style={{ position: "relative" }}>
           {firstPhotoUrl ? (
             <AspectRatio ratio={16 / 12}>
               <Image
                 src={firstPhotoUrl}
                 alt={`${entry.name} - Christmas lights display`}
-                radius="sm"
+                radius={0}
                 fit="cover"
                 loading="lazy"
                 decoding="async"
@@ -66,10 +70,7 @@ export default function EntryGalleryCard({
             </AspectRatio>
           ) : (
             <AspectRatio ratio={16 / 12}>
-              <Center
-                bg="var(--mantine-color-gray-9)"
-                style={{ borderRadius: "var(--mantine-radius-sm)" }}
-              >
+              <Center bg="var(--mantine-color-gray-9)">
                 <Stack gap="xs" align="center">
                   <IconPhoto size={32} color="var(--mantine-color-gray-5)" />
                   <Text size="sm" c="dimmed">
@@ -79,26 +80,38 @@ export default function EntryGalleryCard({
               </Center>
             </AspectRatio>
           )}
+          {/* Prominent Entry Number Badge */}
+          <Box
+            style={{
+              position: "absolute",
+              top: 12,
+              right: 12,
+              backgroundColor: "#FBAF5D",
+              color: "#0b1c3b",
+              padding: "6px 12px",
+              borderRadius: "var(--mantine-radius-md)",
+              fontWeight: 700,
+              fontSize: "1rem",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
+            }}
+          >
+            #{entry.entryNumber}
+          </Box>
         </Box>
 
-        {/* Entry Header */}
-        <Stack gap="xs">
-          <Group justify="space-between" align="flex-start">
-            <Text fw={600} size="lg" lineClamp={2}>
-              {entry.name}
-            </Text>
-            <Badge color="blue" variant="filled" size="sm">
-              #{entry.entryNumber}
-            </Badge>
-          </Group>
+        {/* Entry Info */}
+        <Stack gap="md" p="lg">
+          <Text fw={700} size="xl" lineClamp={2} style={{ lineHeight: 1.3 }}>
+            {entry.name}
+          </Text>
 
           <Group gap="xs" align="flex-start">
             <IconMapPin
-              size={16}
+              size={18}
               color="var(--mantine-color-gray-6)"
               style={{ marginTop: 2, flexShrink: 0 }}
             />
-            <Text size="sm" c="dimmed" lineClamp={2}>
+            <Text size="md" c="dimmed" lineClamp={2} style={{ flex: 1 }}>
               {getAddressString(entry.houseAddress)}
             </Text>
           </Group>

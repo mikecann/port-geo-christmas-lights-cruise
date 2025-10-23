@@ -96,7 +96,7 @@ export function MainAppShell({ children }: MobileNavbarProps) {
 function MenuItems() {
   return (
     <>
-      <MenuItem link={routes.entries().link}>Vote</MenuItem>
+      <MenuItem link={routes.entries().link}>Entries</MenuItem>
       <MenuItem link={routes.tickets().link}>Tickets</MenuItem>
       <MenuItem link={routes.map().link}>Map</MenuItem>
     </>

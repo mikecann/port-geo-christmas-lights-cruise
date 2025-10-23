@@ -21,30 +21,32 @@ export default function SearchSection({
   cachedSearchQuery,
 }: SearchSectionProps) {
   return (
-    <Stack gap="sm" align="center">
+    <Stack gap="lg" align="center">
       <TextInput
         placeholder="Search by entry name, address, or entry number..."
         value={searchQuery}
         onChange={(event) => onSearchChange(event.currentTarget.value)}
         leftSection={
-          isSearching ? <Loader size={16} /> : <IconSearch size={16} />
+          isSearching ? <Loader size={18} /> : <IconSearch size={18} />
         }
         size="lg"
-        w={{ base: "100%", sm: 500 }}
+        w={{ base: "100%", sm: 600 }}
         styles={{
           input: {
             borderRadius: "var(--mantine-radius-md)",
+            fontSize: "1rem",
+            "&:focus": {
+              borderColor: "#FBAF5D",
+            },
           },
         }}
       />
-      {/* Subtle Results Summary */}
-      {displayResults.length > 0 && (
+      {/* Results Summary - only show when meaningful */}
+      {searchQuery && displayResults.length > 0 && (
         <Text size="sm" c="dimmed" ta="center">
           {isSearching
-            ? `Searching... (showing ${displayResults.length} ${displayResults.length === 1 ? "result" : "results"}${cachedSearchQuery ? ` from "${cachedSearchQuery}"` : ""})`
-            : searchQuery
-              ? `Found ${displayResults.length} of ${totalCount} ${displayResults.length === 1 ? "entry" : "entries"} matching "${searchQuery}"`
-              : `Showing ${displayResults.length} of ${totalCount} competition ${displayResults.length === 1 ? "entry" : "entries"}`}
+            ? `Searching...${cachedSearchQuery ? ` (showing results from "${cachedSearchQuery}")` : ""}`
+            : `Found ${displayResults.length} of ${totalCount} ${displayResults.length === 1 ? "entry" : "entries"}`}
         </Text>
       )}
     </Stack>

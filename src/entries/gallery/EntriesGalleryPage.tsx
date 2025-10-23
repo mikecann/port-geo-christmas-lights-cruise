@@ -1,4 +1,12 @@
-import { Container, Stack, Center, Loader, Group, Text } from "@mantine/core";
+import {
+  Container,
+  Stack,
+  Center,
+  Loader,
+  Group,
+  Text,
+  Box,
+} from "@mantine/core";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { EntryWithFirstPhoto } from "../../../convex/public/entries";
@@ -70,9 +78,11 @@ export default function EntriesGalleryPage() {
   // Show skeleton grid on initial load instead of loading spinner
   if (results === undefined && isInitialLoad)
     return (
-      <Container size="lg" py="xl">
+      <Container size="xl" py="xl">
         <Stack gap="xl">
-          <GalleryHeader />
+          <Box mb="xl">
+            <GalleryHeader />
+          </Box>
           <SearchSection
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -87,10 +97,12 @@ export default function EntriesGalleryPage() {
     );
 
   return (
-    <Container size="lg" py="xl">
+    <Container size="xl" py="xl">
       <Stack gap="xl">
         {/* Header */}
-        <GalleryHeader />
+        <Box mb="xl">
+          <GalleryHeader />
+        </Box>
 
         {/* Search Bar */}
         <SearchSection

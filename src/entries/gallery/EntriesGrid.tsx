@@ -26,7 +26,7 @@ export default function EntriesGrid({
   emptyStateTitle = "No entries yet",
   emptyStateDescription = "Competition entries will appear here once they are approved. Check back soon to see the amazing Christmas light displays!",
   gridCols = { base: 1, sm: 2, lg: 3 },
-  spacing = "lg",
+  spacing = "xl",
   verticalSpacing = "xl",
   isLoading = false,
 }: EntriesGridProps) {
