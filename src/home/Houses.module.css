@@ -1,86 +1,4 @@
-/* Default boat animation */
-.houses :global(g) {
-  animation: boat-lg 30s infinite linear;
-}
-
-/* House element colors */
-.houses :global(.shadow) {
-  fill: #02051a;
-}
-
-.houses :global(.yellow) {
-  fill: #fbaf5d;
-}
-
-.houses :global(.hills) {
-  fill: #131829;
-}
-
-.houses :global(.water-dark) {
-  fill: #173f6d;
-}
-
-.houses :global(.water) {
-  fill: #2d4c92;
-}
-
-.houses :global(.red) {
-  fill: #ef4648;
-}
-
-.houses :global(.green) {
-  fill: #009172;
-}
-
-.houses :global(.blue) {
-  fill: #0098d8;
-}
-
-.houses :global(.window) {
-  fill: none;
-  stroke: #131829;
-  stroke-width: 1.216;
-  stroke-miterlimit: 10;
-}
-
-.houses :global(.boat) {
-  fill: #1a2f5a;
-}
-
-.houses :global(.boat-light) {
-  fill: #175ea7;
-}
-
-.houses :global(.boat-highlight) {
-  fill: #ffffff;
-}
-
-.houses :global(.ripple1) {
-  fill: #4e6db4;
-}
-
-.houses :global(.ripple2) {
-  fill: #3954a5;
-}
-
-/* Animated Christmas lights */
-.houses :global(.light.yellow) {
-  animation: change-color-y 2s 0s infinite;
-}
-
-.houses :global(.light.red) {
-  animation: change-color-r 2s 0s infinite;
-}
-
-.houses :global(.light.blue) {
-  animation: change-color-b 2s 0s infinite;
-}
-
-.houses :global(.light.green) {
-  animation: change-color-g 2s 0s infinite;
-}
-
-/* Color changing animations for lights */
+/* Keyframe animations for Christmas lights */
 @keyframes change-color-y {
   0% {
     fill: #fbaf5d;
@@ -203,7 +121,6 @@
   }
 }
 
-/* Float animation */
 @keyframes float {
   0% {
     transform: translatey(20px);
@@ -216,8 +133,39 @@
   }
 }
 
-/* Responsive adjustments */
-@media screen and (min-width: 1600px) {
+/* Main container */
+.houses {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin: 40px 0 0;
+}
+
+/* Default boat animation */
+.houses :global(g) {
+  animation: boat-lg 30s infinite linear;
+}
+
+/* Animated Christmas lights */
+.houses :global(.light.yellow) {
+  animation: change-color-y 2s 0s infinite;
+}
+
+.houses :global(.light.red) {
+  animation: change-color-r 2s 0s infinite;
+}
+
+.houses :global(.light.blue) {
+  animation: change-color-b 2s 0s infinite;
+}
+
+.houses :global(.light.green) {
+  animation: change-color-g 2s 0s infinite;
+}
+
+/* Responsive adjustments using Mantine breakpoints */
+/* Extra large screens (1600px+) */
+@media (min-width: 1600px) {
   .houses :global(g) {
     transform: translateX(-55vw) scale(1.1);
     transform-origin: center bottom;
@@ -225,7 +173,8 @@
   }
 }
 
-@media screen and (min-width: 1201px) {
+/* Large screens (1201px+) */
+@media (min-width: 1201px) {
   .houses :global(g) {
     transform: translateX(-80vw) scale(1.05);
     transform-origin: center bottom;
@@ -233,7 +182,8 @@
   }
 }
 
-@media screen and (max-width: 1200px) and (min-width: 768px) {
+/* Medium screens (768px - 1200px) - Mantine md breakpoint */
+@media (max-width: 1200px) and (min-width: 768px) {
   .houses :global(g) {
     transform: translateX(-125vw) scale(0.9);
     transform-origin: center bottom;
@@ -241,26 +191,28 @@
   }
 }
 
-@media screen and (max-width: 767px) {
+/* Small screens (576px - 767px) - Mantine sm breakpoint */
+@media (max-width: 767px) and (min-width: 576px) {
+  .houses {
+    margin: 20px 0 0;
+  }
+
   .houses :global(g) {
     transform: translateX(-85vw) scale(0.8);
     transform-origin: center bottom;
     animation: boat-sm 20s infinite linear;
   }
-
-  .houses {
-    margin: 20px 0px 0px;
-  }
 }
 
-@media screen and (max-width: 480px) {
+/* Extra small screens (below 576px) - Mantine xs breakpoint */
+@media (max-width: 575px) {
+  .houses {
+    margin: 10px 0 0;
+  }
+
   .houses :global(g) {
     transform: translateX(-150vw) scale(0.7);
     transform-origin: center bottom;
     animation: boat-xs 20s infinite linear;
-  }
-
-  .houses {
-    margin: 10px 0px 0px;
   }
 }
