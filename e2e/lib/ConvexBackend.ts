@@ -49,6 +49,8 @@ export class ConvexBackend {
     console.log("✅ Deploy successful!");
 
     this.backendUrl = `http://localhost:${this.port}`;
+    this._client = new ConvexHttpClient(this.backendUrl);
+    (this._client as any).setAdminAuth(this.adminKey);
 
     console.log(`✅ Convex backend ready at ${this.backendUrl}\n`);
   }
@@ -176,12 +178,13 @@ export class ConvexBackend {
     });
   }
 
+  /**
+   * Reset the database by clearing all scheduled functions, files, and tables.
+   * Im not sure if this is the best way to do this right now or if its better to use your own
+   * reset database mutation.
+   */
   async resetDatabase(): Promise<void> {
     if (!this.backendUrl) throw new Error("Backend URL not set");
-    const adminClient = new ConvexHttpClient(this.backendUrl);
-
-    // Use internal API to set admin authentication
-    (adminClient as any).setAdminAuth(this.adminKey);
 
     console.log("🔄 Resetting database...");
 
@@ -190,7 +193,7 @@ export class ConvexBackend {
     let scheduledCursor: string | null = null;
 
     do {
-      const result = (await adminClient.query(
+      const result = (await this.client.query(
         "_system/frontend/paginatedScheduledJobs" as any,
         {
           componentId: null,
@@ -203,7 +206,7 @@ export class ConvexBackend {
       };
 
       if (result.page.length > 0) {
-        const deleteResult = (await adminClient.mutation(
+        const deleteResult = (await this.client.mutation(
           "_system/frontend/deleteDocuments" as any,
           {
             componentId: null,
@@ -235,7 +238,7 @@ export class ConvexBackend {
     let fileCursor: string | null = null;
 
     do {
-      const result = (await adminClient.query(
+      const result = (await this.client.query(
         "_system/fileStorageV2/fileMetadata" as any,
         {
           componentId: null,
@@ -248,7 +251,7 @@ export class ConvexBackend {
       };
 
       if (result.page.length > 0) {
-        await adminClient.mutation("_system/fileStorageV2/deleteFiles" as any, {
+        await this.client.mutation("_system/fileStorageV2/deleteFiles" as any, {
           componentId: null,
           storageIds: result.page.map((file) => file._id),
         });
@@ -263,7 +266,7 @@ export class ConvexBackend {
     }
 
     // Get all table names from the database
-    const tableMapping = (await adminClient.query(
+    const tableMapping = (await this.client.query(
       "_system/frontend/getTableMapping" as any,
       { componentId: null },
     )) as Record<string, string>;
@@ -279,7 +282,7 @@ export class ConvexBackend {
       let totalDeleted = 0;
 
       do {
-        const result = (await adminClient.mutation(
+        const result = (await this.client.mutation(
           "_system/frontend/clearTablePage" as any,
           { tableName, cursor, componentId: null },
         )) as {
