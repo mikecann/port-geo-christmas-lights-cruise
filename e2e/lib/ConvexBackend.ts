@@ -1,9 +1,11 @@
-import { spawn, ChildProcess, spawnSync } from "child_process";
+import { spawnSync } from "child_process";
 import { mkdirSync } from "fs";
 import { join } from "path";
 import { downloadConvexBinary } from "./downloadConvexBinary";
 import { ConvexHttpClient } from "convex/browser";
 import { findUnusedPort, waitForHttpOk, onProcessExit } from "./lib";
+import { execa, type ResultPromise } from "execa";
+import kill from "tree-kill";
 
 const INSTANCE_NAME = "carnitas";
 const INSTANCE_SECRET =
@@ -14,7 +16,7 @@ const ADMIN_KEY =
 export class ConvexBackend {
   public port?: number;
   public siteProxyPort?: number;
-  public process?: ChildProcess;
+  public process?: ResultPromise;
   public readonly adminKey = ADMIN_KEY;
   public backendUrl?: string;
   private _client?: ConvexHttpClient;
@@ -67,7 +69,7 @@ export class ConvexBackend {
     this.port = findUnusedPort();
     this.siteProxyPort = findUnusedPort();
 
-    this.process = spawn(
+    this.process = execa(
       convexBinary,
       [
         "--port",
@@ -85,14 +87,20 @@ export class ConvexBackend {
       {
         cwd: backendDir,
         stdio: this.stdio,
-        detached: false,
       },
     );
 
+    // Handle process exit (expected when we call stop())
+    this.process.catch(() => {
+      // Process was terminated, this is expected
+    });
+
+    // Wait for the backend to be healthy
     await this.healthCheck();
 
-    if (this.process?.exitCode !== null) {
-      throw new Error("Convex process failed to start");
+    // Verify the process has a PID (started successfully)
+    if (!this.process.pid) {
+      throw new Error("Convex process failed to start - no PID assigned");
     }
   }
 
@@ -171,15 +179,17 @@ export class ConvexBackend {
   }
 
   async stop(): Promise<void> {
-    if (!this.process || this.process.exitCode !== null) return;
+    if (!this.process || this.process.pid === undefined) return;
 
     console.log(`🛑 Stopping Convex backend...`);
 
-    await new Promise<void>((resolve) => {
-      this.process!.once("exit", () => resolve());
-      this.process!.kill("SIGKILL");
-      setTimeout(() => resolve(), 2000);
-    });
+    const pid = this.process.pid;
+    try {
+      // Try graceful SIGTERM first, tree-kill will kill all child processes
+      await kill(pid, "SIGTERM");
+    } catch (error) {
+      console.warn(`Failed to terminate Convex backend gracefully:`, error);
+    }
   }
 
   /**

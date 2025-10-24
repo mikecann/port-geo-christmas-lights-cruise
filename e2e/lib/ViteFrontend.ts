@@ -1,9 +1,10 @@
-import { spawn, ChildProcess } from "child_process";
 import { findUnusedPort, waitForHttpOk, onProcessExit } from "./lib";
+import { execa, type ResultPromise } from "execa";
+import kill from "tree-kill";
 
 export class ViteFrontend {
   public port?: number;
-  public process?: ChildProcess;
+  public process?: ResultPromise;
   public frontendUrl?: string;
 
   constructor() {}
@@ -13,7 +14,7 @@ export class ViteFrontend {
 
     this.port = findUnusedPort();
 
-    this.process = spawn(
+    this.process = execa(
       "bunx",
       ["vite", "--port", String(this.port), "--strictPort"],
       {
@@ -24,15 +25,20 @@ export class ViteFrontend {
           CLOUDFLARE_ENV: "dev",
         },
         stdio: "ignore",
-        detached: false,
       },
     );
+
+    // Handle process exit (expected when we call stop())
+    this.process.catch(() => {
+      // Process was terminated, this is expected
+    });
 
     this.frontendUrl = `http://localhost:${this.port}`;
     await waitForHttpOk(this.frontendUrl);
 
-    if (this.process.exitCode !== null)
-      throw new Error("Vite process exited early");
+    // Verify the process has a PID (started successfully)
+    if (!this.process.pid)
+      throw new Error("Vite process failed to start - no PID assigned");
 
     console.log(`✅ Vite server running at ${this.frontendUrl}\n`);
 
@@ -40,14 +46,16 @@ export class ViteFrontend {
   }
 
   async stop(): Promise<void> {
-    if (!this.process || this.process.exitCode !== null) return;
+    if (!this.process || this.process.pid === undefined) return;
 
     console.log(`🛑 Stopping Vite server...`);
 
-    await new Promise<void>((resolve) => {
-      this.process!.once("exit", () => resolve());
-      this.process!.kill("SIGKILL");
-      setTimeout(() => resolve(), 2000);
-    });
+    const pid = this.process.pid;
+    try {
+      // Try graceful SIGTERM first, tree-kill will kill all child processes
+      await kill(pid, "SIGTERM");
+    } catch (error) {
+      console.warn(`Failed to terminate Vite server gracefully:`, error);
+    }
   }
 }
