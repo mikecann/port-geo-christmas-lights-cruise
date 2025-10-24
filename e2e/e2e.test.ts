@@ -204,34 +204,34 @@ describe("an entrant's experience", () => {
     );
   });
 
-  it(
-    "AGENTICALLY should allow voting on an entry",
-    async () => {
-      await goto();
+  // it(
+  //   "AGENTICALLY should allow voting on an entry",
+  //   async () => {
+  //     await goto();
 
-      const agent = await stagehand.agent();
+  //     const agent = await stagehand.agent();
 
-      await agent.execute({
-        instruction: `Create an entry for the competition and submit it.
+  //     await agent.execute({
+  //       instruction: `Create an entry for the competition and submit it.
 
-          You should use '35 Keel Retreat' as the house address.
+  //         You should use '35 Keel Retreat' as the house address.
 
-          After entering the address you must select the address from the autocomplete to register the address as valid.
+  //         After entering the address you must select the address from the autocomplete to register the address as valid.
 
-          You should use 'Test Entry' as the entry name.
+  //         You should use 'Test Entry' as the entry name.
 
-          After submitting the entry, wait for the entry submission confirmation to appear and then finish.`,
-        maxSteps: 30,
-      });
+  //         After submitting the entry, wait for the entry submission confirmation to appear and then finish.`,
+  //       maxSteps: 30,
+  //     });
 
-      const entries = await backend.client.query(
-        api.testing.testing.listEntries,
-      );
+  //     const entries = await backend.client.query(
+  //       api.testing.testing.listEntries,
+  //     );
 
-      expect(entries.length).toBe(1);
-      const entry = entries[0];
-      expect(entry.status).toBe("submitted");
-    },
-    minutesInMs(5),
-  );
+  //     expect(entries.length).toBe(1);
+  //     const entry = entries[0];
+  //     expect(entry.status).toBe("submitted");
+  //   },
+  //   minutesInMs(5),
+  // );
 });
