@@ -6,7 +6,105 @@ import { z } from "zod";
 import { minutesInMs } from "../shared/time";
 import { wait } from "../shared/misc";
 
-const { auth, backend, frontend, stagehand, goto } = setupE2E();
+const { auth, backend, stagehand, goto } = setupE2E();
+
+describe("a public user's experience", () => {
+  it("should allow a user to buy tickets from the homepage", async () => {
+    await goto();
+
+    await stagehand.page.act("Click the button to buy tickets");
+
+    const button = await stagehand.page.observe("find the Buy Tickets button");
+
+    expect(button.length).toBeGreaterThan(0);
+  });
+
+  it("should allow a user to navigate to the entries page and view the entries", async () => {
+    await goto();
+
+    await stagehand.page.act("Click the entries button from the top bar");
+
+    await backend.client.mutation(api.testing.testing.createMockEntries, {
+      count: 9,
+    });
+
+    const { entries } = await stagehand.page.extract({
+      instruction: "find the entries listed",
+      schema: z.object({
+        entries: z.array(
+          z.object({
+            entryName: z.string(),
+            entryNumber: z.string(),
+          }),
+        ),
+      }),
+    });
+
+    expect(entries.length).toBe(9);
+
+    const firstEntry = entries[0];
+
+    await stagehand.page.act(
+      `Click the entry with the name "${firstEntry.entryName}"`,
+    );
+
+    const { entryTitle, entryNumber } = await stagehand.page.extract({
+      instruction: "get some of the entry info",
+      schema: z.object({
+        entryTitle: z.string(),
+        entryNumber: z.number(),
+      }),
+    });
+
+    expect(entryTitle).toBe(firstEntry.entryName);
+    expect(entryNumber).toBe(Number(firstEntry.entryNumber));
+  });
+
+  it("should allow the user to sign in to vote from the entry page", async () => {
+    const mockEntries = await backend.client.mutation(
+      api.testing.testing.createMockEntries,
+      { count: 3 },
+    );
+
+    await goto(routes.entry({ entryId: mockEntries[0].id }));
+
+    await stagehand.page.act("Click the sign in to vote button");
+
+    expect(stagehand.page.url()).toContain(
+      routes.signin({ returnTo: "" }).href,
+    );
+  });
+
+  it("should allow a user to navigate to the map page and open an entry marker popup", async () => {
+    await goto();
+
+    const mockEntries = await backend.client.mutation(
+      api.testing.testing.createMockEntries,
+      {
+        count: 9,
+      },
+    );
+
+    await stagehand.page.act({
+      action: "Click the map button from the top bar",
+      iframes: true,
+    });
+
+    await stagehand.page.act({
+      action: `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
+      iframes: true,
+    });
+
+    await stagehand.page.act({
+      action: `Click view details button in the popup that opens`,
+      iframes: true,
+    });
+
+    expect(stagehand.page.url()).toContain(
+      routes.entry({ entryId: mockEntries[0].id }).href,
+    );
+  });
+});
 
 describe("a voter's experience", () => {
   it("should allow a user to submit an entry", async () => {
@@ -153,102 +251,4 @@ describe("an entrant's experience", () => {
     },
     minutesInMs(5),
   );
-});
-
-describe("a public user's experience", () => {
-  it("should allow a user to buy tickets from the homepage", async () => {
-    await goto();
-
-    await stagehand.page.act("Click the book tickets now button");
-
-    const button = await stagehand.page.observe("find the Buy Tickets button");
-
-    expect(button.length).toBeGreaterThan(0);
-  });
-
-  it("should allow a user to navigate to the entries page and view the entries", async () => {
-    await goto();
-
-    await backend.client.mutation(api.testing.testing.createMockEntries, {
-      count: 9,
-    });
-
-    await stagehand.page.act("Click the entries button from the top bar");
-
-    const { entries } = await stagehand.page.extract({
-      instruction: "find the entries listed",
-      schema: z.object({
-        entries: z.array(
-          z.object({
-            entryName: z.string(),
-            entryNumber: z.string(),
-          }),
-        ),
-      }),
-    });
-
-    expect(entries.length).toBe(9);
-
-    const firstEntry = entries[0];
-
-    await stagehand.page.act(
-      `Click the entry with the name "${firstEntry.entryName}"`,
-    );
-
-    const { entryTitle, entryNumber } = await stagehand.page.extract({
-      instruction: "get some of the entry info",
-      schema: z.object({
-        entryTitle: z.string(),
-        entryNumber: z.number(),
-      }),
-    });
-
-    expect(entryTitle).toBe(firstEntry.entryName);
-    expect(entryNumber).toBe(Number(firstEntry.entryNumber));
-  });
-
-  it("should allow the user to sign in to vote from the entry page", async () => {
-    const mockEntries = await backend.client.mutation(
-      api.testing.testing.createMockEntries,
-      { count: 3 },
-    );
-
-    await goto(routes.entry({ entryId: mockEntries[0].id }));
-
-    await stagehand.page.act("Click the sign in to vote button");
-
-    expect(stagehand.page.url()).toContain(
-      routes.signin({ returnTo: "" }).href,
-    );
-  });
-
-  it("should allow a user to navigate to the map page and open an entry marker popup", async () => {
-    await goto();
-
-    const mockEntries = await backend.client.mutation(
-      api.testing.testing.createMockEntries,
-      {
-        count: 9,
-      },
-    );
-
-    await stagehand.page.act({
-      action: "Click the map button from the top bar",
-      iframes: true,
-    });
-
-    await stagehand.page.act({
-      action: `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
-      iframes: true,
-    });
-
-    await stagehand.page.act({
-      action: `Click view details button in the popup that opens`,
-      iframes: true,
-    });
-
-    expect(stagehand.page.url()).toContain(
-      routes.entry({ entryId: mockEntries[0].id }).href,
-    );
-  });
 });

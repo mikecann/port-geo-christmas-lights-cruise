@@ -23,3 +23,26 @@ export async function waitForHttpOk(
     attempts++;
   }
 }
+
+/**
+ * Register a cleanup handler to be called when the current process exits.
+ * This handles SIGINT, SIGTERM, and uncaught exceptions.
+ */
+export function onProcessExit(handler: () => void | Promise<void>): void {
+  const handleExit = async (signal: string) => {
+    try {
+      await handler();
+    } catch (error) {
+      console.error(`Error during cleanup (${signal}):`, error);
+    } finally {
+      process.exit(signal === "uncaughtException" ? 1 : 0);
+    }
+  };
+
+  process.on("SIGINT", () => handleExit("SIGINT"));
+  process.on("SIGTERM", () => handleExit("SIGTERM"));
+  process.on("uncaughtException", (error) => {
+    console.error("Uncaught exception:", error);
+    handleExit("uncaughtException");
+  });
+}

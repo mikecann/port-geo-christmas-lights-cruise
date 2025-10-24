@@ -53,12 +53,13 @@ export const setupE2E = () => {
   beforeAll(async () => {
     await backend.init();
 
+    await frontend.init({ convexUrl: backend.backendUrl! });
+    
+    await stagehand.init();
+
     const authKeys = await generateTestKeys();
     await backend.setEnv("JWT_PRIVATE_KEY", authKeys.JWT_PRIVATE_KEY);
     await backend.setEnv("JWKS", authKeys.JWKS);
-
-    await frontend.init({ convexUrl: backend.backendUrl! });
-    await stagehand.init();
   });
 
   afterAll(async () => {

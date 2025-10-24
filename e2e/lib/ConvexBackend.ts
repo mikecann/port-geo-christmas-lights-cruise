@@ -3,7 +3,7 @@ import { mkdirSync } from "fs";
 import { join } from "path";
 import { downloadConvexBinary } from "./downloadConvexBinary";
 import { ConvexHttpClient } from "convex/browser";
-import { findUnusedPort, waitForHttpOk } from "./lib";
+import { findUnusedPort, waitForHttpOk, onProcessExit } from "./lib";
 
 const INSTANCE_NAME = "carnitas";
 const INSTANCE_SECRET =
@@ -53,6 +53,8 @@ export class ConvexBackend {
     (this._client as any).setAdminAuth(this.adminKey);
 
     console.log(`✅ Convex backend ready at ${this.backendUrl}\n`);
+
+    onProcessExit(() => this.stop());
   }
 
   private async startBackend(backendDir: string): Promise<void> {
@@ -170,6 +172,8 @@ export class ConvexBackend {
 
   async stop(): Promise<void> {
     if (!this.process || this.process.exitCode !== null) return;
+
+    console.log(`🛑 Stopping Convex backend...`);
 
     await new Promise<void>((resolve) => {
       this.process!.once("exit", () => resolve());

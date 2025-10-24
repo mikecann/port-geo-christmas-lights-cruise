@@ -1,5 +1,5 @@
 import { spawn, ChildProcess } from "child_process";
-import { findUnusedPort, waitForHttpOk } from "./lib";
+import { findUnusedPort, waitForHttpOk, onProcessExit } from "./lib";
 
 export class ViteFrontend {
   public port?: number;
@@ -35,10 +35,14 @@ export class ViteFrontend {
       throw new Error("Vite process exited early");
 
     console.log(`✅ Vite server running at ${this.frontendUrl}\n`);
+
+    onProcessExit(() => this.stop());
   }
 
   async stop(): Promise<void> {
     if (!this.process || this.process.exitCode !== null) return;
+
+    console.log(`🛑 Stopping Vite server...`);
 
     await new Promise<void>((resolve) => {
       this.process!.once("exit", () => resolve());
