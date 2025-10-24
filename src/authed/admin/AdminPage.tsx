@@ -129,7 +129,9 @@ export default function AdminPage() {
               padding="lg"
               radius="md"
               withBorder
-              style={{ gridColumn: me.isCompetitionAdmin ? "1 / -1" : "auto" }}
+              style={{
+                gridColumn: me.isCompetitionAdmin ? "1 / -1" : "auto",
+              }}
             >
               <Stack gap="md">
                 <Group>

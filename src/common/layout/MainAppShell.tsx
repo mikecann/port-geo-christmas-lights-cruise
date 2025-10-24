@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { useDisclosure, useWindowScroll } from "@mantine/hooks";
-import { AppShell, Group, Burger, Container } from "@mantine/core";
-import { routes } from "../../routes";
-import { useIsCompetitionAdmin, useIsSystemAdmin } from "../../auth/useMeHooks";
+import { AppShell, Group, Burger, Container, Box } from "@mantine/core";
+import { routes, routeGroups } from "../../routes";
 import { useRoute } from "../../routes";
 import { MeOrSignIn } from "./MeOrSignIn";
 import { TopLogo } from "./TopLogo";
 import { MenuItem } from "../components/MenuItem";
+import Footer from "../Footer";
 
 interface MobileNavbarProps {
   children: React.ReactNode;
@@ -25,6 +25,7 @@ export function MainAppShell({ children }: MobileNavbarProps) {
   const isHome = route.name === "home";
   const isScrolled = y > 30;
   const isTransparent = isHome && !isScrolled && !opened;
+  const isMapPage = routeGroups.map.has(route);
 
   return (
     <AppShell
@@ -86,8 +87,18 @@ export function MainAppShell({ children }: MobileNavbarProps) {
         <MenuItems />
       </AppShell.Navbar>
 
-      <AppShell.Main p={0} pt={isHome ? 0 : "60px"}>
-        {children}
+      <AppShell.Main
+        p={0}
+        style={{
+          minHeight: "calc(100vh)",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <Box style={{ flex: 1 }} pb={isHome || isMapPage ? 0 : 60}>
+          {children}
+        </Box>
+        {!isMapPage && <Footer />}
       </AppShell.Main>
     </AppShell>
   );

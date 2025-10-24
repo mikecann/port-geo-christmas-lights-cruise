@@ -6,7 +6,6 @@ import { Houses } from "./Houses";
 import { Trees } from "./Trees";
 import BelowTheFoldCopy from "./BelowTheFold";
 import BookNowSection from "./BookNowSection";
-import Footer from "./Footer";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { HomeEntryMarker } from "./HomeEntryMarker";
@@ -53,7 +52,6 @@ export default function HomePage() {
           <Sponsors />
         </Stack>
       </Stack>
-      <Footer />
     </Box>
   );
 }
