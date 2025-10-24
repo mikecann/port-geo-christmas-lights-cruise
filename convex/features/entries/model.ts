@@ -12,6 +12,7 @@ import { photos } from "../photos/model";
 import { isStatus } from "../../../shared/filter";
 import { randomIntRange } from "../../../shared/num";
 import * as testing from "./testing";
+import { exhaustiveCheck } from "../../../shared/misc";
 
 export const entries = {
   testing,
@@ -245,6 +246,17 @@ export const entries = {
             `Entry '${entry._id}' is not in the submitting status`,
           );
 
+        if (
+          await entries.hasEntryWithPlaceIdAlreadyBeenSubmitted(
+            db,
+            args.placeId,
+            entry._id,
+          )
+        )
+          throw new Error(
+            `Cannot finalize submission: Place ID '${args.placeId}' already has an approved entry`,
+          );
+
         await db.patch(entry._id, {
           status: "submitted" as const,
           submittedAt: Date.now(),
@@ -345,18 +357,22 @@ export const entries = {
   async hasEntryWithPlaceIdAlreadyBeenSubmitted(
     db: DatabaseReader,
     placeId: string,
+    excludeEntryId?: Id<"entries">,
   ) {
     const matchedEntries = await this.findEntriesByPlaceId(db, placeId);
 
-    const submitted = matchedEntries.filter((e) =>
-      match(e)
+    const submitted = matchedEntries.filter((e) => {
+      // Exclude the current entry if specified
+      if (excludeEntryId && e._id === excludeEntryId) return false;
+
+      return match(e)
         .with({ status: "draft" }, () => false)
         .with({ status: "submitted" }, () => true)
         .with({ status: "approved" }, () => true)
         .with({ status: "rejected" }, () => false)
-        .with({ status: "submitting" }, () => false)
-        .exhaustive(),
-    );
+        .with({ status: "submitting" }, () => true)
+        .exhaustive();
+    });
 
     return submitted.length > 0;
   },
