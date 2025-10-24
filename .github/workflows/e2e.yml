@@ -44,15 +44,6 @@ jobs:
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ vars.VITE_GOOGLE_MAPS_API_KEY }}
 
-      - name: Upload test results
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-test-results
-          path: |
-            .convex-e2e-test/
-          retention-days: 7
-
       - name: Upload E2E test videos
         if: always()
         uses: actions/upload-artifact@v4
@@ -60,5 +51,4 @@ jobs:
           name: e2e-test-videos
           path: e2e-videos/
           if-no-files-found: warn
-          retention-days: 30
-
+          retention-days: 7

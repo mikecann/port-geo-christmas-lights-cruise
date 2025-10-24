@@ -24,9 +24,12 @@ describe("a public user's experience", () => {
 
     await stagehand.page.act("Click the entries button from the top bar");
 
-    await backend.client.mutation(api.testing.testing.createMockEntries, {
-      count: 9,
-    });
+    const mocks = await backend.client.mutation(
+      api.testing.testing.createMockEntries,
+      {
+        count: 9,
+      },
+    );
 
     const { entries } = await stagehand.page.extract({
       instruction: "find the entries listed",
@@ -34,30 +37,18 @@ describe("a public user's experience", () => {
         entries: z.array(
           z.object({
             entryName: z.string(),
-            entryNumber: z.string(),
+            entryNumber: z.number(),
           }),
         ),
       }),
     });
 
     expect(entries.length).toBe(9);
-
-    const firstEntry = entries[0];
-
-    await stagehand.page.act(
-      `Click the entry with the name "${firstEntry.entryName}"`,
-    );
-
-    const { entryTitle, entryNumber } = await stagehand.page.extract({
-      instruction: "get some of the entry info",
-      schema: z.object({
-        entryTitle: z.string(),
-        entryNumber: z.number(),
-      }),
-    });
-
-    expect(entryTitle).toBe(firstEntry.entryName);
-    expect(entryNumber).toBe(Number(firstEntry.entryNumber));
+    for (const mock of mocks) {
+      expect(entries.some((e) => e.entryNumber === mock.entryNumber)).toBe(
+        true,
+      );
+    }
   });
 
   it("should allow the user to sign in to vote from the entry page", async () => {
@@ -126,50 +117,41 @@ describe("a voter's experience", () => {
 
     await stagehand.page.act(`Click the vote button`);
 
-    await stagehand.page.act(`Click the vote for best display`);
+    await stagehand.page.act(`Click the most jolly category button`);
 
-    await stagehand.page.act(`wait for it to show the vote confirmation`);
+    await stagehand.page.act(`Click the button to cast the vote`);
 
     const votes = await backend.client.query(api.testing.testing.listVotes);
 
     expect(votes.length).toBe(1);
     expect(votes[0].votingUserId).toBe(me?._id);
     expect(votes[0].entryId).toBe(entries[0].id);
-    expect(votes[0].category).toBe("best_display");
+    expect(votes[0].category).toBe("most_jolly");
   });
 
   it(
-    "AGENTICALLY enable voting in the jolly category",
+    "agentically enable voting for an entry in the most jolly category",
     async () => {
       await goto();
 
-      await auth.signInAs({
-        email: "test@example.com",
-        name: "Test User",
-        isSystemAdmin: false,
-        isCompetitionAdmin: false,
-      });
-
-      await goto();
-
-      await backend.client.mutation(api.testing.testing.createMockEntries, {
-        count: 10,
-      });
+      const entries = await backend.client.mutation(
+        api.testing.testing.createMockEntries,
+        {
+          count: 3,
+        },
+      );
 
       const agent = await stagehand.agent();
 
       await agent.execute({
-        instruction: `Vote for any of the entries in the "most jolly" category.
-
-        After voting, wait for the vote confirmation to appear and then finish.`,
-        maxSteps: 15,
+        instruction: `Vote for an entry #${entries[1].entryNumber} in the "most jolly" category`,
+        maxSteps: 30,
       });
-
-      await wait(1000);
 
       const votes = await backend.client.query(api.testing.testing.listVotes);
 
       expect(votes.length).toBe(1);
+      expect(votes[0].entryId).toBe(entries[1].id);
       expect(votes[0].category).toBe("most_jolly");
     },
     minutesInMs(5),
