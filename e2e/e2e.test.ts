@@ -72,21 +72,22 @@ describe("a public user's experience", () => {
     const mockEntries = await backend.client.mutation(
       api.testing.testing.createMockEntries,
       {
-        count: 9,
+        count: 3,
       },
     );
 
     await stagehand.page.act({
       action: "Click the map button from the top bar",
-      iframes: true,
     });
 
     await stagehand.page.act({
+      modelName: "openai/gpt-5",
       action: `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
       iframes: true,
     });
 
     await stagehand.page.act({
+      modelName: "openai/gpt-5",
       action: `Click view details button in the popup that opens`,
       iframes: true,
     });
@@ -97,140 +98,140 @@ describe("a public user's experience", () => {
   });
 });
 
-// describe("a voter's experience", () => {
-//   it("should allow a user to submit an entry", async () => {
-//     await goto();
+describe("a voter's experience", () => {
+  it("should allow a user to submit an entry", async () => {
+    await goto();
 
-//     const me = await auth.signInAs({
-//       email: "test@example.com",
-//       name: "Test User",
-//       isSystemAdmin: false,
-//       isCompetitionAdmin: false,
-//     });
+    const me = await auth.signInAs({
+      email: "test@example.com",
+      name: "Test User",
+      isSystemAdmin: false,
+      isCompetitionAdmin: false,
+    });
 
-//     const entries = await backend.client.mutation(
-//       api.testing.testing.createMockEntries,
-//       { count: 1 },
-//     );
+    const entries = await backend.client.mutation(
+      api.testing.testing.createMockEntries,
+      { count: 1 },
+    );
 
-//     await goto(routes.entry({ entryId: entries[0].id }));
+    await goto(routes.entry({ entryId: entries[0].id }));
 
-//     await stagehand.page.act(`Click the vote button`);
+    await stagehand.page.act(`Click the vote button`);
 
-//     await stagehand.page.act(`Click the most jolly category button`);
+    await stagehand.page.act(`Click the most jolly category button`);
 
-//     await stagehand.page.act(`Click the button to cast the vote`);
+    await stagehand.page.act(`Click the button to cast the vote`);
 
-//     const votes = await backend.client.query(api.testing.testing.listVotes);
+    const votes = await backend.client.query(api.testing.testing.listVotes);
 
-//     expect(votes.length).toBe(1);
-//     expect(votes[0].votingUserId).toBe(me?._id);
-//     expect(votes[0].entryId).toBe(entries[0].id);
-//     expect(votes[0].category).toBe("most_jolly");
-//   });
+    expect(votes.length).toBe(1);
+    expect(votes[0].votingUserId).toBe(me?._id);
+    expect(votes[0].entryId).toBe(entries[0].id);
+    expect(votes[0].category).toBe("most_jolly");
+  });
 
-//   it(
-//     "agentically enable voting for an entry in the most jolly category",
-//     async () => {
-//       await goto();
+  it(
+    "agentically enable voting for an entry in the most jolly category",
+    async () => {
+      await goto();
 
-//       const entries = await backend.client.mutation(
-//         api.testing.testing.createMockEntries,
-//         {
-//           count: 3,
-//         },
-//       );
+      const entries = await backend.client.mutation(
+        api.testing.testing.createMockEntries,
+        {
+          count: 3,
+        },
+      );
 
-//       const agent = await stagehand.agent();
+      const agent = await stagehand.agent();
 
-//       await agent.execute({
-//         instruction: `Vote for an entry #${entries[1].entryNumber} in the "most jolly" category`,
-//         maxSteps: 30,
-//       });
+      await agent.execute({
+        instruction: `Vote for an entry #${entries[1].entryNumber} in the "most jolly" category`,
+        maxSteps: 30,
+      });
 
-//       const votes = await backend.client.query(api.testing.testing.listVotes);
+      const votes = await backend.client.query(api.testing.testing.listVotes);
 
-//       expect(votes.length).toBe(1);
-//       expect(votes[0].entryId).toBe(entries[1].id);
-//       expect(votes[0].category).toBe("most_jolly");
-//     },
-//     minutesInMs(5),
-//   );
-// });
+      expect(votes.length).toBe(1);
+      expect(votes[0].entryId).toBe(entries[1].id);
+      expect(votes[0].category).toBe("most_jolly");
+    },
+    minutesInMs(5),
+  );
+});
 
-// describe("an entrant's experience", () => {
-//   it("should allow voting on an entry", async () => {
-//     await goto();
+describe("an entrant's experience", () => {
+  it("should allow voting on an entry", async () => {
+    await goto();
 
-//     const me = await auth.signInAs({
-//       email: "test@example.com",
-//       name: "Test User",
-//       isSystemAdmin: false,
-//       isCompetitionAdmin: false,
-//     });
+    const me = await auth.signInAs({
+      email: "test@example.com",
+      name: "Test User",
+      isSystemAdmin: false,
+      isCompetitionAdmin: false,
+    });
 
-//     await goto(routes.myEntries());
+    await goto(routes.myEntries());
 
-//     await stagehand.page.act(`Click to enter the competition`);
+    await stagehand.page.act(`Click to enter the competition`);
 
-//     await stagehand.page.act(
-//       `Enter '35 Keel Retreat in the House Address Field'`,
-//     );
+    await stagehand.page.act(
+      `Enter '35 Keel Retreat in the House Address Field'`,
+    );
 
-//     await stagehand.page.act(`Select 35 Keel Retreat from the autocomplete`);
+    await stagehand.page.act(`Select 35 Keel Retreat from the autocomplete`);
 
-//     await stagehand.page.act(`Enter 'Test Entry' in the Entry Name Field`);
+    await stagehand.page.act(`Enter 'Test Entry' in the Entry Name Field`);
 
-//     await stagehand.page.act(`Click the submit button`);
+    await stagehand.page.act(`Click the submit button`);
 
-//     await stagehand.page.act(
-//       `wait for it to show the entry submission confirmation`,
-//     );
+    await stagehand.page.act(
+      `wait for it to show the entry submission confirmation`,
+    );
 
-//     const entry = await backend.client.mutation(
-//       api.testing.testing.findEntryForUser,
-//       {
-//         userId: me?._id,
-//       },
-//     );
+    const entry = await backend.client.mutation(
+      api.testing.testing.findEntryForUser,
+      {
+        userId: me?._id,
+      },
+    );
 
-//     if (!entry) throw new Error("Entry not found");
+    if (!entry) throw new Error("Entry not found");
 
-//     expect(entry.status).toBe("submitted");
-//     expect(entry.name).toBe("Test Entry");
-//     expect(entry.houseAddress?.address).toBe(
-//       "35 Keel Retreat, Geographe WA, Australia",
-//     );
-//   });
+    expect(entry.status).toBe("submitted");
+    expect(entry.name).toBe("Test Entry");
+    expect(entry.houseAddress?.address).toBe(
+      "35 Keel Retreat, Geographe WA, Australia",
+    );
+  });
 
-//   it(
-//     "AGENTICALLY should allow voting on an entry",
-//     async () => {
-//       await goto();
+  it(
+    "AGENTICALLY should allow voting on an entry",
+    async () => {
+      await goto();
 
-//       const agent = await stagehand.agent();
+      const agent = await stagehand.agent();
 
-//       await agent.execute({
-//         instruction: `Create an entry for the competition and submit it.
+      await agent.execute({
+        instruction: `Create an entry for the competition and submit it.
 
-//           You should use '35 Keel Retreat' as the house address.
+          You should use '35 Keel Retreat' as the house address.
 
-//           After entering the address you must select the address from the autocomplete to register the address as valid.
+          After entering the address you must select the address from the autocomplete to register the address as valid.
 
-//           You should use 'Test Entry' as the entry name.
+          You should use 'Test Entry' as the entry name.
 
-//           After submitting the entry, wait for the entry submission confirmation to appear and then finish.`,
-//         maxSteps: 30,
-//       });
+          After submitting the entry, wait for the entry submission confirmation to appear and then finish.`,
+        maxSteps: 30,
+      });
 
-//       const entries = await backend.client.query(
-//         api.testing.testing.listEntries,
-//       );
+      const entries = await backend.client.query(
+        api.testing.testing.listEntries,
+      );
 
-//       expect(entries.length).toBe(1);
-//       const entry = entries[0];
-//       expect(entry.status).toBe("submitted");
-//     },
-//     minutesInMs(5),
-//   );
-// });
+      expect(entries.length).toBe(1);
+      const entry = entries[0];
+      expect(entry.status).toBe("submitted");
+    },
+    minutesInMs(5),
+  );
+});
