@@ -9,7 +9,7 @@
     "not_found_handling": "single-page-application",
   },
   "vars": {
-    "CONVEX_SITE_URL": "https://fortunate-grouse-28.convex.site",
+    "CONVEX_SITE_URL": "https://convex.portgeochristmascruise.com.au/",
   },
   "observability": {
     "logs": {
