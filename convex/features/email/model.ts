@@ -130,7 +130,7 @@ export const email = {
 
         <p>We appreciate your understanding and hope you'll consider participating in future events.</p>
         
-        <p style="color: #666; font-size: 14px; margin-top: 30px;">For any questions or concerns, please contact us at nansara@aigleroyal.com.au</p>
+        <p style="color: #666; font-size: 14px; margin-top: 30px;">For any questions or concerns, please reply to this email</p>
       `,
     });
   },
