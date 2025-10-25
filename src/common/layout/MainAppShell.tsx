@@ -95,7 +95,11 @@ export function MainAppShell({ children }: MobileNavbarProps) {
           flexDirection: "column",
         }}
       >
-        <Box style={{ flex: 1 }} pb={isHome || isMapPage ? 0 : 60}>
+        <Box
+          style={{ flex: 1 }}
+          mt={isHome || isMapPage ? 0 : 60}
+          pb={isHome || isMapPage ? 0 : 60}
+        >
           {children}
         </Box>
         {!isMapPage && <Footer />}

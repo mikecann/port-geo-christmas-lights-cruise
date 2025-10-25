@@ -147,7 +147,17 @@ export default function Footer() {
                 © 2025 Port Geographe Christmas Lights Cruise
               </Text>
               <Text c="gray.6" size="xs">
-                All rights reserved. Made with ❤️ for the community.
+                All rights reserved.{" "}
+                <Anchor
+                  component="a"
+                  href="https://mikecann.blog"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  c="gray.6"
+                  style={{ fontSize: "inherit" }}
+                >
+                  Made with ❤️ for the community.
+                </Anchor>
               </Text>
             </Stack>
             <Text c="gray.6" size="xs" ta="right">
