@@ -18,16 +18,20 @@ import React from "react";
 import { useDisclosure } from "@mantine/hooks";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc } from "../../../../convex/_generated/dataModel";
-import { useConfirmation } from "../../../common/components/confirmation/useConfirmation";
 import { useErrorCatchingMutation } from "../../../common/errors";
 import PhotoLightbox from "../../myEntries/photos/PhotoLightbox";
 import { getAddressString } from "../../../../shared/misc";
 import { PhotoImage } from "./PhotoImage";
 import { useQuery } from "convex/react";
+import RejectEntryModal from "./RejectEntryModal";
 
 export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
+  const [
+    rejectModalOpened,
+    { open: openRejectModal, close: closeRejectModal },
+  ] = useDisclosure(false);
   const [selectedImageUrl, setSelectedImageUrl] = React.useState<string>("");
   const photos =
     useQuery(api.my.photos.listForEntry, { entryId: entry._id }) ?? [];
@@ -38,7 +42,6 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
   const [rejectEntry, isRejecting] = useErrorCatchingMutation(
     api.admin.competition.entries.reject,
   );
-  const { confirm } = useConfirmation();
 
   if (entry.status !== "submitted") return null;
 
@@ -119,17 +122,7 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
               variant="outline"
               size="sm"
               flex={1}
-              onClick={async () => {
-                const confirmed = await confirm({
-                  title: "Reject Entry",
-                  content: `Are you sure you want to reject "${entry.name}" at ${entry.houseAddress}? This action cannot be undone.`,
-                  confirmButton: "Reject Entry",
-                  cancelButton: "Cancel",
-                  confirmButtonColor: "red",
-                });
-                if (!confirmed) return;
-                rejectEntry({ entryId: entry._id });
-              }}
+              onClick={() => openRejectModal()}
               loading={isRejecting}
             >
               Deny
@@ -142,6 +135,17 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
         opened={modalOpened}
         onClose={closeModal}
         imageUrl={selectedImageUrl}
+      />
+
+      <RejectEntryModal
+        opened={rejectModalOpened}
+        onClose={closeRejectModal}
+        onConfirm={(reason) => {
+          rejectEntry({ entryId: entry._id, rejectedReason: reason });
+          closeRejectModal();
+        }}
+        entryName={entry.name}
+        loading={isRejecting}
       />
     </>
   );

@@ -2,6 +2,7 @@ import { userCompetitionAdminMutation } from "./lib";
 import { userCompetitionAdminQuery } from "./lib";
 import { entries } from "../../features/entries/model";
 import { photos } from "../../features/photos/model";
+import { email } from "../../features/email/model";
 import { v } from "convex/values";
 
 // Queries
@@ -109,8 +110,19 @@ export const approve = userCompetitionAdminMutation({
     entryId: v.id("entries"),
   },
   handler: async (ctx, args) => {
+    const entry = await entries.forEntry(args.entryId).get(ctx.db);
     const entryNumber = await entries.getNextAvailableEntryNumber(ctx.db);
     await entries.forEntry(args.entryId).approve(ctx.db, { entryNumber });
+
+    const user = await ctx.db.get(entry.submittedByUserId);
+    if (!user?.email) return null;
+
+    await email.sendEntryApprovalEmail(ctx, {
+      to: user.email,
+      entry: await entries.forEntry(args.entryId).get(ctx.db),
+      entryNumber,
+    });
+
     return null;
   },
 });
@@ -118,9 +130,22 @@ export const approve = userCompetitionAdminMutation({
 export const reject = userCompetitionAdminMutation({
   args: {
     entryId: v.id("entries"),
+    rejectedReason: v.string(),
   },
   handler: async (ctx, args) => {
-    await entries.forEntry(args.entryId).reject(ctx.db);
+    const entry = await entries.forEntry(args.entryId).get(ctx.db);
+    await entries
+      .forEntry(args.entryId)
+      .reject(ctx.db, { rejectedReason: args.rejectedReason });
+
+    const user = await ctx.db.get(entry.submittedByUserId);
+    if (!user?.email) return null;
+
+    await email.sendEntryRejectionEmail(ctx, {
+      to: user.email,
+      entry: await entries.forEntry(args.entryId).get(ctx.db),
+      rejectedReason: args.rejectedReason,
+    });
 
     return null;
   },

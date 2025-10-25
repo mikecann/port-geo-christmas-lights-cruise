@@ -65,7 +65,10 @@ export const entries = {
         });
       },
 
-      async reject(db: DatabaseWriter) {
+      async reject(
+        db: DatabaseWriter,
+        { rejectedReason }: { rejectedReason: string },
+      ) {
         const entry = await this.get(db);
 
         if (entry.status !== "submitted")
@@ -76,6 +79,7 @@ export const entries = {
         await db.patch(entryId, {
           status: "rejected",
           rejectedAt: Date.now(),
+          rejectedReason,
         });
       },
 

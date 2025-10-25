@@ -54,6 +54,7 @@ export const entrySchema = v.union(
     ...commonEntryFields,
     status: v.literal("rejected"),
     rejectedAt: v.number(),
+    rejectedReason: v.string(),
     submittedAt: v.number(),
     houseAddress: homeAddressValidator,
     name: v.string(),
