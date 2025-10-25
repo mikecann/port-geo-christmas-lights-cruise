@@ -337,6 +337,7 @@ describe("finalizeSubmission", () => {
         name: "Rejected Entry",
         submittedAt: Date.now(),
         rejectedAt: Date.now(),
+        rejectedReason: "Test rejection reason",
         houseAddress: {
           address: "789 Pine St",
           lat: 10,

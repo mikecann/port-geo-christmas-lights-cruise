@@ -17,6 +17,8 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "preview": "vite preview",
     "test": "tsc -b && vitest run",
+    "test:unit": "bun run test --project unit",
+    "test:e2e": "bun run test --project e2e",
     "dev:test": "vitest"
   },
   "dependencies": {
