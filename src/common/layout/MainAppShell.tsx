@@ -6,7 +6,7 @@ import { useRoute } from "../../routes";
 import { MeOrSignIn } from "./MeOrSignIn";
 import { TopLogo } from "./TopLogo";
 import { MenuItem } from "../components/MenuItem";
-import Footer from "../Footer";
+import Footer from "../footer/Footer";
 
 interface MobileNavbarProps {
   children: React.ReactNode;
