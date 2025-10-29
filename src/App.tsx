@@ -5,7 +5,7 @@ import { AuthRequired } from "./auth/AuthRequired";
 import { routeGroups, useRoute } from "./routes";
 import type { Id } from "../convex/_generated/dataModel";
 import { LazyLoadWrapper } from "./common/components/LazyLoadWrapper";
-import * as LazyPages from "./LazyPages";
+import * as LazyPages from "./common/lazy/LazyPages";
 
 export default function App() {
   return (

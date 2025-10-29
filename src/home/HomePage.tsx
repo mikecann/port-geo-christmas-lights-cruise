@@ -9,6 +9,8 @@ import BookNowSection from "./BookNowSection";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { HomeEntryMarker } from "./HomeEntryMarker";
+import { Activity } from "react";
+import * as LazyPages from "../common/lazy/LazyPages";
 
 export default function HomePage() {
   const randomEntries = useQuery(api.public.entries.getRandomThree);
