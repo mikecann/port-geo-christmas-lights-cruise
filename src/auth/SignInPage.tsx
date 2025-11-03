@@ -15,6 +15,7 @@ import { useConvexAuth } from "convex/react";
 import { useApiErrorHandler } from "../common/errors";
 import { TestAuthPage } from "./TestAuthPage";
 import { isTestMode } from "../common/testMode";
+import { isSignupDisabled } from "../common/auth";
 
 export function SignInPage() {
   const { signIn } = useAuthActions();
@@ -32,6 +33,30 @@ export function SignInPage() {
   }, [isAuthenticated, returnTo]);
 
   if (isTestMode()) return <TestAuthPage />;
+
+  if (isSignupDisabled())
+    return (
+      <Box
+        style={{
+          minHeight: "calc(100svh - 60px)",
+          height: "calc(100svh - 60px)",
+          background:
+            "linear-gradient(135deg, #0b1c3b 0%, #1a2332 50%, #0a0f1a 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <Container size="xs" py="xl">
+          <Paper withBorder shadow="md" p="xl" radius="md">
+            Sign in and signup is currently under construction. Please check
+            back later.
+          </Paper>
+        </Container>
+      </Box>
+    );
 
   return (
     <Box
