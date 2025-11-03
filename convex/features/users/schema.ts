@@ -13,5 +13,5 @@ export const usersTable = defineTable({
   isCompetitionAdmin: v.optional(v.boolean()),
   isTestUser: v.optional(v.boolean()),
 })
-  .index("by_email", ["email"])
+  .index("email", ["email"])
   .index("by_isCompetitionAdmin", ["isCompetitionAdmin"]);
