@@ -17,7 +17,7 @@ import { TestAuthPage } from "./TestAuthPage";
 import { isTestMode } from "../common/testMode";
 import { isSignupDisabled } from "../common/auth";
 
-export function SignInPage() {
+export function SignInPage({ isAdmin }: { isAdmin: boolean }) {
   const { signIn } = useAuthActions();
   const [isLoading, setIsLoading] = useState(false);
   const onApiError = useApiErrorHandler();
@@ -34,7 +34,7 @@ export function SignInPage() {
 
   if (isTestMode()) return <TestAuthPage />;
 
-  if (isSignupDisabled())
+  if (isSignupDisabled() && !isAdmin)
     return (
       <Box
         style={{

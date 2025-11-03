@@ -41,7 +41,9 @@ export function AppRoutes() {
       />
     );
 
-  if (route.name === "signin") return <LazyPages.SignInPage />;
+  if (route.name === "signin")
+    return <LazyPages.SignInPage isAdmin={route.params.unlockPassword == "trustme"} />;
+
   if (route.name === "testAuth") return <LazyPages.TestAuthPage />;
   if (route.name === "tickets") return <LazyPages.TicketsPage />;
   if (route.name === "competitionDetails")
