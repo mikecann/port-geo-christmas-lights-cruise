@@ -34,29 +34,29 @@ export function SignInPage({ isAdmin }: { isAdmin: boolean }) {
 
   if (isTestMode()) return <TestAuthPage />;
 
-  // if (isSignupDisabled() && !isAdmin)
-  //   return (
-  //     <Box
-  //       style={{
-  //         minHeight: "calc(100svh - 60px)",
-  //         height: "calc(100svh - 60px)",
-  //         background:
-  //           "linear-gradient(135deg, #0b1c3b 0%, #1a2332 50%, #0a0f1a 100%)",
-  //         display: "flex",
-  //         alignItems: "center",
-  //         justifyContent: "center",
-  //         position: "relative",
-  //         overflow: "hidden",
-  //       }}
-  //     >
-  //       <Container size="xs" py="xl">
-  //         <Paper withBorder shadow="md" p="xl" radius="md">
-  //           Sign in and signup is currently under construction. Please check
-  //           back later.
-  //         </Paper>
-  //       </Container>
-  //     </Box>
-  //   );
+  if (isSignupDisabled() && !isAdmin)
+    return (
+      <Box
+        style={{
+          minHeight: "calc(100svh - 60px)",
+          height: "calc(100svh - 60px)",
+          background:
+            "linear-gradient(135deg, #0b1c3b 0%, #1a2332 50%, #0a0f1a 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <Container size="xs" py="xl">
+          <Paper withBorder shadow="md" p="xl" radius="md">
+            Sign in and signup is currently under construction. Please check
+            back later.
+          </Paper>
+        </Container>
+      </Box>
+    );
 
   return (
     <Box
