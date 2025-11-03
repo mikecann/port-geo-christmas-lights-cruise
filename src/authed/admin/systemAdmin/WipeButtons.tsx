@@ -3,7 +3,11 @@ import { IconTrash, IconCheck } from "@tabler/icons-react";
 import { useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { useConfirmation } from "../../../common/components/confirmation/useConfirmation";
-import { useErrorCatchingMutation } from "../../../common/errors";
+import {
+  useErrorCatchingMutation,
+  useApiErrorHandler,
+} from "../../../common/errors";
+import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 
 export function WipeEntriesButton() {
@@ -116,12 +120,8 @@ export function WipeVotesButton() {
 
 export function WipeAllDataButton() {
   const [isWipingAllData, setIsWipingAllData] = useState(false);
-  const [wipeAllEntries] = useErrorCatchingMutation(
-    api.admin.system.entries.wipeAll,
-  );
-  const [wipeAllVotes] = useErrorCatchingMutation(
-    api.admin.system.votes.wipeAll,
-  );
+  const wipeAllData = useMutation(api.admin.system.data.wipeAllData);
+  const onApiError = useApiErrorHandler();
   const { confirm } = useConfirmation();
 
   return (
@@ -136,14 +136,15 @@ export function WipeAllDataButton() {
             <>
               <Text size="sm" mb="md">
                 <strong>DANGER:</strong> This action will permanently delete ALL
-                entries AND votes from the database. This action cannot be
-                undone.
+                entries, votes, and users (except system and competition admins)
+                from the database. This action cannot be undone.
               </Text>
               <Text size="sm" c="dimmed">
                 This will completely reset the competition database, removing
-                all entries (draft, submitted, approved, rejected) and all
-                public votes. Use this only for complete system resets during
-                testing.
+                all entries (draft, submitted, approved, rejected), all public
+                votes, and all non-admin users. System and competition admins
+                will be preserved. Use this only for complete system resets
+                during testing.
               </Text>
             </>
           ),
@@ -151,24 +152,8 @@ export function WipeAllDataButton() {
           confirmButtonColor: "red",
         });
         if (!confirmed) return;
-
         setIsWipingAllData(true);
-        try {
-          // Wipe votes first, then entries
-          await wipeAllVotes({});
-          await wipeAllEntries({});
-
-          notifications.show({
-            title: "Success!",
-            message: "All data wiped successfully",
-            color: "green",
-            icon: <IconCheck size={16} />,
-          });
-        } catch (error) {
-          // Error already handled by useErrorCatchingMutation
-        } finally {
-          setIsWipingAllData(false);
-        }
+        await wipeAllData({});
       }}
       loading={isWipingAllData}
     >

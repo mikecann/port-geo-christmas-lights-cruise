@@ -45,6 +45,7 @@ export const userSystemAdminMutation = customMutation(mutation, {
       ctx: {
         ...triggers.wrapDB(_ctx),
         _db: _ctx.db,
+        storage: _ctx.storage,
         getUser: async () => user,
       },
       args: {},
