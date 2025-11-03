@@ -15,6 +15,7 @@ import type * as admin_system_data from "../admin/system/data.js";
 import type * as admin_system_email from "../admin/system/email.js";
 import type * as admin_system_entries from "../admin/system/entries.js";
 import type * as admin_system_lib from "../admin/system/lib.js";
+import type * as admin_system_users from "../admin/system/users.js";
 import type * as admin_system_votes from "../admin/system/votes.js";
 import type * as auth from "../auth.js";
 import type * as features_common_lib from "../features/common/lib.js";
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   "admin/system/email": typeof admin_system_email;
   "admin/system/entries": typeof admin_system_entries;
   "admin/system/lib": typeof admin_system_lib;
+  "admin/system/users": typeof admin_system_users;
   "admin/system/votes": typeof admin_system_votes;
   auth: typeof auth;
   "features/common/lib": typeof features_common_lib;

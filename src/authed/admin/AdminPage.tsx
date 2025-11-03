@@ -14,6 +14,7 @@ import {
   IconClipboardList,
   IconListCheck,
   IconDatabase,
+  IconUsers,
   IconArrowRight,
 } from "@tabler/icons-react";
 import { useMe } from "../../auth/useMeHooks";
@@ -117,6 +118,39 @@ export default function AdminPage() {
                   onClick={() => routes.adminVotes().push()}
                 >
                   Manage Votes
+                </Button>
+              </Stack>
+            </Card>
+          )}
+
+          {/* User Management: System Admin only */}
+          {me.isSystemAdmin && (
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Stack gap="md">
+                <Group>
+                  <IconUsers size={32} color="var(--mantine-color-purple-6)" />
+                  <div>
+                    <Text size="lg" fw={500}>
+                      User Management
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      View and manage all system users
+                    </Text>
+                  </div>
+                </Group>
+
+                <Text size="sm">
+                  Browse all users in the system, view their roles and account
+                  information, and manage user access.
+                </Text>
+
+                <Button
+                  rightSection={<IconArrowRight size={16} />}
+                  variant="light"
+                  color="purple"
+                  onClick={() => routes.adminUsers().push()}
+                >
+                  Manage Users
                 </Button>
               </Stack>
             </Card>

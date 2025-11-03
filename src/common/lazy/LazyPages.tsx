@@ -53,3 +53,6 @@ export const VoteManagementPage = lazy(
 export const SystemAdminPage = lazy(
   () => import("../../authed/admin/systemAdmin/SystemAdminPage"),
 );
+export const UserManagementPage = lazy(
+  () => import("../../authed/admin/users/UserManagementPage"),
+);

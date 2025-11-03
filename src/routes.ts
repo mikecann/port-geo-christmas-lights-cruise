@@ -19,7 +19,10 @@ export const { RouteProvider, useRoute, routes } = createRouter({
     (q) => `/${q.entryId}`,
   ),
   signin: defineRoute(
-    { returnTo: param.query.string, unlockPassword: param.query.optional.string },
+    {
+      returnTo: param.query.string,
+      unlockPassword: param.query.optional.string,
+    },
     () => "/signin",
   ),
   testAuth: defineRoute("/test-auth"),
@@ -32,6 +35,7 @@ export const { RouteProvider, useRoute, routes } = createRouter({
   adminEntries: defineRoute("/admin/entries"),
   adminVotes: defineRoute("/admin/votes"),
   adminSystem: defineRoute("/admin/system"),
+  adminUsers: defineRoute("/admin/users"),
 });
 
 export const routeGroups = {
@@ -43,6 +47,7 @@ export const routeGroups = {
     routes.adminEntries,
     routes.adminVotes,
     routes.adminSystem,
+    routes.adminUsers,
   ]),
   map: createGroup([routes.map, routes.mapEntry]),
 };

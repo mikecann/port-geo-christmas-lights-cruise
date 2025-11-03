@@ -22,6 +22,7 @@ export const userSystemAdminQuery = customQuery(query, {
 
     return {
       ctx: {
+        db: _ctx.db,
         getUser: async () => user,
       },
       args: {},

@@ -42,7 +42,11 @@ export function AppRoutes() {
     );
 
   if (route.name === "signin")
-    return <LazyPages.SignInPage isAdmin={route.params.unlockPassword == "trustme"} />;
+    return (
+      <LazyPages.SignInPage
+        isAdmin={route.params.unlockPassword == "trustme"}
+      />
+    );
 
   if (route.name === "testAuth") return <LazyPages.TestAuthPage />;
   if (route.name === "tickets") return <LazyPages.TicketsPage />;
@@ -69,6 +73,7 @@ function AuthedRoutes({ route }: { route: Route<typeof routeGroups.authed> }) {
   if (route.name === "adminEntries") return <LazyPages.EntryManagementPage />;
   if (route.name === "adminVotes") return <LazyPages.VoteManagementPage />;
   if (route.name === "adminSystem") return <LazyPages.SystemAdminPage />;
+  if (route.name === "adminUsers") return <LazyPages.UserManagementPage />;
 
   exhaustiveCheck(route);
 }
