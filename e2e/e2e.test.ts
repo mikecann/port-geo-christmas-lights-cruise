@@ -4,7 +4,6 @@ import { routes } from "../src/routes";
 import { api } from "../convex/_generated/api";
 import { z } from "zod";
 import { minutesInMs } from "../shared/time";
-import { wait } from "../shared/misc";
 
 const { auth, backend, stagehand, goto } = setupE2E();
 
