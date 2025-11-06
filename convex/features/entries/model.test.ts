@@ -206,6 +206,273 @@ describe("getNextAvailableEntryNumber", () => {
   });
 });
 
+describe("revertToDraft", () => {
+  let rawTest: ConvexTest;
+  let t: AuthenticatedConvexTest;
+  let user: Doc<"users">;
+
+  beforeEach(async () => {
+    rawTest = createConvexTest();
+    user = await createTestUser(rawTest, {});
+    t = signInAsTestUser(rawTest, user);
+  });
+
+  it("should revert an entry from submitting status back to draft", async () => {
+    // Arrange - create an entry in submitting status
+    const entry = await createTestEntry(t, {
+      submittedByUserId: user._id,
+      status: "submitting",
+      name: "Test Entry",
+      houseAddress: {
+        address: "123 Test Street",
+        placeId: "test-place-id-123",
+      },
+    });
+
+    if (!entry || entry.status !== "submitting")
+      throw new Error("Failed to create entry in submitting status");
+
+    // Act
+    await t.run(async (ctx) => {
+      await entries.forUser(user._id).revertToDraft(ctx.db);
+    });
+
+    // Assert
+    const revertedEntry = await t.run(async (ctx) => {
+      return await entries.forEntry(entry._id).get(ctx.db);
+    });
+
+    expect(revertedEntry.status).toBe("draft");
+    expect(revertedEntry.name).toBe("Test Entry");
+    expect(revertedEntry.houseAddress).toEqual({
+      address: "123 Test Street",
+      placeId: "test-place-id-123",
+    });
+  });
+
+  it("should preserve address data when reverting from submitting to draft", async () => {
+    // Arrange
+    const entry = await createTestEntry(t, {
+      submittedByUserId: user._id,
+      status: "submitting",
+      name: "Entry with Address",
+      houseAddress: {
+        address: "456 Oak Avenue",
+        placeId: "place-456",
+      },
+    });
+
+    if (!entry) throw new Error("Failed to create entry");
+
+    // Act
+    await t.run(async (ctx) => {
+      await entries.forUser(user._id).revertToDraft(ctx.db);
+    });
+
+    // Assert
+    const revertedEntry = await t.run(async (ctx) => {
+      return await entries.forEntry(entry._id).get(ctx.db);
+    });
+
+    expect(revertedEntry.status).toBe("draft");
+    expect(
+      typeof revertedEntry.houseAddress === "object" &&
+        revertedEntry.houseAddress !== null &&
+        "address" in revertedEntry.houseAddress,
+    ).toBe(true);
+    if (
+      typeof revertedEntry.houseAddress === "object" &&
+      revertedEntry.houseAddress !== null &&
+      "address" in revertedEntry.houseAddress
+    ) {
+      expect(revertedEntry.houseAddress.address).toBe("456 Oak Avenue");
+      expect(revertedEntry.houseAddress.placeId).toBe("place-456");
+    }
+  });
+
+  it("should throw an error when trying to revert an entry that is not in submitting status", async () => {
+    // Arrange - create a draft entry
+    const entry = await createTestEntry(t, {
+      submittedByUserId: user._id,
+      status: "draft",
+    });
+
+    if (!entry) throw new Error("Failed to create entry");
+
+    // Act & Assert
+    await expect(
+      t.run(async (ctx) => {
+        await entries.forUser(user._id).revertToDraft(ctx.db);
+      }),
+    ).rejects.toThrow(/not in submitting status, cannot revert/);
+  });
+
+  it("should handle entries without address data when reverting", async () => {
+    // Arrange - create an entry in submitting status without houseAddress
+    const entryId = await t.run(async (ctx) => {
+      const id = await ctx.db.insert("entries", {
+        status: "submitting",
+        submittedByUserId: user._id,
+        name: "Entry Without Address",
+        houseAddress: {
+          address: "Test Address",
+          placeId: "test-place",
+        },
+      });
+      return id;
+    });
+
+    // Act
+    await t.run(async (ctx) => {
+      await entries.forUser(user._id).revertToDraft(ctx.db);
+    });
+
+    // Assert
+    const revertedEntry = await t.run(async (ctx) => {
+      return await entries.forEntry(entryId).get(ctx.db);
+    });
+
+    expect(revertedEntry.status).toBe("draft");
+  });
+});
+
+describe("submission error reversion", () => {
+  let rawTest: ConvexTest;
+  let t: AuthenticatedConvexTest;
+  let user: Doc<"users">;
+
+  beforeEach(async () => {
+    rawTest = createConvexTest();
+    user = await createTestUser(rawTest, {});
+    t = signInAsTestUser(rawTest, user);
+  });
+
+  it("should revert entry to draft when finalizeSubmission fails due to boundary violation", async () => {
+    // Arrange - create an entry in submitting status with coordinates outside boundary
+    const entry = await createTestEntry(t, {
+      submittedByUserId: user._id,
+      status: "submitting",
+      name: "Entry Outside Boundary",
+      houseAddress: {
+        address: "24 Hardy Street, Augusta WA, Australia",
+        placeId: "augusta-place-id",
+      },
+    });
+
+    if (!entry) throw new Error("Failed to create entry");
+
+    // Coordinates outside the competition boundary (Augusta is way north)
+    const outsideBoundaryLat = -33.7; // Outside the boundary
+    const outsideBoundaryLng = 115.35;
+
+    // Act & Assert - finalizeSubmission should fail
+    await expect(
+      t.run(async (ctx) => {
+        await entries.forUser(user._id).finalizeSubmission(ctx.db, {
+          lat: outsideBoundaryLat,
+          lng: outsideBoundaryLng,
+          placeId: entry.houseAddress?.placeId || "",
+        });
+      }),
+    ).rejects.toThrow(/outside the competition area/);
+
+    // Verify entry is still in submitting status (needs manual revert)
+    const entryAfterError = await t.run(async (ctx) => {
+      return await entries.forEntry(entry._id).get(ctx.db);
+    });
+    expect(entryAfterError.status).toBe("submitting");
+  });
+
+  it("should revert entry to draft when finalizeSubmission fails due to address conflict", async () => {
+    // Arrange - create two entries with the same placeId
+    const placeId = "conflicting-place-id";
+    const entry1 = await createTestEntry(t, {
+      submittedByUserId: user._id,
+      status: "submitted",
+      name: "First Entry",
+      houseAddress: {
+        address: "123 Test St",
+        lat: -33.63,
+        lng: 115.39,
+        placeId,
+      },
+    });
+
+    const entry2 = await createTestEntry(t, {
+      submittedByUserId: user._id,
+      status: "submitting",
+      name: "Second Entry",
+      houseAddress: {
+        address: "123 Test St",
+        placeId,
+      },
+    });
+
+    if (!entry1 || !entry2) throw new Error("Failed to create entries");
+
+    // Act & Assert - should fail due to conflict
+    await expect(
+      t.run(async (ctx) => {
+        await entries.forUser(user._id).finalizeSubmission(ctx.db, {
+          lat: -33.63,
+          lng: 115.39,
+          placeId,
+        });
+      }),
+    ).rejects.toThrow(/already has an approved entry/);
+
+    // Verify entry2 is still in submitting status
+    const entryAfterError = await t.run(async (ctx) => {
+      return await entries.forEntry(entry2._id).get(ctx.db);
+    });
+    expect(entryAfterError.status).toBe("submitting");
+  });
+
+  it("should successfully finalize submission when entry is within boundary", async () => {
+    // Arrange - create entry in submitting status with coordinates inside boundary
+    const entry = await createTestEntry(t, {
+      submittedByUserId: user._id,
+      status: "submitting",
+      name: "Entry Within Boundary",
+      houseAddress: {
+        address: "Within Boundary Address",
+        placeId: "within-boundary-place-id",
+      },
+    });
+
+    if (!entry) throw new Error("Failed to create entry");
+
+    // Coordinates within the competition boundary
+    const withinBoundaryLat = -33.63;
+    const withinBoundaryLng = 115.39;
+
+    // Act
+    await t.run(async (ctx) => {
+      await entries.forUser(user._id).finalizeSubmission(ctx.db, {
+        lat: withinBoundaryLat,
+        lng: withinBoundaryLng,
+        placeId: entry.houseAddress?.placeId || "",
+      });
+    });
+
+    // Assert - entry should be in submitted status
+    const finalizedEntry = await t.run(async (ctx) => {
+      return await entries.forEntry(entry._id).get(ctx.db);
+    });
+
+    expect(finalizedEntry.status).toBe("submitted");
+    if (finalizedEntry.status === "submitted") {
+      expect(finalizedEntry.houseAddress).toEqual({
+        address: "Within Boundary Address",
+        lat: withinBoundaryLat,
+        lng: withinBoundaryLng,
+        placeId: "within-boundary-place-id",
+      });
+      expect(finalizedEntry.submittedAt).toBeDefined();
+    }
+  });
+});
+
 describe("finalizeSubmission", () => {
   let rawTest: ConvexTest;
   let t: AuthenticatedConvexTest;

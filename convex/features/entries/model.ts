@@ -278,6 +278,31 @@ export const entries = {
           },
         });
       },
+
+      async revertToDraft(db: DatabaseWriter) {
+        const entry = await this.get(db);
+
+        if (entry.status !== "submitting")
+          throw new Error(
+            `Entry '${entry._id}' is not in submitting status, cannot revert`,
+          );
+
+        // Revert back to draft, preserving the address data as optional draft format
+        const draftAddress =
+          typeof entry.houseAddress === "object" &&
+          "address" in entry.houseAddress &&
+          "placeId" in entry.houseAddress
+            ? {
+                address: entry.houseAddress.address,
+                placeId: entry.houseAddress.placeId,
+              }
+            : undefined;
+
+        await db.patch(entry._id, {
+          status: "draft" as const,
+          houseAddress: draftAddress,
+        });
+      },
     };
   },
 

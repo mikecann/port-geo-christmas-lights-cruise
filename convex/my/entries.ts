@@ -61,23 +61,39 @@ export const submit = myAction({
     if (entry.status != "submitting")
       throw new Error("Entry is not in submitting status");
 
-    let latLng: LatLng = { lat: 0, lng: 0 };
     try {
-      latLng = await geocodeAddress(entry.houseAddress.address);
+      let latLng: LatLng = { lat: 0, lng: 0 };
+      try {
+        latLng = await geocodeAddress(entry.houseAddress.address);
+      } catch (error) {
+        // Revert to draft if geocoding fails
+        await ctx.runMutation(internal.entries.revertToDraft, {
+          userId: ctx.userId,
+        });
+        throw new Error(
+          `Unable to find your address "${entry.houseAddress.address}". Please check the address and try again, or contact support if you believe this is an error.`,
+        );
+      }
+
+      await ctx.runMutation(internal.entries.finalizeSubmission, {
+        entryId: entry._id,
+        lat: latLng.lat,
+        lng: latLng.lng,
+        placeId: entry.houseAddress.placeId,
+      });
+
+      return null;
     } catch (error) {
-      console.error(error);
-      console.error(
-        `Unable to find your address "${entry.houseAddress.address}". Please check the address and try again, or contact support if you believe this is an error.`,
-      );
+      // Revert entry to draft state on any error during submission
+      try {
+        await ctx.runMutation(internal.entries.revertToDraft, {
+          userId: ctx.userId,
+        });
+      } catch (revertError) {
+        // Log but don't throw - we want to propagate the original error
+        console.error("Failed to revert entry to draft:", revertError);
+      }
+      throw error;
     }
-
-    await ctx.runMutation(internal.entries.finalizeSubmission, {
-      entryId: entry._id,
-      lat: latLng.lat,
-      lng: latLng.lng,
-      placeId: entry.houseAddress.placeId,
-    });
-
-    return null;
   },
 });

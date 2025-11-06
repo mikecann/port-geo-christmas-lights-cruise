@@ -37,3 +37,13 @@ export const finalizeSubmission = internalMutation({
   },
 });
 
+export const revertToDraft = internalMutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    await entries.forUser(args.userId).revertToDraft(ctx.db);
+    return null;
+  },
+});
+
