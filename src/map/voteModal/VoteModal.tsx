@@ -20,7 +20,7 @@ export default function VoteModal({ entryId, opened, onClose }: Props) {
     <Modal
       opened={opened}
       onClose={onClose}
-      size="lg"
+      size="md"
       padding="md"
       centered
       title={`Vote for ${entry?.name} #${entry?.entryNumber}`}
