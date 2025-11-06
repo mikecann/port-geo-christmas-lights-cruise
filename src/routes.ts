@@ -2,17 +2,16 @@ import { createGroup, createRouter, defineRoute, param } from "type-route";
 
 const mapBase = defineRoute("/map");
 
+const entry = defineRoute(
+  { entryId: param.path.string },
+  (q) => `/entries/${q.entryId}`,
+);
+
 export const { RouteProvider, useRoute, routes } = createRouter({
   home: defineRoute("/"),
   entries: defineRoute("/entries"),
-  entry: defineRoute(
-    { entryId: param.path.string },
-    (q) => `/entries/${q.entryId}`,
-  ),
-  entryVote: defineRoute(
-    { entryId: param.path.string },
-    (q) => `/entries/${q.entryId}/vote`,
-  ),
+  entry,
+  entryVote: entry.extend("/vote"),
   map: mapBase,
   mapEntry: mapBase.extend(
     { entryId: param.path.string },
@@ -50,4 +49,5 @@ export const routeGroups = {
     routes.adminUsers,
   ]),
   map: createGroup([routes.map, routes.mapEntry]),
+  entry: createGroup([routes.entry, routes.entryVote]),
 };

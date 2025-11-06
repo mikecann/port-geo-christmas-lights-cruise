@@ -4,7 +4,7 @@ import { IconPhoto } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { useRoute, routes } from "../routes";
+import { useRoute, routes, routeGroups } from "../routes";
 import { useState, useRef, useEffect } from "react";
 import { AspectRatio } from "@mantine/core";
 import EntryPageSkeleton from "./EntryPageSkeleton";
@@ -16,30 +16,18 @@ import EntryVoting from "./voting/EntryVoting";
 import VoteModal from "../map/voteModal/VoteModal";
 import ShareModal from "./ShareModal";
 import { PhotoSlide } from "./PhotoSlide";
+import { Route } from "type-route";
 
 export default function EntryPage({
-  entryId,
-  isVote,
+  route,
 }: {
-  entryId: Id<"entries">;
-  isVote: boolean;
+  route: Route<typeof routeGroups.entry>;
 }) {
-  const route = useRoute();
   const [lightboxOpened, setLightboxOpened] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
-  const [voteModalManuallyClosed, setVoteModalManuallyClosed] = useState(false);
   const [shareModalOpened, setShareModalOpened] = useState(false);
 
-  // Reset voteModalManuallyClosed when route changes back to entryVote
-  useEffect(() => {
-    if (route.name === "entryVote" || isVote) {
-      setVoteModalManuallyClosed(false);
-    }
-  }, [route.name, isVote]);
-
-  // Derive vote modal state from route and manual close state
-  const voteModalOpened =
-    (route.name === "entryVote" || isVote) && !voteModalManuallyClosed;
+  const entryId = route.params.entryId as Id<"entries">;
 
   const entryWithPhotos = useQuery(api.public.entries.getWithPhotos, {
     entryId,
@@ -144,14 +132,15 @@ export default function EntryPage({
       />
 
       {/* Vote Modal */}
-      <VoteModal
-        entryId={entryId}
-        opened={voteModalOpened}
-        onClose={() => {
-          setVoteModalManuallyClosed(true);
-          routes.entry({ entryId }).push();
-        }}
-      />
+      {route.name == "entryVote" ? (
+        <VoteModal
+          entryId={entryId}
+          opened={true}
+          onClose={() => {
+            routes.entry({ entryId }).push();
+          }}
+        />
+      ) : null}
 
       {/* Share Modal */}
       <ShareModal

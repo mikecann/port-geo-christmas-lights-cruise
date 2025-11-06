@@ -24,13 +24,8 @@ export function AppRoutes() {
 
   if (route.name === "entries") return <LazyPages.EntriesGalleryPage />;
 
-  if (route.name === "entry" || route.name === "entryVote")
-    return (
-      <LazyPages.EntryPage
-        entryId={route.params.entryId as Id<"entries">}
-        isVote={route.name === "entryVote"}
-      />
-    );
+  if (routeGroups.entry.has(route))
+    return <LazyPages.EntryPage route={route} />;
 
   if (route.name == "map") return <LazyPages.MapPage />;
 

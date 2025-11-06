@@ -156,6 +156,64 @@ describe("a voter's experience", () => {
     },
     minutesInMs(5),
   );
+
+  it("should reopen the vote modal after closing it", async () => {
+    await auth.signInAs({
+      email: "test@example.com",
+      name: "Test User",
+      isSystemAdmin: false,
+      isCompetitionAdmin: false,
+    });
+
+    const entries = await backend.client.mutation(
+      api.testing.testing.createMockEntries,
+      {
+        count: 1,
+      },
+    );
+
+    await goto(routes.entry({ entryId: entries[0].id }));
+
+    // First vote button click - modal should open
+    await stagehand.page.act("Click the vote button");
+    
+    // Verify modal opened by checking for vote categories
+    const firstModalCheck = await stagehand.page.extract({
+      instruction: "find the vote modal with categories tabs",
+      schema: z.object({
+        hasBestDisplayTab: z.boolean(),
+        hasMostJollyTab: z.boolean(),
+      }),
+    });
+    expect(firstModalCheck.hasBestDisplayTab).toBe(true);
+    expect(firstModalCheck.hasMostJollyTab).toBe(true);
+
+    // Close the modal by clicking the X button
+    await stagehand.page.act("Close the vote modal by clicking the X button");
+
+    // Wait for modal to close - check that modal content is gone
+    await stagehand.page.waitForFunction(
+      () => {
+        const modal = document.querySelector('[role="dialog"]');
+        return !modal || modal.getAttribute("aria-hidden") === "true";
+      },
+      { timeout: 2000 },
+    );
+
+    // Click vote button again - modal should reopen
+    await stagehand.page.act("Click the vote button again");
+
+    // Verify modal reopened by checking for vote categories again
+    const secondModalCheck = await stagehand.page.extract({
+      instruction: "find the vote modal with categories tabs",
+      schema: z.object({
+        hasBestDisplayTab: z.boolean(),
+        hasMostJollyTab: z.boolean(),
+      }),
+    });
+    expect(secondModalCheck.hasBestDisplayTab).toBe(true);
+    expect(secondModalCheck.hasMostJollyTab).toBe(true);
+  });
 });
 
 describe("an entrant's experience", () => {
