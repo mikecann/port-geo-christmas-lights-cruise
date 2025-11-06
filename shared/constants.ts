@@ -22,3 +22,110 @@ export const COMPETITION_GEOGRAPHIC_BOUNDARY = {
     lng: 115.401862,
   },
 } as const;
+
+export const usersWhiteList = [
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Mike Cann",
+    email: "mike.cann@gmail.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+  {
+    name: "Redacted",
+    email: "redacted@example.com",
+  },
+];

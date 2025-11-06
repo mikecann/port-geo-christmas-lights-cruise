@@ -17,6 +17,7 @@ import {
   IconMail,
   IconShieldCheck,
   IconAlertCircle,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
 import React from "react";
 import { useDisclosure } from "@mantine/hooks";
@@ -42,9 +43,12 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
   const user = useQuery(api.admin.competition.entries.getUserDetails, {
     userId: entry.submittedByUserId,
   });
-  const conflictCheck = useQuery(api.admin.competition.entries.checkAddressConflicts, {
-    entryId: entry._id,
-  });
+  const validationStatus = useQuery(
+    api.admin.competition.entries.getEntryValidationStatus,
+    {
+      entryId: entry._id,
+    },
+  );
 
   const [approveEntry, isApproving] = useErrorCatchingMutation(
     api.admin.competition.entries.approve,
@@ -134,9 +138,9 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
             </Group>
           </Group>
 
-          {conflictCheck && (
+          {validationStatus && (
             <>
-              {!conflictCheck.hasConflicts && (
+              {!validationStatus.hasConflicts && (
                 <Group gap="xs">
                   <IconShieldCheck size={14} color="green" />
                   <Text size="sm" c="dimmed">
@@ -144,9 +148,9 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
                   </Text>
                 </Group>
               )}
-              {conflictCheck.isWithinBoundary !== undefined && (
+              {validationStatus.isWithinBoundary !== undefined && (
                 <Group gap="xs">
-                  {conflictCheck.isWithinBoundary ? (
+                  {validationStatus.isWithinBoundary ? (
                     <>
                       <IconShieldCheck size={14} color="green" />
                       <Text size="sm" c="dimmed">
@@ -163,6 +167,29 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
                   )}
                 </Group>
               )}
+              {validationStatus.isOnWhitelist !== undefined &&
+                validationStatus.isOnWhitelist !== null && (
+                  <Group gap="xs">
+                    {validationStatus.isOnWhitelist ? (
+                      <>
+                        <IconShieldCheck size={14} color="green" />
+                        <Text size="sm" c="dimmed">
+                          User is known from past competitions
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <IconAlertTriangle
+                          size={14}
+                          style={{ color: "#FFB800" }}
+                        />
+                        <Text size="sm" c="dimmed">
+                          User is not known from past competitions
+                        </Text>
+                      </>
+                    )}
+                  </Group>
+                )}
             </>
           )}
 

@@ -103,13 +103,25 @@ export const getUserDetails = userCompetitionAdminQuery({
   },
 });
 
-export const checkAddressConflicts = userCompetitionAdminQuery({
+export const getEntryValidationStatus = userCompetitionAdminQuery({
   args: { entryId: v.id("entries") },
+  returns: v.object({
+    hasConflicts: v.boolean(),
+    isWithinBoundary: v.union(v.boolean(), v.null()),
+    isOnWhitelist: v.union(v.boolean(), v.null()),
+  }),
   handler: async (ctx, args) => {
     const entry = await entries.forEntry(args.entryId).get(ctx.db);
-    if (!entry.houseAddress || typeof entry.houseAddress !== "object" || !("placeId" in entry.houseAddress)) {
-      return { hasConflicts: false, isWithinBoundary: false };
-    }
+    if (
+      !entry.houseAddress ||
+      typeof entry.houseAddress !== "object" ||
+      !("placeId" in entry.houseAddress)
+    )
+      return {
+        hasConflicts: false,
+        isWithinBoundary: null,
+        isOnWhitelist: null,
+      };
 
     const placeId = entry.houseAddress.placeId;
     const hasConflicts = await entries.hasEntryWithPlaceIdAlreadyBeenSubmitted(
@@ -120,7 +132,7 @@ export const checkAddressConflicts = userCompetitionAdminQuery({
 
     // Check if location is within competition boundary
     const houseAddress = entry.houseAddress;
-    let isWithinBoundary = false;
+    let isWithinBoundary: boolean | null = null;
     if (
       "lat" in houseAddress &&
       "lng" in houseAddress &&
@@ -128,14 +140,19 @@ export const checkAddressConflicts = userCompetitionAdminQuery({
       typeof houseAddress.lng === "number" &&
       houseAddress.lat !== 0 &&
       houseAddress.lng !== 0
-    ) {
+    )
       isWithinBoundary = entries.isLocationWithinCompetitionBoundary(
         houseAddress.lat,
         houseAddress.lng,
       );
-    }
 
-    return { hasConflicts, isWithinBoundary };
+    // Check if user email is on whitelist
+    const user = await ctx.db.get(entry.submittedByUserId);
+    const isOnWhitelist = user
+      ? entries.isUserEmailOnWhitelist(user.email)
+      : null;
+
+    return { hasConflicts, isWithinBoundary, isOnWhitelist };
   },
 });
 
