@@ -8,6 +8,7 @@ import {
   Group,
   Alert,
   Center,
+  Box,
 } from "@mantine/core";
 import { IconAward, IconMoodSmile, IconInfoCircle } from "@tabler/icons-react";
 import { useState } from "react";
@@ -24,6 +25,7 @@ interface CategoryConfig {
   key: VoteCategory;
   title: string;
   description: string;
+  longDescription: string;
   icon: React.ReactNode;
   color: string;
 }
@@ -34,6 +36,8 @@ const CATEGORIES_CONFIG: CategoryConfig[] = [
     title: "Best Display",
     description:
       "Creativity, visual impact and overall presentation of the lights",
+    longDescription:
+      "Vote for the home that impresses you most with its creativity, scale, and technical execution.",
     icon: <IconAward size={16} />,
     color: "blue",
   },
@@ -41,6 +45,8 @@ const CATEGORIES_CONFIG: CategoryConfig[] = [
     key: "most_jolly",
     title: "Most Jolly",
     description: "Festive spirit, warmth and joy conveyed by the display",
+    longDescription:
+      "Vote for the home that brings the most Christmas cheer and warm fuzzy feelings.",
     icon: <IconMoodSmile size={16} />,
     color: "grape",
   },
@@ -69,7 +75,32 @@ export default function VoteCategories({
     );
 
   return (
-    <Stack gap="sm">
+    <Stack gap="md">
+      {/* Info Alert */}
+      <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
+        <Stack gap="sm">
+          <div>
+            <Text size="sm" fw={500}>
+              Two Independent Awards
+            </Text>
+            <Text size="xs">
+              You can vote once in each category. Choose different homes or vote
+              for the same one twice!
+            </Text>
+          </div>
+          <Button
+            size="xs"
+            variant="light"
+            onClick={() => {
+              routes.competitionDetails().push();
+              onClose();
+            }}
+          >
+            Competition Details
+          </Button>
+        </Stack>
+      </Alert>
+
       <Tabs value={activeTab} onChange={setActiveTab}>
         <Tabs.List>
           {CATEGORIES_CONFIG.map((category) => {
@@ -104,16 +135,25 @@ export default function VoteCategories({
             <Tabs.Panel
               key={categoryConfig.key}
               value={categoryConfig.key}
-              pt="sm"
+              pt="md"
             >
-              <Stack gap="sm">
-                {vote ? null : (
-                  <div>
-                    <Text size="xs" c="dimmed">
-                      {categoryConfig.description}
-                    </Text>
-                  </div>
-                )}
+              <Stack gap="md">
+                {/* Category Description - Always Visible */}
+                <Box
+                  p="sm"
+                  style={{
+                    backgroundColor: "var(--mantine-color-gray-9)",
+                    borderRadius: "var(--mantine-radius-sm)",
+                    borderLeft: `3px solid var(--mantine-color-${categoryConfig.color}-6)`,
+                  }}
+                >
+                  <Text size="sm" fw={500} mb={4}>
+                    What to consider:
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {categoryConfig.longDescription}
+                  </Text>
+                </Box>
 
                 {vote ? (
                   <ExistingVoteCard
@@ -128,12 +168,12 @@ export default function VoteCategories({
                     currentEntryId={entryId}
                   />
                 ) : (
-                  <Card withBorder padding="sm">
+                  <Card withBorder padding="md">
                     <Stack gap="sm" align="center">
                       <div style={{ textAlign: "center" }}>
                         <Button
                           color={categoryConfig.color}
-                          size="sm"
+                          size="md"
                           leftSection={categoryConfig.icon}
                           onClick={() =>
                             voteForEntry({
