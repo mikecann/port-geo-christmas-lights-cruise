@@ -15,7 +15,6 @@ import {
 import PhotoSection from "./photos/PhotoSection";
 import AddressAutocomplete from "../../common/components/AddressAutocomplete";
 import DraftEntryHeader from "./DraftEntryHeader";
-import DraftEntryAlert from "./DraftEntryAlert";
 import { isTestMode } from "../../common/testMode";
 
 interface DraftEntryStateProps {
@@ -88,8 +87,6 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
               removeEntry().catch(onApiError);
             }}
           />
-
-          <DraftEntryAlert />
 
           {/* Form */}
           <Stack gap="md">

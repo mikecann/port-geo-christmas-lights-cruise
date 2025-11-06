@@ -103,6 +103,25 @@ export const getUserDetails = userCompetitionAdminQuery({
   },
 });
 
+export const checkAddressConflicts = userCompetitionAdminQuery({
+  args: { entryId: v.id("entries") },
+  handler: async (ctx, args) => {
+    const entry = await entries.forEntry(args.entryId).get(ctx.db);
+    if (!entry.houseAddress || typeof entry.houseAddress !== "object" || !("placeId" in entry.houseAddress)) {
+      return { hasConflicts: false };
+    }
+
+    const placeId = entry.houseAddress.placeId;
+    const hasConflicts = await entries.hasEntryWithPlaceIdAlreadyBeenSubmitted(
+      ctx.db,
+      placeId,
+      args.entryId,
+    );
+
+    return { hasConflicts };
+  },
+});
+
 // Mutations
 
 export const approve = userCompetitionAdminMutation({

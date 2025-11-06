@@ -19,8 +19,12 @@ export default function PhotoSection({
 }: PhotoSectionProps) {
   return (
     <div>
-      <Text size="sm" fw={500} mb="sm">
+      <Text size="sm" fw={500}>
         Photos
+      </Text>
+
+      <Text size="sm" c="dimmed" mb="sm">
+        Don't worry if you don't have any photos yet, you can add them later.
       </Text>
 
       {photos.length == 0 ? null : (

@@ -13,6 +13,9 @@ import {
   IconCalendar,
   IconCheck,
   IconX,
+  IconUser,
+  IconMail,
+  IconShieldCheck,
 } from "@tabler/icons-react";
 import React from "react";
 import { useDisclosure } from "@mantine/hooks";
@@ -35,6 +38,12 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
   const [selectedImageUrl, setSelectedImageUrl] = React.useState<string>("");
   const photos =
     useQuery(api.my.photos.listForEntry, { entryId: entry._id }) ?? [];
+  const user = useQuery(api.admin.competition.entries.getUserDetails, {
+    userId: entry.submittedByUserId,
+  });
+  const conflictCheck = useQuery(api.admin.competition.entries.checkAddressConflicts, {
+    entryId: entry._id,
+  });
 
   const [approveEntry, isApproving] = useErrorCatchingMutation(
     api.admin.competition.entries.approve,
@@ -69,6 +78,27 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
                 {getAddressString(entry.houseAddress)}
               </Text>
             </Group>
+
+            {user && (
+              <>
+                {user.name && (
+                  <Group gap="xs" mt="xs">
+                    <IconUser size={14} color="gray" />
+                    <Text size="sm" c="dimmed" lineClamp={1}>
+                      {user.name}
+                    </Text>
+                  </Group>
+                )}
+                {user.email && (
+                  <Group gap="xs" mt="xs">
+                    <IconMail size={14} color="gray" />
+                    <Text size="sm" c="dimmed" lineClamp={1}>
+                      {user.email}
+                    </Text>
+                  </Group>
+                )}
+              </>
+            )}
           </Stack>
 
           {photos.length > 0 && (
@@ -102,6 +132,15 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
               </Text>
             </Group>
           </Group>
+
+          {conflictCheck && !conflictCheck.hasConflicts && (
+            <Group gap="xs">
+              <IconShieldCheck size={14} color="green" />
+              <Text size="sm" c="dimmed">
+                No address conflicts found
+              </Text>
+            </Group>
+          )}
 
           {/* Admin Action Buttons */}
           <Group gap="sm" mt="md">
