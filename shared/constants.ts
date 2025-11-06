@@ -22,3 +22,110 @@ export const COMPETITION_GEOGRAPHIC_BOUNDARY = {
     lng: 115.401862,
   },
 } as const;
+
+export const usersWhiteList = [
+  {
+    name: "Alli Torony",
+    email: "allikat7@iprimus.com.au",
+  },
+  {
+    name: "Andrea",
+    email: "Randhes@bigpond.com",
+  },
+  {
+    name: "Dave Julie Ebert",
+    email: "djebert6@gmail.com",
+  },
+  {
+    name: "Glen Barkla",
+    email: "gbarkla@bigpond.net.au",
+  },
+  {
+    name: "Graham Doust",
+    email: "doustagriservices@westnet.com.au",
+  },
+  {
+    name: "Jason and Tamny",
+    email: "jts76@bigpond.com",
+  },
+  {
+    name: "Jason Offer",
+    email: "offer7@bigpond.com",
+  },
+  {
+    name: "Jen McAloon",
+    email: "mcaloon_clan@bigpond.com",
+  },
+  {
+    name: "Julie Kelly",
+    email: "Jaryli@karriweb.com.au",
+  },
+  {
+    name: "Lesley coulter",
+    email: "lesley.coulter@hotmail.com",
+  },
+  {
+    name: "Liz wright",
+    email: "Lizwright389@gmail.com",
+  },
+  {
+    name: "Ly Hoang and Kin Lee",
+    email: "Jascharess@yahoo.com",
+  },
+  {
+    name: "Marilyn Riggs",
+    email: "marilyn.riggs@live.com.au",
+  },
+  {
+    name: "Michael Goss",
+    email: "aussiemfg@hotmail.com",
+  },
+  {
+    name: "Michelle Baker",
+    email: "phil@forkwest.com.au",
+  },
+  {
+    name: "Michelle Camus",
+    email: "shell.louise1979@gmail.com",
+  },
+  {
+    name: "Mike Cann",
+    email: "mike.cann@gmail.com",
+  },
+  {
+    name: "Rosa McGillivray",
+    email: "rosamcgillivray@gmail.com",
+  },
+  {
+    name: "Sharon Morris",
+    email: "shaznsw@hotmail.com",
+  },
+  {
+    name: "Simon Pauline Rudge",
+    email: "greentea1965@outlook.com",
+  },
+  {
+    name: "Suzan Edmunds",
+    email: "suzangay62@gmail.com",
+  },
+  {
+    name: "Tanya Bertram",
+    email: "tanya.bartram@hotmail.com",
+  },
+  {
+    name: "Tanya May",
+    email: "tanymay@yahoo.com.au",
+  },
+  {
+    name: "Tenille Jason Duggan",
+    email: "tenilleduggan@yahoo.con",
+  },
+  {
+    name: "Tony Roper",
+    email: "tonyroper@bigpond.com",
+  },
+  {
+    name: "Troy and Jennnifer Evans",
+    email: "evo.32@bigpond.com",
+  },
+];

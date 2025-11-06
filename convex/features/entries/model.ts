@@ -16,6 +16,7 @@ import { exhaustiveCheck } from "../../../shared/misc";
 import {
   COMPETITION_GEOGRAPHIC_BOUNDARY,
   MAX_ENTRY_NUMBER,
+  usersWhiteList,
 } from "../../../shared/constants";
 
 export const entries = {
@@ -431,6 +432,20 @@ export const entries = {
       lat <= northEast.lat &&
       lng >= southWest.lng &&
       lng <= northEast.lng
+    );
+  },
+
+  /**
+   * Checks if a user's email is on the whitelist.
+   * Comparison is case-insensitive.
+   * @param email - User's email address
+   * @returns true if email is on the whitelist, false otherwise
+   */
+  isUserEmailOnWhitelist(email: string | undefined): boolean {
+    if (!email) return false;
+    const emailLower = email.toLowerCase().trim();
+    return usersWhiteList.some(
+      (user) => user.email.toLowerCase().trim() === emailLower,
     );
   },
 };
