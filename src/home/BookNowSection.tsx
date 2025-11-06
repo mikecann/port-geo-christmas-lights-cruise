@@ -27,24 +27,6 @@ export default function BookNowSection() {
           >
             Book Tickets Now
           </Button>
-
-          <Button
-            component="a"
-            {...(isAuthenticated
-              ? routes.myEntries().link
-              : routes.signin({ returnTo: routes.myEntries().href }).link)}
-            radius="md"
-            variant="outline"
-            color="#FBAF5D"
-            styles={{
-              root: {
-                borderColor: "#FBAF5D",
-                color: "#FBAF5D",
-              },
-            }}
-          >
-            Enter Competition
-          </Button>
         </Stack>
       </Container>
     </Box>

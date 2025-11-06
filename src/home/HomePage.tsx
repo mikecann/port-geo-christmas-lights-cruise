@@ -46,7 +46,7 @@ export default function HomePage() {
         )}
       </Box>
       <Trees />
-      <Stack bg="#02051A">
+      <Stack bg="#02051A" gap={0}>
         <BookNowSection />
         <BelowTheFoldCopy />
         <CompetitionSection />
