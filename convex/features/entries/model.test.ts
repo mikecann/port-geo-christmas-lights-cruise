@@ -626,6 +626,7 @@ describe("finalizeSubmission", () => {
           lng: 115.39,
           placeId: sharedPlaceId,
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
     });
 
