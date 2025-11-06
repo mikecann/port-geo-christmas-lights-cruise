@@ -1,4 +1,5 @@
 import { Stack, Text, Anchor } from "@mantine/core";
+import { Authenticated, Unauthenticated } from "convex/react";
 import { routes } from "../../routes";
 
 export default function FooterNavigation() {
@@ -44,6 +45,28 @@ export default function FooterNavigation() {
         >
           Map View
         </Anchor>
+        <Authenticated>
+          <Anchor
+            component="a"
+            {...routes.myEntries().link}
+            c="gray.4"
+            td="none"
+            style={{ fontSize: 14 }}
+          >
+            Enter Competition
+          </Anchor>
+        </Authenticated>
+        <Unauthenticated>
+          <Anchor
+            component="a"
+            {...routes.signin({ returnTo: routes.myEntries().href }).link}
+            c="gray.4"
+            td="none"
+            style={{ fontSize: 14 }}
+          >
+            Enter Competition
+          </Anchor>
+        </Unauthenticated>
       </Stack>
     </Stack>
   );

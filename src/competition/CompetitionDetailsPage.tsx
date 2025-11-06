@@ -118,6 +118,24 @@ export default function CompetitionDetailsPage() {
         <Divider />
 
         <Box>
+          <Title order={3} c="#FBAF5D" mb="xs" size="h4">
+            Competition Entrants – Complimentary Tasting + Purchase Incentive
+          </Title>
+          <Text mb="xs" size="md">
+            Bring your entry confirmation to Altair Estate for a complimentary
+            wine tasting for two and $10 off any bottle purchase.
+          </Text>
+          <Text mb="xs" size="md" fs="italic">
+            Offer valid: Wednesday, 7 January 2026 – Sunday, 29 February 2026.*
+          </Text>
+          <Text mb="md" size="sm" fs="italic">
+            *Entry must be presented at the cellar door
+          </Text>
+        </Box>
+
+        <Divider />
+
+        <Box>
           <Title order={2} mb="md">
             Terms & Conditions
           </Title>

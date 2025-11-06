@@ -42,20 +42,6 @@ export default function BelowTheFoldCopy() {
           <Text c="gray.0" mb="lg" size="md" fs="italic">
             Offer valid: Wednesday, 7 January 2026 – Sunday, 29 February 2026.
           </Text>
-
-          <Title order={3} c="#FBAF5D" mt="lg" mb="xs" size="h4">
-            Competition Entrants – Complimentary Tasting + Purchase Incentive
-          </Title>
-          <Text c="gray.0" mb="xs" size="md">
-            Bring your entry confirmation to Altair Estate for a complimentary
-            wine tasting for two and $10 off any bottle purchase.
-          </Text>
-          <Text c="gray.0" mb="xs" size="md" fs="italic">
-            Offer valid: Wednesday, 7 January 2026 – Sunday, 29 February 2026.*
-          </Text>
-          <Text c="gray.0" mb="lg" size="sm" fs="italic">
-            *Entry must be presented at the cellar door
-          </Text>
         </Box>
       </Container>
     </Box>
