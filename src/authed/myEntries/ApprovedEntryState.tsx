@@ -60,21 +60,6 @@ export default function ApprovedEntryState({ entry }: ApprovedEntryStateProps) {
                 </Badge>
               )}
             </Group>
-            <Text size="sm" c="dimmed">
-              Created {new Date(entry._creationTime).toLocaleDateString()}
-              {"submittedAt" in entry && (
-                <span>
-                  {" "}
-                  • Submitted {new Date(entry.submittedAt).toLocaleDateString()}
-                </span>
-              )}
-              {"approvedAt" in entry && (
-                <span>
-                  {" "}
-                  • Approved {new Date(entry.approvedAt).toLocaleDateString()}
-                </span>
-              )}
-            </Text>
           </Stack>
           <Badge color="green" variant="light">
             Approved

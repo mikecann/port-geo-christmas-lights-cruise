@@ -13,6 +13,7 @@ import { isStatus } from "../../../shared/filter";
 import { randomIntRange } from "../../../shared/num";
 import * as testing from "./testing";
 import { exhaustiveCheck } from "../../../shared/misc";
+import { COMPETITION_GEOGRAPHIC_BOUNDARY } from "../../../shared/constants";
 
 export const entries = {
   testing,
@@ -261,6 +262,11 @@ export const entries = {
             `Cannot finalize submission: Place ID '${args.placeId}' already has an approved entry`,
           );
 
+        if (!entries.isLocationWithinCompetitionBoundary(args.lat, args.lng))
+          throw new Error(
+            `Address "${entry.houseAddress.address}" is outside the competition area. Entries must be within the Port Geographe/Busselton region.`,
+          );
+
         await db.patch(entry._id, {
           status: "submitted" as const,
           submittedAt: Date.now(),
@@ -379,5 +385,23 @@ export const entries = {
     });
 
     return submitted.length > 0;
+  },
+
+  /**
+   * Checks if the given latitude and longitude coordinates are within
+   * the allowed geographic boundary for competition entries.
+   * @param lat - Latitude coordinate
+   * @param lng - Longitude coordinate
+   * @returns true if coordinates are within the boundary, false otherwise
+   */
+  isLocationWithinCompetitionBoundary(lat: number, lng: number): boolean {
+    const { southWest, northEast } = COMPETITION_GEOGRAPHIC_BOUNDARY;
+
+    return (
+      lat >= southWest.lat &&
+      lat <= northEast.lat &&
+      lng >= southWest.lng &&
+      lng <= northEast.lng
+    );
   },
 };

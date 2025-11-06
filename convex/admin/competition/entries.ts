@@ -108,7 +108,7 @@ export const checkAddressConflicts = userCompetitionAdminQuery({
   handler: async (ctx, args) => {
     const entry = await entries.forEntry(args.entryId).get(ctx.db);
     if (!entry.houseAddress || typeof entry.houseAddress !== "object" || !("placeId" in entry.houseAddress)) {
-      return { hasConflicts: false };
+      return { hasConflicts: false, isWithinBoundary: false };
     }
 
     const placeId = entry.houseAddress.placeId;
@@ -118,7 +118,24 @@ export const checkAddressConflicts = userCompetitionAdminQuery({
       args.entryId,
     );
 
-    return { hasConflicts };
+    // Check if location is within competition boundary
+    const houseAddress = entry.houseAddress;
+    let isWithinBoundary = false;
+    if (
+      "lat" in houseAddress &&
+      "lng" in houseAddress &&
+      typeof houseAddress.lat === "number" &&
+      typeof houseAddress.lng === "number" &&
+      houseAddress.lat !== 0 &&
+      houseAddress.lng !== 0
+    ) {
+      isWithinBoundary = entries.isLocationWithinCompetitionBoundary(
+        houseAddress.lat,
+        houseAddress.lng,
+      );
+    }
+
+    return { hasConflicts, isWithinBoundary };
   },
 });
 

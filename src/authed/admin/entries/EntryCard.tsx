@@ -16,6 +16,7 @@ import {
   IconUser,
   IconMail,
   IconShieldCheck,
+  IconAlertCircle,
 } from "@tabler/icons-react";
 import React from "react";
 import { useDisclosure } from "@mantine/hooks";
@@ -133,13 +134,36 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
             </Group>
           </Group>
 
-          {conflictCheck && !conflictCheck.hasConflicts && (
-            <Group gap="xs">
-              <IconShieldCheck size={14} color="green" />
-              <Text size="sm" c="dimmed">
-                No address conflicts found
-              </Text>
-            </Group>
+          {conflictCheck && (
+            <>
+              {!conflictCheck.hasConflicts && (
+                <Group gap="xs">
+                  <IconShieldCheck size={14} color="green" />
+                  <Text size="sm" c="dimmed">
+                    No address conflicts found
+                  </Text>
+                </Group>
+              )}
+              {conflictCheck.isWithinBoundary !== undefined && (
+                <Group gap="xs">
+                  {conflictCheck.isWithinBoundary ? (
+                    <>
+                      <IconShieldCheck size={14} color="green" />
+                      <Text size="sm" c="dimmed">
+                        Within competition boundary
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <IconAlertCircle size={14} color="orange" />
+                      <Text size="sm" c="dimmed">
+                        Outside competition boundary
+                      </Text>
+                    </>
+                  )}
+                </Group>
+              )}
+            </>
           )}
 
           {/* Admin Action Buttons */}
