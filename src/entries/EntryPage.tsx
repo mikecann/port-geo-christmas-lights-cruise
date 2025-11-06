@@ -30,6 +30,13 @@ export default function EntryPage({
   const [voteModalManuallyClosed, setVoteModalManuallyClosed] = useState(false);
   const [shareModalOpened, setShareModalOpened] = useState(false);
 
+  // Reset voteModalManuallyClosed when route changes back to entryVote
+  useEffect(() => {
+    if (route.name === "entryVote" || isVote) {
+      setVoteModalManuallyClosed(false);
+    }
+  }, [route.name, isVote]);
+
   // Derive vote modal state from route and manual close state
   const voteModalOpened =
     (route.name === "entryVote" || isVote) && !voteModalManuallyClosed;
