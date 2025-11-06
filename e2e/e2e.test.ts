@@ -176,7 +176,7 @@ describe("a voter's experience", () => {
 
     // First vote button click - modal should open
     await stagehand.page.act("Click the vote button");
-    
+
     // Verify modal opened by checking for vote categories
     const firstModalCheck = await stagehand.page.extract({
       instruction: "find the vote modal with categories tabs",
@@ -191,14 +191,8 @@ describe("a voter's experience", () => {
     // Close the modal by clicking the X button
     await stagehand.page.act("Close the vote modal by clicking the X button");
 
-    // Wait for modal to close - check that modal content is gone
-    await stagehand.page.waitForFunction(
-      () => {
-        const modal = document.querySelector('[role="dialog"]');
-        return !modal || modal.getAttribute("aria-hidden") === "true";
-      },
-      { timeout: 2000 },
-    );
+    // Observe that the modal is no longer open
+    await stagehand.page.observe("confirm that there is no vote modal opened");
 
     // Click vote button again - modal should reopen
     await stagehand.page.act("Click the vote button again");

@@ -7,6 +7,8 @@ const entry = defineRoute(
   (q) => `/entries/${q.entryId}`,
 );
 
+const admin = defineRoute("/admin");
+
 export const { RouteProvider, useRoute, routes } = createRouter({
   home: defineRoute("/"),
   entries: defineRoute("/entries"),
@@ -30,11 +32,11 @@ export const { RouteProvider, useRoute, routes } = createRouter({
   settings: defineRoute("/settings"),
   myEntries: defineRoute("/my-entries"),
   myVotes: defineRoute("/my-votes"),
-  admin: defineRoute("/admin"),
-  adminEntries: defineRoute("/admin/entries"),
-  adminVotes: defineRoute("/admin/votes"),
-  adminSystem: defineRoute("/admin/system"),
-  adminUsers: defineRoute("/admin/users"),
+  admin,
+  adminEntries: admin.extend("/entries"),
+  adminVotes: admin.extend("/votes"),
+  adminSystem: admin.extend("/system"),
+  adminUsers: admin.extend("/users"),
 });
 
 export const routeGroups = {
@@ -50,4 +52,11 @@ export const routeGroups = {
   ]),
   map: createGroup([routes.map, routes.mapEntry]),
   entry: createGroup([routes.entry, routes.entryVote]),
+  admin: createGroup([
+    routes.admin,
+    routes.adminEntries,
+    routes.adminVotes,
+    routes.adminSystem,
+    routes.adminUsers,
+  ]),
 };

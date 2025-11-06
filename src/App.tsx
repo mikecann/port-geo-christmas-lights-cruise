@@ -64,6 +64,13 @@ function AuthedRoutes({ route }: { route: Route<typeof routeGroups.authed> }) {
   if (route.name === "settings") return <LazyPages.SettingsPage />;
   if (route.name === "myEntries") return <LazyPages.MyEntriesPage />;
   if (route.name === "myVotes") return <LazyPages.MyVotesPage />;
+
+  if (routeGroups.admin.has(route)) return <AdminRoutes route={route} />;
+
+  exhaustiveCheck(route);
+}
+
+function AdminRoutes({ route }: { route: Route<typeof routeGroups.admin> }) {
   if (route.name === "admin") return <LazyPages.AdminPage />;
   if (route.name === "adminEntries") return <LazyPages.EntryManagementPage />;
   if (route.name === "adminVotes") return <LazyPages.VoteManagementPage />;
