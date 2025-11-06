@@ -12,6 +12,7 @@ import {
 } from "@mantine/core";
 import { IconAward, IconMoodSmile, IconInfoCircle } from "@tabler/icons-react";
 import { useState } from "react";
+import React from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -26,7 +27,7 @@ interface CategoryConfig {
   title: string;
   description: string;
   longDescription: string;
-  icon: React.ReactNode;
+  IconComponent: React.ComponentType<{ size?: number }>;
   color: string;
 }
 
@@ -38,7 +39,7 @@ const CATEGORIES_CONFIG: CategoryConfig[] = [
       "Creativity, visual impact and overall presentation of the lights",
     longDescription:
       "Vote for the home that impresses you most with its creativity, scale, and technical execution.",
-    icon: <IconAward size={16} />,
+    IconComponent: IconAward,
     color: "blue",
   },
   {
@@ -47,7 +48,7 @@ const CATEGORIES_CONFIG: CategoryConfig[] = [
     description: "Festive spirit, warmth and joy conveyed by the display",
     longDescription:
       "Vote for the home that brings the most Christmas cheer and warm fuzzy feelings.",
-    icon: <IconMoodSmile size={16} />,
+    IconComponent: IconMoodSmile,
     color: "grape",
   },
 ];
@@ -109,7 +110,7 @@ export default function VoteCategories({
               <Tabs.Tab
                 key={category.key}
                 value={category.key}
-                leftSection={category.icon}
+                leftSection={<category.IconComponent size={16} />}
                 rightSection={
                   vote ? (
                     <Badge
@@ -147,12 +148,24 @@ export default function VoteCategories({
                     borderLeft: `3px solid var(--mantine-color-${categoryConfig.color}-6)`,
                   }}
                 >
-                  <Text size="sm" fw={500} mb={4}>
-                    What to consider:
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    {categoryConfig.longDescription}
-                  </Text>
+                  <Group gap="md" align="flex-start" wrap="nowrap">
+                    <Box
+                      style={{
+                        color: `var(--mantine-color-${categoryConfig.color}-6)`,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <categoryConfig.IconComponent size={32} />
+                    </Box>
+                    <Box style={{ flex: 1 }}>
+                      <Text size="sm" fw={500} mb={4}>
+                        What to consider:
+                      </Text>
+                      <Text size="sm" c="dimmed">
+                        {categoryConfig.longDescription}
+                      </Text>
+                    </Box>
+                  </Group>
                 </Box>
 
                 {vote ? (
@@ -168,26 +181,24 @@ export default function VoteCategories({
                     currentEntryId={entryId}
                   />
                 ) : (
-                  <Card withBorder padding="md">
-                    <Stack gap="sm" align="center">
-                      <div style={{ textAlign: "center" }}>
-                        <Button
-                          color={categoryConfig.color}
-                          size="md"
-                          leftSection={categoryConfig.icon}
-                          onClick={() =>
-                            voteForEntry({
-                              entryId,
-                              category: categoryConfig.key,
-                            })
-                          }
-                          disabled={vote != null || isVoting}
-                          loading={isVoting}
-                        >
-                          Cast Your Vote
-                        </Button>
-                      </div>
-                    </Stack>
+                  <Card withBorder padding="md" style={{ display: "flex" }}>
+                    <Button
+                      color={categoryConfig.color}
+                      size="lg"
+                      fullWidth
+                      leftSection={<categoryConfig.IconComponent size={20} />}
+                      onClick={() =>
+                        voteForEntry({
+                          entryId,
+                          category: categoryConfig.key,
+                        })
+                      }
+                      disabled={vote != null || isVoting}
+                      loading={isVoting}
+                      style={{ height: "100%", minHeight: "60px" }}
+                    >
+                      Cast Your Vote
+                    </Button>
                   </Card>
                 )}
               </Stack>
