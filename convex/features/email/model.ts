@@ -74,7 +74,7 @@ export const email = {
       subject: "🎉 Your Christmas Lights Entry Has Been Approved!",
       html: `
         <h2>Congratulations! Your Entry Has Been Approved</h2>
-        <p>We're excited to let you know that your entry for the Port Geographe Christmas Lights Cruise has been approved!</p>
+        <p>We're excited to let you know that your entry for the Port Geographe Christmas Lights Competition has been approved!</p>
         
         <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Entry Number:</strong> ${args.entryNumber}</p>
@@ -117,7 +117,7 @@ export const email = {
         
         <p>Unfortunately, we are unable to approve your entry at this time.</p>
 
-        <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
+      <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
           <p><strong>Property Name:</strong> ${args.entry.name}</p>
           <p><strong>Address:</strong> ${args.entry.houseAddress?.address}</p>
           <p style="margin-top: 15px;"><strong>Reason:</strong></p>
