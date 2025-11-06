@@ -41,20 +41,10 @@ export default function EntryHeader({
             <Title order={1} mb="xs">
               {entry.name}
             </Title>
-            <Group gap="xs" align="flex-start" mb="md">
-              <IconMapPin
-                size={18}
-                color="var(--mantine-color-gray-6)"
-                style={{ marginTop: 2, flexShrink: 0 }}
-              />
-              <Text size="lg" c="dimmed">
-                {getAddressString(entry.houseAddress)}
-              </Text>
-            </Group>
           </Box>
 
           <Badge color="blue" variant="light" size="md">
-            #{entry.entryNumber}
+            Entry #{entry.entryNumber}
           </Badge>
         </Group>
 
