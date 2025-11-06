@@ -13,7 +13,10 @@ import { isStatus } from "../../../shared/filter";
 import { randomIntRange } from "../../../shared/num";
 import * as testing from "./testing";
 import { exhaustiveCheck } from "../../../shared/misc";
-import { COMPETITION_GEOGRAPHIC_BOUNDARY } from "../../../shared/constants";
+import {
+  COMPETITION_GEOGRAPHIC_BOUNDARY,
+  MAX_ENTRY_NUMBER,
+} from "../../../shared/constants";
 
 export const entries = {
   testing,
@@ -362,14 +365,15 @@ export const entries = {
 
   async getNextAvailableEntryNumber(db: DatabaseReader) {
     const approvedEntries = await this.listApproved(db);
-    if (approvedEntries.length === 0) return randomIntRange(0, 50);
+    if (approvedEntries.length === 0)
+      return randomIntRange(0, MAX_ENTRY_NUMBER);
 
     const usedNumbers = new Set(
       approvedEntries.map((entry) => entry.entryNumber),
     );
 
     const availableNumbers = [];
-    for (let i = 0; i <= 50; i++)
+    for (let i = 0; i <= MAX_ENTRY_NUMBER; i++)
       if (!usedNumbers.has(i)) availableNumbers.push(i);
 
     if (availableNumbers.length > 0) {

@@ -12,6 +12,7 @@ import {
 } from "../common/tests/testingHelpers";
 import { entries } from "./model";
 import type { Doc } from "../../_generated/dataModel";
+import { MAX_ENTRY_NUMBER } from "../../../shared/constants";
 
 describe("getNextAvailableEntryNumber", () => {
   let rawTest: ConvexTest;
@@ -24,13 +25,13 @@ describe("getNextAvailableEntryNumber", () => {
     t = signInAsTestUser(rawTest, user);
   });
 
-  it("should return a random number between 0-50 when no approved entries exist", async () => {
+  it(`should return a random number between 0-${MAX_ENTRY_NUMBER} when no approved entries exist`, async () => {
     const result = await t.run(async (ctx) => {
       return await entries.getNextAvailableEntryNumber(ctx.db);
     });
 
     expect(result).toBeGreaterThanOrEqual(0);
-    expect(result).toBeLessThanOrEqual(50);
+    expect(result).toBeLessThanOrEqual(MAX_ENTRY_NUMBER);
   });
 
   it("should return a number not already in use", async () => {
@@ -58,9 +59,9 @@ describe("getNextAvailableEntryNumber", () => {
       return await entries.getNextAvailableEntryNumber(ctx.db);
     });
 
-    // Assert - should be between 0-50 and not the same as the existing entry
+    // Assert - should be between 0-MAX_ENTRY_NUMBER and not the same as the existing entry
     expect(result).toBeGreaterThanOrEqual(0);
-    expect(result).toBeLessThanOrEqual(50);
+    expect(result).toBeLessThanOrEqual(MAX_ENTRY_NUMBER);
     expect(result).not.toBe(approvedEntry.entryNumber);
   });
 
@@ -114,9 +115,9 @@ describe("getNextAvailableEntryNumber", () => {
       return await entries.getNextAvailableEntryNumber(ctx.db);
     });
 
-    // Assert - should be between 0-50 and not already used
+    // Assert - should be between 0-MAX_ENTRY_NUMBER and not already used
     expect(result).toBeGreaterThanOrEqual(0);
-    expect(result).toBeLessThanOrEqual(50);
+    expect(result).toBeLessThanOrEqual(MAX_ENTRY_NUMBER);
     expect(usedNumbers.has(result)).toBe(false);
   });
 
@@ -164,14 +165,14 @@ describe("getNextAvailableEntryNumber", () => {
 
     // Assert - should be in range and not the same as the one approved entry
     expect(result).toBeGreaterThanOrEqual(0);
-    expect(result).toBeLessThanOrEqual(50);
+    expect(result).toBeLessThanOrEqual(MAX_ENTRY_NUMBER);
     expect(result).not.toBe(approved.entryNumber);
   });
 
-  it("should return max + 1 when all numbers 0-50 are taken", async () => {
-    // Arrange - create and approve 51 entries to fill all numbers 0-50
+  it(`should return max + 1 when all numbers 0-${MAX_ENTRY_NUMBER} are taken`, async () => {
+    // Arrange - create and approve MAX_ENTRY_NUMBER + 1 entries to fill all numbers 0-MAX_ENTRY_NUMBER
     const createdEntries = [];
-    for (let i = 0; i <= 50; i++) {
+    for (let i = 0; i <= MAX_ENTRY_NUMBER; i++) {
       const entry = await createTestEntry(t, {
         submittedByUserId: user._id,
       });
@@ -179,8 +180,8 @@ describe("getNextAvailableEntryNumber", () => {
       createdEntries.push(entry);
     }
 
-    // Approve all entries with specific entry numbers 0-50
-    for (let i = 0; i <= 50; i++)
+    // Approve all entries with specific entry numbers 0-MAX_ENTRY_NUMBER
+    for (let i = 0; i <= MAX_ENTRY_NUMBER; i++)
       await moveEntryToStatus(t, {
         entryId: createdEntries[i]._id,
         status: "approved",
@@ -201,8 +202,8 @@ describe("getNextAvailableEntryNumber", () => {
       return await entries.getNextAvailableEntryNumber(ctx.db);
     });
 
-    // Assert - should be 51 (max + 1)
-    expect(result).toBe(51);
+    // Assert - should be MAX_ENTRY_NUMBER + 1 (41)
+    expect(result).toBe(MAX_ENTRY_NUMBER + 1);
   });
 });
 

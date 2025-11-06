@@ -22,7 +22,7 @@ export default function FooterContact() {
         </ActionIcon>
         <ActionIcon
           component="a"
-          href="mailto:nansara@aigleroyal.com.au"
+          href="mailto:AMcRostie@aigleroyal.com.au"
           size="lg"
           variant="subtle"
           color="gray"
