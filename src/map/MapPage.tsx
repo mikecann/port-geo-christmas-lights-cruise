@@ -4,6 +4,7 @@ import { api } from "../../convex/_generated/api";
 import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
 import { CenterOnEntry } from "./CenterOnEntry";
 import { MapDebugInfo } from "./MapDebugInfo";
+import { CompetitionBoundaryOverlay } from "./CompetitionBoundaryOverlay";
 import { EntryMarker } from "./EntryMarker";
 import MyLocationControls from "./myLocation/controls/MyLocationControls";
 import { UserLocationProvider } from "./myLocation/UserLocationProvider";
@@ -67,6 +68,7 @@ export default function MapPage({
             <FitBoundsToEntries entries={entries} />
             {targetEntry ? <CenterOnEntry entry={targetEntry} /> : null}
             <MapDebugInfo />
+            <CompetitionBoundaryOverlay />
             {entries.map((entry) => (
               <EntryMarker
                 key={entry.entry._id}

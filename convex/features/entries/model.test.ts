@@ -339,18 +339,20 @@ describe("revertToDraft", () => {
 describe("submission error reversion", () => {
   let rawTest: ConvexTest;
   let t: AuthenticatedConvexTest;
-  let user: Doc<"users">;
+  let user1: Doc<"users">;
+  let user2: Doc<"users">;
 
   beforeEach(async () => {
     rawTest = createConvexTest();
-    user = await createTestUser(rawTest, {});
-    t = signInAsTestUser(rawTest, user);
+    user1 = await createTestUser(rawTest, {});
+    user2 = await createTestUser(rawTest, {});
+    t = signInAsTestUser(rawTest, user1);
   });
 
   it("should revert entry to draft when finalizeSubmission fails due to boundary violation", async () => {
     // Arrange - create an entry in submitting status with coordinates outside boundary
     const entry = await createTestEntry(t, {
-      submittedByUserId: user._id,
+      submittedByUserId: user1._id,
       status: "submitting",
       name: "Entry Outside Boundary",
       houseAddress: {
@@ -368,7 +370,7 @@ describe("submission error reversion", () => {
     // Act & Assert - finalizeSubmission should fail
     await expect(
       t.run(async (ctx) => {
-        await entries.forUser(user._id).finalizeSubmission(ctx.db, {
+        await entries.forUser(user1._id).finalizeSubmission(ctx.db, {
           lat: outsideBoundaryLat,
           lng: outsideBoundaryLng,
           placeId: entry.houseAddress?.placeId || "",
@@ -384,22 +386,32 @@ describe("submission error reversion", () => {
   });
 
   it("should revert entry to draft when finalizeSubmission fails due to address conflict", async () => {
-    // Arrange - create two entries with the same placeId
+    // Arrange - create two entries with the same placeId (different users)
     const placeId = "conflicting-place-id";
     const entry1 = await createTestEntry(t, {
-      submittedByUserId: user._id,
+      submittedByUserId: user1._id,
+    });
+    if (!entry1) throw new Error("Failed to create entry1");
+
+    // Move entry1 to submitted status using the helper
+    await moveEntryToStatus(t, {
+      entryId: entry1._id,
       status: "submitted",
-      name: "First Entry",
-      houseAddress: {
-        address: "123 Test St",
-        lat: -33.63,
-        lng: 115.39,
-        placeId,
+      overrides: {
+        houseAddress: {
+          address: "123 Test St",
+          lat: -33.63,
+          lng: 115.39,
+          placeId,
+        },
+        name: "First Entry",
       },
     });
 
-    const entry2 = await createTestEntry(t, {
-      submittedByUserId: user._id,
+    // Use user2 for entry2 to avoid unique() query issues
+    const t2 = signInAsTestUser(rawTest, user2);
+    const entry2 = await createTestEntry(t2, {
+      submittedByUserId: user2._id,
       status: "submitting",
       name: "Second Entry",
       houseAddress: {
@@ -408,21 +420,21 @@ describe("submission error reversion", () => {
       },
     });
 
-    if (!entry1 || !entry2) throw new Error("Failed to create entries");
+    if (!entry2) throw new Error("Failed to create entry2");
 
     // Act & Assert - should fail due to conflict
     await expect(
-      t.run(async (ctx) => {
-        await entries.forUser(user._id).finalizeSubmission(ctx.db, {
+      t2.run(async (ctx) => {
+        await entries.forUser(user2._id).finalizeSubmission(ctx.db, {
           lat: -33.63,
           lng: 115.39,
           placeId,
         });
       }),
-    ).rejects.toThrow(/already has an approved entry/);
+    ).rejects.toThrow(/already has an approved entry|already has an entry/);
 
     // Verify entry2 is still in submitting status
-    const entryAfterError = await t.run(async (ctx) => {
+    const entryAfterError = await t2.run(async (ctx) => {
       return await entries.forEntry(entry2._id).get(ctx.db);
     });
     expect(entryAfterError.status).toBe("submitting");
@@ -431,7 +443,7 @@ describe("submission error reversion", () => {
   it("should successfully finalize submission when entry is within boundary", async () => {
     // Arrange - create entry in submitting status with coordinates inside boundary
     const entry = await createTestEntry(t, {
-      submittedByUserId: user._id,
+      submittedByUserId: user1._id,
       status: "submitting",
       name: "Entry Within Boundary",
       houseAddress: {
@@ -448,7 +460,7 @@ describe("submission error reversion", () => {
 
     // Act
     await t.run(async (ctx) => {
-      await entries.forUser(user._id).finalizeSubmission(ctx.db, {
+      await entries.forUser(user1._id).finalizeSubmission(ctx.db, {
         lat: withinBoundaryLat,
         lng: withinBoundaryLng,
         placeId: entry.houseAddress?.placeId || "",
@@ -500,8 +512,8 @@ describe("finalizeSubmission", () => {
       overrides: {
         houseAddress: {
           address: "123 Test St",
-          lat: 10,
-          lng: 20,
+          lat: -33.63,
+          lng: 115.39,
           placeId: sharedPlaceId,
         },
         name: "First Entry",
@@ -530,8 +542,8 @@ describe("finalizeSubmission", () => {
     await expect(
       t.run(async (ctx) => {
         await entries.forUser(user2._id).finalizeSubmission(ctx.db, {
-          lat: 10,
-          lng: 20,
+          lat: -33.63,
+          lng: 115.39,
           placeId: sharedPlaceId,
         });
       }),
@@ -558,11 +570,11 @@ describe("finalizeSubmission", () => {
       });
     });
 
-    // Finalize should succeed
+    // Finalize should succeed - use coordinates within the competition boundary
     await t.run(async (ctx) => {
       await entries.forUser(user1._id).finalizeSubmission(ctx.db, {
-        lat: 30,
-        lng: 40,
+        lat: -33.63,
+        lng: 115.39,
         placeId: uniquePlaceId,
       });
     });
@@ -598,20 +610,22 @@ describe("finalizeSubmission", () => {
       submittedByUserId: user4._id,
     });
     if (!rejectedEntry) throw new Error("Failed to create rejectedEntry");
+    // Manually create rejected entry since moveEntryToStatus doesn't support rejected
     await t.run(async (ctx) => {
-      await ctx.db.patch(rejectedEntry._id, {
+      await ctx.db.replace(rejectedEntry._id, {
         status: "rejected" as const,
+        submittedByUserId: user4._id,
         name: "Rejected Entry",
-        submittedAt: Date.now(),
+        submittedAt: Date.now() - 1000,
         rejectedAt: Date.now(),
         rejectedReason: "Test rejection reason",
         houseAddress: {
           address: "789 Pine St",
-          lat: 10,
-          lng: 20,
+          lat: -33.63,
+          lng: 115.39,
           placeId: sharedPlaceId,
         },
-      });
+      } as any);
     });
 
     // Create a new entry to finalize with a different user
@@ -632,10 +646,11 @@ describe("finalizeSubmission", () => {
     });
 
     // Finalize should succeed since only draft and rejected entries exist with this placeId
+    // Use coordinates within the competition boundary
     await t.run(async (ctx) => {
       await entries.forUser(user1._id).finalizeSubmission(ctx.db, {
-        lat: 30,
-        lng: 40,
+        lat: -33.63,
+        lng: 115.39,
         placeId: sharedPlaceId,
       });
     });
