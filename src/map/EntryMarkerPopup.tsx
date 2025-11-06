@@ -48,10 +48,6 @@ export default function EntryMarkerPopup({ entryId }: EntryMarkerPopupProps) {
           </Badge>
         </Group>
 
-        <Text size="sm" c="gray.6" lh={1.3}>
-          {address}
-        </Text>
-
         <Stack gap="xs" mt="xs">
           <Button
             size="sm"
