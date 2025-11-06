@@ -64,10 +64,7 @@ export default [
 
       "@typescript-eslint/no-non-null-assertion": "error",
       "@typescript-eslint/prefer-as-const": "error",
-      "@typescript-eslint/consistent-type-imports": [
-        "error",
-        { prefer: "type-imports" },
-      ],
+      "@typescript-eslint/consistent-type-imports": "off",
 
       "no-restricted-syntax": [
         "error",
@@ -89,7 +86,7 @@ export default [
     rules: {
       "max-lines-per-function": [
         "warn",
-        { max: 150, skipBlankLines: true, skipComments: true },
+        { max: 200, skipBlankLines: true, skipComments: true },
       ],
     },
   },

@@ -31,28 +31,24 @@ const extractFriendlyMessage = (message: string): string => {
 const getMessage = (error: unknown): string => {
   let rawMessage: string;
 
-  if (typeof error === "string") {
-    rawMessage = error;
-  } else if (error instanceof ConvexError) {
-    if (typeof error.data === "string") {
-      rawMessage = error.data;
-    } else if (
+  if (typeof error === "string") rawMessage = error;
+  else if (error instanceof ConvexError)
+    if (typeof error.data === "string") rawMessage = error.data;
+    else if (
       typeof error.data === "object" &&
       error.data !== null &&
       "message" in error.data &&
       typeof error.data.message === "string"
-    ) {
+    )
       rawMessage = error.data.message;
-    } else {
-      return "An unexpected error occurred";
-    }
-  } else if (error && typeof error === "object") {
+    else return "An unexpected error occurred";
+  else if (error && typeof error === "object")
     if (
       "message" in error &&
       typeof (error as { message?: unknown }).message === "string"
-    ) {
+    )
       rawMessage = (error as { message: string }).message;
-    } else if ("error" in error) {
+    else if ("error" in error) {
       const nested = (error as { error?: unknown }).error;
       if (
         nested &&
@@ -60,17 +56,11 @@ const getMessage = (error: unknown): string => {
         nested !== null &&
         "message" in nested &&
         typeof (nested as { message?: unknown }).message === "string"
-      ) {
+      )
         rawMessage = (nested as { message: string }).message;
-      } else {
-        return "An unexpected error occurred";
-      }
-    } else {
-      return "An unexpected error occurred";
-    }
-  } else {
-    return "An unexpected error occurred";
-  }
+      else return "An unexpected error occurred";
+    } else return "An unexpected error occurred";
+  else return "An unexpected error occurred";
 
   return extractFriendlyMessage(rawMessage);
 };

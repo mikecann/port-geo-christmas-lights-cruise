@@ -27,13 +27,12 @@ export default function EntryPage({
   const route = useRoute();
   const [lightboxOpened, setLightboxOpened] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
-  const [voteModalOpened, setVoteModalOpened] = useState(isVote);
+  const [voteModalManuallyClosed, setVoteModalManuallyClosed] = useState(false);
   const [shareModalOpened, setShareModalOpened] = useState(false);
 
-  // Show vote modal when URL contains /vote
-  useEffect(() => {
-    if (route.name === "entryVote") setVoteModalOpened(true);
-  }, [route.name]);
+  // Derive vote modal state from route and manual close state
+  const voteModalOpened =
+    (route.name === "entryVote" || isVote) && !voteModalManuallyClosed;
 
   const entryWithPhotos = useQuery(api.public.entries.getWithPhotos, {
     entryId,
@@ -142,7 +141,7 @@ export default function EntryPage({
         entryId={entryId}
         opened={voteModalOpened}
         onClose={() => {
-          setVoteModalOpened(false);
+          setVoteModalManuallyClosed(true);
           routes.entry({ entryId }).push();
         }}
       />

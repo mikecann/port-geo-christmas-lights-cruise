@@ -5,13 +5,13 @@ import { photos } from "../features/photos/model";
 import { v } from "convex/values";
 import {
   VOTE_CATEGORIES,
-  VoteCategory,
   voteCategoryValidator,
 } from "../features/votes/schema";
+import type { VoteCategory } from "../features/votes/schema";
 import { entries } from "../features/entries/model";
 import { vv } from "../schema";
 import { homeAddressValidator } from "../features/entries/schema";
-import { Doc } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 
 export const list = myQuery({
   args: {},

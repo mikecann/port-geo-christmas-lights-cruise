@@ -19,7 +19,7 @@ export function CompetitionBoundaryOverlay() {
     }
 
     // Create rectangle if it doesn't exist
-    if (!rectangleRef.current) {
+    if (!rectangleRef.current)
       rectangleRef.current = new google.maps.Rectangle({
         bounds: new google.maps.LatLngBounds(
           new google.maps.LatLng(
@@ -37,7 +37,6 @@ export function CompetitionBoundaryOverlay() {
         fillOpacity: 0,
         clickable: false,
       });
-    }
 
     // Set rectangle on map
     rectangleRef.current.setMap(map);
