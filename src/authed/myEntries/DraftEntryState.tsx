@@ -4,9 +4,7 @@ import {
   Button,
   TextInput,
   Divider,
-  Modal,
   ActionIcon,
-  Text,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconCheck, IconAlertTriangle } from "@tabler/icons-react";
@@ -25,6 +23,7 @@ import {
 import PhotoSection from "./photos/PhotoSection";
 import AddressAutocomplete from "../../common/components/AddressAutocomplete";
 import DraftEntryHeader from "./DraftEntryHeader";
+import EntryNameGuidelinesModal from "./EntryNameGuidelinesModal";
 import { isTestMode } from "../../common/testMode";
 
 interface DraftEntryStateProps {
@@ -172,26 +171,7 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
         </Stack>
       </Card>
 
-      <Modal
-        opened={modalOpened}
-        onClose={closeModal}
-        title="Entry Name Guidelines"
-        centered
-      >
-        <Stack gap="md">
-          <Text size="sm">
-            New this year! Our website now includes an interactive map to help
-            voters easily view and locate and their favourite displays to vote.
-          </Text>
-          <Text size="sm">
-            Each entry is shown by its entrant number and entry name only.
-          </Text>
-          <Text size="sm">
-            Please avoid using your full name or home address as your entry name
-            - instead, give your display a fun, festive title.
-          </Text>
-        </Stack>
-      </Modal>
+      <EntryNameGuidelinesModal opened={modalOpened} onClose={closeModal} />
     </>
   );
 }
