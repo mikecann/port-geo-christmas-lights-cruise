@@ -4,10 +4,8 @@ import {
   Stack,
   LoadingOverlay,
   Loader,
-  Text,
   Button,
   Group,
-  Modal,
   ActionIcon,
 } from "@mantine/core";
 import { IconTrophy, IconAlertTriangle } from "@tabler/icons-react";
@@ -21,6 +19,7 @@ import SubmittingEntryState from "./SubmittingEntryState";
 import SubmittedEntryState from "./SubmittedEntryState";
 import ApprovedEntryState from "./ApprovedEntryState";
 import RejectedEntryState from "./RejectedEntryState";
+import EntryNameGuidelinesModal from "./EntryNameGuidelinesModal";
 import { exhaustiveCheck, iife } from "../../../shared/misc";
 import { routes } from "../../routes";
 
@@ -61,26 +60,7 @@ export default function MyEntriesPage() {
         </Group>
       </Group>
 
-      <Modal
-        opened={modalOpened}
-        onClose={closeModal}
-        title="Entry Name Guidelines"
-        centered
-      >
-        <Stack gap="md">
-          <Text size="sm">
-            New this year! Our website now includes an interactive map to help
-            voters easily view and locate and their favourite displays to vote.
-          </Text>
-          <Text size="sm">
-            Each entry is shown by its entrant number and entry name only.
-          </Text>
-          <Text size="sm">
-            Please avoid using your full name or home address as your entry name
-            - instead, give your display a fun, festive title.
-          </Text>
-        </Stack>
-      </Modal>
+      <EntryNameGuidelinesModal opened={modalOpened} onClose={closeModal} />
 
       <Stack gap="md">
         {iife(() => {
