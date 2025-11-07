@@ -16,7 +16,7 @@ export default function BelowTheFoldCopy() {
             Departs Port Geographe Marina | $18 per person
           </Text>
           <Text c="gray.0" mb="md" size="md">
-            Every Friday, Saturday and Sunday from 5th Dec | 7:40pm & 8:40pm
+            Every Friday, Saturday and Sunday from 5th Dec | 7:30pm & 8:40pm
           </Text>
           <Text c="gray.0" mb="lg" size="md">
             All Sea Charters will take you through every canal and under the
