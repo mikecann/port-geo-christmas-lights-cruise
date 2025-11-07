@@ -87,7 +87,7 @@ export const email = {
           <li><strong>Collect Your Sign:</strong> Every entrant will receive an A1 corflute sign with a unique number to display on your canal side. Signs can be collected from Sunday 30th onwards from Mike Cann at 35 Keel Retreat.</li>
           <li><strong>Decorate Your Home:</strong> Make sure your Christmas lights display is ready for the cruise dates in December 2025.</li>
           <li><strong>Be Visible:</strong> Ensure your lights are switched on during cruise hours (we'll send you the schedule closer to the date).</li>
-          <li><strong>Share the Joy:</strong> Tell your friends and neighbors about the event!</li>
+          <li><strong>Share the Joy:</strong> Tell your friends and neighbours about the event!</li>
           <li><strong>Stay Updated:</strong> Keep an eye on your email for important updates about the cruise schedule.</li>
         </ol>
 
