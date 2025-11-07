@@ -1,7 +1,17 @@
-import { Card, Stack, Button, TextInput, Divider } from "@mantine/core";
+import {
+  Card,
+  Stack,
+  Button,
+  TextInput,
+  Divider,
+  Modal,
+  ActionIcon,
+  Text,
+} from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconCheck } from "@tabler/icons-react";
+import { IconCheck, IconAlertTriangle } from "@tabler/icons-react";
 import { useState, useEffect, useRef } from "react";
+import { useDisclosure } from "@mantine/hooks";
 import { useMutation, useAction, useQuery } from "convex/react";
 import { useDebounce } from "use-debounce";
 import { api } from "../../../convex/_generated/api";
@@ -33,6 +43,8 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
   const [isPhotosUploading, setIsPhotosUploading] = useState(false);
   const { confirm } = useConfirmation();
   const onApiError = useApiErrorHandler();
+  const [modalOpened, { open: openModal, close: closeModal }] =
+    useDisclosure(false);
 
   // Form state
   const [name, setName] = useState(() => entry.name || "");
@@ -108,6 +120,16 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
               placeholder="Give your display a name (optional)"
               value={name}
               onChange={(e) => setName(e.currentTarget.value)}
+              rightSection={
+                <ActionIcon
+                  variant="subtle"
+                  color="yellow"
+                  onClick={openModal}
+                  size="sm"
+                >
+                  <IconAlertTriangle size={18} />
+                </ActionIcon>
+              }
             />
 
             {/* Photo Section */}
@@ -149,6 +171,27 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
           </Button>
         </Stack>
       </Card>
+
+      <Modal
+        opened={modalOpened}
+        onClose={closeModal}
+        title="Entry Name Guidelines"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            New this year! Our website now includes an interactive map to help
+            voters easily view and locate and their favourite displays to vote.
+          </Text>
+          <Text size="sm">
+            Each entry is shown by its entrant number and entry name only.
+          </Text>
+          <Text size="sm">
+            Please avoid using your full name or home address as your entry name
+            - instead, give your display a fun, festive title.
+          </Text>
+        </Stack>
+      </Modal>
     </>
   );
 }
