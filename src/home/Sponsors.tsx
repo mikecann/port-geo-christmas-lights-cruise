@@ -70,14 +70,14 @@ export function Sponsors() {
           <Text
             style={{
               color: "#FBAF5D",
-              fontSize: 18,
+              fontSize: 22,
               marginBottom: 20,
               fontWeight: 600,
             }}
           >
             Proudly sponsored by
           </Text>
-          <Group justify="center" gap={20}>
+          <Group justify="center" gap={10} bg="white" p="md">
             {sponsors.map((sponsor) => (
               <SponsorLink
                 key={sponsor.alt}
