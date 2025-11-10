@@ -210,59 +210,59 @@ describe("a voter's experience", () => {
   });
 });
 
-describe("an entrant's experience", () => {
-  // it("should allow voting on an entry", async () => {
-  //   await goto();
-  //   const me = await auth.signInAs({
-  //     email: "test@example.com",
-  //     name: "Test User",
-  //     isSystemAdmin: false,
-  //     isCompetitionAdmin: false,
-  //   });
-  //   await goto(routes.myEntries());
-  //   await stagehand.page.act(`Click to enter the competition`);
-  //   await stagehand.page.act(
-  //     `Enter '35 Keel Retreat in the House Address Field'`,
-  //   );
-  //   await stagehand.page.act(`Select 35 Keel Retreat from the autocomplete`);
-  //   await stagehand.page.act(`Enter 'Test Entry' in the Entry Name Field`);
-  //   await stagehand.page.act(`Click the submit button`);
-  //   await stagehand.page.act(
-  //     `wait for it to show the entry submission confirmation`,
-  //   );
-  //   const entry = await backend.client.mutation(
-  //     api.testing.testing.findEntryForUser,
-  //     {
-  //       userId: me?._id,
-  //     },
-  //   );
-  //   if (!entry) throw new Error("Entry not found");
-  //   expect(entry.status).toBe("submitted");
-  //   expect(entry.name).toBe("Test Entry");
-  //   expect(entry.houseAddress?.address).toBe(
-  //     "35 Keel Retreat, Geographe WA, Australia",
-  //   );
-  // });
-  // it(
-  //   "AGENTICALLY should allow voting on an entry",
-  //   async () => {
-  //     await goto();
-  //     const agent = await stagehand.agent();
-  //     await agent.execute({
-  //       instruction: `Create an entry for the competition and submit it.
-  //         You should use '35 Keel Retreat' as the house address.
-  //         After entering the address you must select the address from the autocomplete to register the address as valid.
-  //         You should use 'Test Entry' as the entry name.
-  //         After submitting the entry, wait for the entry submission confirmation to appear and then finish.`,
-  //       maxSteps: 30,
-  //     });
-  //     const entries = await backend.client.query(
-  //       api.testing.testing.listEntries,
-  //     );
-  //     expect(entries.length).toBe(1);
-  //     const entry = entries[0];
-  //     expect(entry.status).toBe("submitted");
-  //   },
-  //   minutesInMs(5),
-  // );
-});
+//describe("an entrant's experience", () => {
+// it("should allow voting on an entry", async () => {
+//   await goto();
+//   const me = await auth.signInAs({
+//     email: "test@example.com",
+//     name: "Test User",
+//     isSystemAdmin: false,
+//     isCompetitionAdmin: false,
+//   });
+//   await goto(routes.myEntries());
+//   await stagehand.page.act(`Click to enter the competition`);
+//   await stagehand.page.act(
+//     `Enter '35 Keel Retreat in the House Address Field'`,
+//   );
+//   await stagehand.page.act(`Select 35 Keel Retreat from the autocomplete`);
+//   await stagehand.page.act(`Enter 'Test Entry' in the Entry Name Field`);
+//   await stagehand.page.act(`Click the submit button`);
+//   await stagehand.page.act(
+//     `wait for it to show the entry submission confirmation`,
+//   );
+//   const entry = await backend.client.mutation(
+//     api.testing.testing.findEntryForUser,
+//     {
+//       userId: me?._id,
+//     },
+//   );
+//   if (!entry) throw new Error("Entry not found");
+//   expect(entry.status).toBe("submitted");
+//   expect(entry.name).toBe("Test Entry");
+//   expect(entry.houseAddress?.address).toBe(
+//     "35 Keel Retreat, Geographe WA, Australia",
+//   );
+// });
+// it(
+//   "AGENTICALLY should allow voting on an entry",
+//   async () => {
+//     await goto();
+//     const agent = await stagehand.agent();
+//     await agent.execute({
+//       instruction: `Create an entry for the competition and submit it.
+//         You should use '35 Keel Retreat' as the house address.
+//         After entering the address you must select the address from the autocomplete to register the address as valid.
+//         You should use 'Test Entry' as the entry name.
+//         After submitting the entry, wait for the entry submission confirmation to appear and then finish.`,
+//       maxSteps: 30,
+//     });
+//     const entries = await backend.client.query(
+//       api.testing.testing.listEntries,
+//     );
+//     expect(entries.length).toBe(1);
+//     const entry = entries[0];
+//     expect(entry.status).toBe("submitted");
+//   },
+//   minutesInMs(5),
+// );
+//});

@@ -51,10 +51,7 @@ export default function CompetitionDetailsPage() {
             <Text fw={600} size="lg" mb="xs">
               People's Choice
             </Text>
-            <Text c="dimmed">
-              $3,000 (Public online vote via Geographe targeted Facebook
-              campaign to open it up to other cruise boats)
-            </Text>
+            <Text c="dimmed">$3,000 (Public online vote)</Text>
           </Box>
 
           <Box>
@@ -117,7 +114,7 @@ export default function CompetitionDetailsPage() {
 
         <Divider />
 
-        <Box>
+        {/* <Box>
           <Title order={3} c="#FBAF5D" mb="xs" size="h4">
             Competition Entrants – Complimentary Tasting + Purchase Incentive
           </Title>
@@ -133,7 +130,7 @@ export default function CompetitionDetailsPage() {
           </Text>
         </Box>
 
-        <Divider />
+        <Divider /> */}
 
         <Box>
           <Title order={2} mb="md">
