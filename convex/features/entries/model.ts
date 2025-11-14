@@ -1,11 +1,6 @@
 import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../../_generated/dataModel";
-import type {
-  DatabaseReader,
-  DatabaseWriter,
-  MutationCtx,
-  QueryCtx,
-} from "../../_generated/server";
+import { type MutationCtx, type QueryCtx } from "../../_generated/server";
 import { ensure } from "../../../shared/ensure";
 import { match } from "ts-pattern";
 import { photos } from "../photos/model";
@@ -22,7 +17,7 @@ import {
 export const entries = {
   testing,
 
-  forEntryDoc(entry: Doc<"entries">) {
+  doc(entry: Doc<"entries">) {
     return {
       ensureIsModifiable() {
         if (entry.status !== "draft" && entry.status !== "approved")
@@ -34,387 +29,435 @@ export const entries = {
     };
   },
 
-  forEntry(entryId: Id<"entries">) {
+  query(context: QueryCtx) {
+    const { auth, db, storage } = context;
     return {
-      find(db: DatabaseReader) {
-        return db.get(entryId);
-      },
-
-      async get(db: DatabaseReader) {
-        const entry = await this.find(db);
-        return ensure(entry, `Entry with id '${entryId}' not found`);
-      },
-
-      async getApproved(db: DatabaseReader) {
-        const entry = await this.get(db);
-        if (entry.status !== "approved")
-          throw new Error("Entry is not approved");
-        return entry;
-      },
-
-      async approve(
-        db: DatabaseWriter,
-        { entryNumber }: { entryNumber: number },
-      ) {
-        const entry = await this.get(db);
-
-        if (entry.status !== "submitted")
-          throw new Error(
-            `Entry '${entryId}' is not in submitted status and cannot be approved. Current status: ${entry.status}`,
-          );
-
-        await db.patch(entryId, {
-          status: "approved",
-          approvedAt: Date.now(),
-          entryNumber,
-        });
-      },
-
-      async reject(
-        db: DatabaseWriter,
-        { rejectedReason }: { rejectedReason: string },
-      ) {
-        const entry = await this.get(db);
-
-        if (entry.status !== "submitted")
-          throw new Error(
-            `Entry '${entryId}' is not in submitted status and cannot be rejected. Current status: ${entry.status}`,
-          );
-
-        await db.patch(entryId, {
-          status: "rejected",
-          rejectedAt: Date.now(),
-          rejectedReason,
-        });
-      },
-
-      async delete(ctx: MutationCtx) {
-        await this.get(ctx.db);
-
-        // Delete all photos for this entry
-        await photos.forEntry(entryId).deleteAll(ctx);
-
-        await ctx.db.delete(entryId);
-      },
-
-      async setEntryNumber(
-        db: DatabaseWriter,
-        { entryNumber }: { entryNumber: number },
-      ) {
-        await this.get(db); // Ensure entry exists
-        await db.patch(entryId, { entryNumber });
-      },
-    };
-  },
-
-  forUser(userId: Id<"users">) {
-    return {
-      find(db: DatabaseReader) {
-        return db
-          .query("entries")
-          .withIndex("by_submittedByUserId", (q) =>
-            q.eq("submittedByUserId", userId),
-          )
-          .unique();
-      },
-
-      async get(db: DatabaseReader) {
-        const entry = await this.find(db);
-        return ensure(entry, `User '${userId}' has no entry`);
-      },
-
-      async getForModification(db: DatabaseReader) {
-        const entry = await this.get(db);
-        entries.forEntryDoc(entry).ensureIsModifiable();
-        return entry;
-      },
-
-      async ensureIsModifiable(db: DatabaseReader) {
-        const entry = await this.get(db);
-        entries.forEntryDoc(entry).ensureIsModifiable();
-      },
-
-      async create(db: DatabaseWriter) {
-        const existing = await this.find(db);
-        if (existing)
-          throw new Error(
-            `Cannot enter competition, user '${userId}' already has an entry`,
-          );
-
-        return await db.insert("entries", {
-          submittedByUserId: userId,
-          status: "draft",
-        });
-      },
-
-      async updateBeforeSubmission(
-        db: DatabaseWriter,
-        args: {
-          houseAddress?: { address: string; placeId: string };
-          name?: string;
-        },
-      ) {
-        const entry = await this.get(db);
-
-        if (entry.status != "draft")
-          throw new Error(`Entry '${entry._id}' is not in the draft status`);
-
-        const updateFields: {
-          houseAddress?: { address: string; placeId: string };
-          name?: string;
-        } = {};
-        if (args.houseAddress !== undefined)
-          updateFields.houseAddress = args.houseAddress;
-
-        if (args.name !== undefined) updateFields.name = args.name;
-
-        await db.patch(entry._id, updateFields);
-      },
-
-      async updateApproved(db: DatabaseWriter, args: { name?: string }) {
-        const entry = await this.get(db);
-
-        if (entry.status !== "approved")
-          throw new Error(`Entry '${entry._id}' is not in approved status`);
-
-        const updateFields: {
-          name?: string;
-        } = {};
-        if (args.name !== undefined) updateFields.name = args.name;
-
-        await db.patch(entry._id, updateFields);
-      },
-
-      async remove(ctx: MutationCtx) {
-        const entry = await this.get(ctx.db);
-
-        if (entry.status != "draft")
-          throw new Error(
-            `Entry of id '${entry._id}' with status '${entry.status}' is not in the draft status`,
-          );
-
-        // Delete all photos for this entry
-        await photos.forEntry(entry._id).deleteAll(ctx);
-
-        await ctx.db.delete(entry._id);
-      },
-
-      async startSubmitting(ctx: MutationCtx) {
-        const entry = await this.get(ctx.db);
-
-        if (entry.status != "draft")
-          throw new Error(`Entry '${entry._id}' is not in the draft status`);
-
-        if (!entry.houseAddress)
-          throw new Error(
-            `Entry '${entry._id}' is missing required house address`,
-          );
-
-        const { address, placeId } = entry.houseAddress;
-        if (
-          typeof address !== "string" ||
-          address.trim().length === 0 ||
-          typeof placeId !== "string" ||
-          placeId.trim().length === 0
-        )
-          throw new Error(
-            `Invalid house address: address '${address}' and placeId '${placeId}' must be provided`,
-          );
-
-        if (
-          await entries.hasEntryWithPlaceIdAlreadyBeenSubmitted(ctx.db, placeId)
-        )
-          throw new ConvexError(
-            `Address ${entry.houseAddress.address} is already used!`,
-          );
-
-        await ctx.db.patch(entry._id, {
-          status: "submitting" as const,
-          name: ensure(
-            entry.name,
-            `Entry '${entry._id}' is missing required name`,
-          ),
-          houseAddress: entry.houseAddress,
-        });
-
-        return await this.get(ctx.db);
-      },
-
-      async finalizeSubmission(
-        db: DatabaseWriter,
-        args: {
-          lat: number;
-          lng: number;
-          placeId: string;
-        },
-      ) {
-        const entry = await this.get(db);
-
-        if (entry.status != "submitting")
-          throw new Error(
-            `Entry '${entry._id}' is not in the submitting status`,
-          );
-
-        if (
-          await entries.hasEntryWithPlaceIdAlreadyBeenSubmitted(
-            db,
-            args.placeId,
-            entry._id,
-          )
-        )
-          throw new Error(
-            `Cannot finalize submission: Place ID '${args.placeId}' already has an approved entry`,
-          );
-
-        if (!entries.isLocationWithinCompetitionBoundary(args.lat, args.lng))
-          throw new Error(
-            `Address "${entry.houseAddress.address}" is outside the competition area. Entries must be within the Port Geographe/Busselton region.`,
-          );
-
-        await db.patch(entry._id, {
-          status: "submitted" as const,
-          submittedAt: Date.now(),
-          houseAddress: {
-            address: entry.houseAddress.address,
-            lat: args.lat,
-            lng: args.lng,
-            placeId: args.placeId,
+      forEntry(entryId: Id<"entries">) {
+        return {
+          find() {
+            return db.get(entryId);
           },
-        });
+
+          async get() {
+            const entry = await this.find();
+            return ensure(entry, `Entry with id '${entryId}' not found`);
+          },
+
+          async getApproved() {
+            const entry = await this.get();
+            if (entry.status !== "approved")
+              throw new Error("Entry is not approved");
+            return entry;
+          },
+
+          async approve({ entryNumber }: { entryNumber: number }) {
+            const entry = await this.get();
+
+            if (entry.status !== "submitted")
+              throw new Error(
+                `Entry '${entryId}' is not in submitted status and cannot be approved. Current status: ${entry.status}`,
+              );
+
+            await db.patch(entryId, {
+              status: "approved",
+              approvedAt: Date.now(),
+              entryNumber,
+            });
+          },
+
+          async reject(
+            db: DatabaseWriter,
+            { rejectedReason }: { rejectedReason: string },
+          ) {
+            const entry = await this.get(db);
+
+            if (entry.status !== "submitted")
+              throw new Error(
+                `Entry '${entryId}' is not in submitted status and cannot be rejected. Current status: ${entry.status}`,
+              );
+
+            await db.patch(entryId, {
+              status: "rejected",
+              rejectedAt: Date.now(),
+              rejectedReason,
+            });
+          },
+        };
       },
 
-      async revertToDraft(db: DatabaseWriter) {
-        const entry = await this.get(db);
+      forUser(userId: Id<"users">) {
+        return {
+          find() {
+            return db
+              .query("entries")
+              .withIndex("by_submittedByUserId", (q) =>
+                q.eq("submittedByUserId", userId),
+              )
+              .unique();
+          },
 
-        if (entry.status !== "submitting")
-          throw new Error(
-            `Entry '${entry._id}' is not in submitting status, cannot revert`,
-          );
+          async get() {
+            const entry = await this.find();
+            return ensure(entry, `User '${userId}' has no entry`);
+          },
 
-        // Revert back to draft, preserving the address data as optional draft format
-        const draftAddress =
-          typeof entry.houseAddress === "object" &&
-          "address" in entry.houseAddress &&
-          "placeId" in entry.houseAddress
-            ? {
-                address: entry.houseAddress.address,
-                placeId: entry.houseAddress.placeId,
-              }
-            : undefined;
+          async getForModification() {
+            const entry = await this.get();
+            entries.doc(entry).ensureIsModifiable();
+            return entry;
+          },
 
-        await db.patch(entry._id, {
-          status: "draft" as const,
-          houseAddress: draftAddress,
+          async ensureIsModifiable() {
+            const entry = await this.get();
+            entries.doc(entry).ensureIsModifiable();
+          },
+        };
+      },
+
+      async listApproved() {
+        const approved = await db
+          .query("entries")
+          .withIndex("by_status", (q) => q.eq("status", "approved"))
+          .collect()
+          .then((a) => a.filter((e) => e.status == "approved"));
+
+        return approved;
+      },
+
+      async countApproved() {
+        const entries = await db
+          .query("entries")
+          .withIndex("by_status", (q) => q.eq("status", "approved"))
+          .collect();
+
+        return entries.length;
+      },
+
+      async listPendingReview() {
+        return await db
+          .query("entries")
+          .withIndex("by_status", (q) => q.eq("status", "submitted"))
+          .collect();
+      },
+
+      async listRejected() {
+        return await db
+          .query("entries")
+          .withIndex("by_status", (q) => q.eq("status", "rejected"))
+          .collect();
+      },
+
+      async getStats() {
+        const allEntries = await db.query("entries").collect();
+        return {
+          totalEntries: allEntries.length,
+          totalSubmittedEntries: allEntries.filter(isStatus("submitted"))
+            .length,
+          totalApprovedEntries: allEntries.filter(isStatus("approved")).length,
+          totalRejectedEntries: allEntries.filter(isStatus("rejected")).length,
+        };
+      },
+
+      async findEntriesByPlaceId(placeId: string) {
+        return await db
+          .query("entries")
+          .withIndex("by_homeAddress_placeId", (q) =>
+            q.eq("houseAddress.placeId", placeId),
+          )
+          .take(100);
+      },
+
+      async hasEntryWithPlaceIdAlreadyBeenSubmitted(
+        placeId: string,
+        excludeEntryId?: Id<"entries">,
+      ) {
+        const matchedEntries = await this.findEntriesByPlaceId(placeId);
+
+        const submitted = matchedEntries.filter((e) => {
+          // Exclude the current entry if specified
+          if (excludeEntryId && e._id === excludeEntryId) return false;
+
+          return match(e)
+            .with({ status: "draft" }, () => false)
+            .with({ status: "submitted" }, () => true)
+            .with({ status: "approved" }, () => true)
+            .with({ status: "rejected" }, () => false)
+            .with({ status: "submitting" }, () => true)
+            .exhaustive();
         });
+
+        return submitted.length > 0;
       },
     };
   },
 
-  async listApproved(db: DatabaseReader) {
-    const approved = await db
-      .query("entries")
-      .withIndex("by_status", (q) => q.eq("status", "approved"))
-      .collect()
-      .then((a) => a.filter((e) => e.status == "approved"));
-
-    return approved;
-  },
-
-  async countApproved(db: DatabaseReader) {
-    const entries = await db
-      .query("entries")
-      .withIndex("by_status", (q) => q.eq("status", "approved"))
-      .collect();
-
-    return entries.length;
-  },
-
-  async listPendingReview(db: DatabaseReader) {
-    return await db
-      .query("entries")
-      .withIndex("by_status", (q) => q.eq("status", "submitted"))
-      .collect();
-  },
-
-  async listRejected(db: DatabaseReader) {
-    return await db
-      .query("entries")
-      .withIndex("by_status", (q) => q.eq("status", "rejected"))
-      .collect();
-  },
-
-  async getStats(db: DatabaseReader) {
-    const allEntries = await db.query("entries").collect();
+  mutate(context: MutationCtx) {
+    const { auth, db, storage } = context;
+    const query = entries.query(context);
     return {
-      totalEntries: allEntries.length,
-      totalSubmittedEntries: allEntries.filter(isStatus("submitted")).length,
-      totalApprovedEntries: allEntries.filter(isStatus("approved")).length,
-      totalRejectedEntries: allEntries.filter(isStatus("rejected")).length,
+      forEntry(entryId: Id<"entries">) {
+        const query = entries.query(context).forEntry(entryId);
+        return {
+          async approve({ entryNumber }: { entryNumber: number }) {
+            const entry = await query.get();
+
+            if (entry.status !== "submitted")
+              throw new Error(
+                `Entry '${entryId}' is not in submitted status and cannot be approved. Current status: ${entry.status}`,
+              );
+
+            await db.patch(entryId, {
+              status: "approved",
+              approvedAt: Date.now(),
+              entryNumber,
+            });
+          },
+
+          async reject({ rejectedReason }: { rejectedReason: string }) {
+            const entry = await query.get();
+
+            if (entry.status !== "submitted")
+              throw new Error(
+                `Entry '${entryId}' is not in submitted status and cannot be rejected. Current status: ${entry.status}`,
+              );
+
+            await db.patch(entryId, {
+              status: "rejected",
+              rejectedAt: Date.now(),
+              rejectedReason,
+            });
+          },
+
+          async delete() {
+            const entry = await query.get();
+
+            // Delete all photos for this entry
+            await photos.forEntry(entryId).deleteAll(context);
+
+            await context.db.delete(entryId);
+          },
+
+          async setEntryNumber({ entryNumber }: { entryNumber: number }) {
+            const entry = await query.get();
+            await db.patch(entryId, { entryNumber });
+          },
+        };
+      },
+
+      forUser(userId: Id<"users">) {
+        const query = entries.query(context).forUser(userId);
+        return {
+          async create() {
+            const existing = await query.find();
+            if (existing)
+              throw new Error(
+                `Cannot enter competition, user '${userId}' already has an entry`,
+              );
+
+            return await db.insert("entries", {
+              submittedByUserId: userId,
+              status: "draft",
+            });
+          },
+
+          async updateBeforeSubmission(args: {
+            houseAddress?: { address: string; placeId: string };
+            name?: string;
+          }) {
+            const entry = await query.get();
+
+            if (entry.status != "draft")
+              throw new Error(
+                `Entry '${entry._id}' is not in the draft status`,
+              );
+
+            const updateFields: {
+              houseAddress?: { address: string; placeId: string };
+              name?: string;
+            } = {};
+            if (args.houseAddress !== undefined)
+              updateFields.houseAddress = args.houseAddress;
+
+            if (args.name !== undefined) updateFields.name = args.name;
+
+            await db.patch(entry._id, updateFields);
+          },
+
+          async updateApproved(args: { name?: string }) {
+            const entry = await query.get();
+
+            if (entry.status !== "approved")
+              throw new Error(`Entry '${entry._id}' is not in approved status`);
+
+            const updateFields: {
+              name?: string;
+            } = {};
+            if (args.name !== undefined) updateFields.name = args.name;
+
+            await db.patch(entry._id, updateFields);
+          },
+
+          async remove(ctx: MutationCtx) {
+            const entry = await query.get();
+
+            if (entry.status != "draft")
+              throw new Error(
+                `Entry of id '${entry._id}' with status '${entry.status}' is not in the draft status`,
+              );
+
+            // Delete all photos for this entry
+            await photos.forEntry(entry._id).deleteAll(ctx);
+
+            await ctx.db.delete(entry._id);
+          },
+
+          async startSubmitting(ctx: MutationCtx) {
+            const entry = await query.get();
+
+            if (entry.status != "draft")
+              throw new Error(
+                `Entry '${entry._id}' is not in the draft status`,
+              );
+
+            if (!entry.houseAddress)
+              throw new Error(
+                `Entry '${entry._id}' is missing required house address`,
+              );
+
+            const { address, placeId } = entry.houseAddress;
+            if (
+              typeof address !== "string" ||
+              address.trim().length === 0 ||
+              typeof placeId !== "string" ||
+              placeId.trim().length === 0
+            )
+              throw new Error(
+                `Invalid house address: address '${address}' and placeId '${placeId}' must be provided`,
+              );
+
+            if (
+              await entries
+                .query(context)
+                .hasEntryWithPlaceIdAlreadyBeenSubmitted(placeId)
+            )
+              throw new ConvexError(
+                `Address ${entry.houseAddress.address} is already used!`,
+              );
+
+            await ctx.db.patch(entry._id, {
+              status: "submitting" as const,
+              name: ensure(
+                entry.name,
+                `Entry '${entry._id}' is missing required name`,
+              ),
+              houseAddress: entry.houseAddress,
+            });
+
+            return await query.get();
+          },
+
+          async finalizeSubmission(args: {
+            lat: number;
+            lng: number;
+            placeId: string;
+          }) {
+            const entry = await query.get();
+
+            if (entry.status != "submitting")
+              throw new Error(
+                `Entry '${entry._id}' is not in the submitting status`,
+              );
+
+            if (
+              await entries
+                .query(context)
+                .hasEntryWithPlaceIdAlreadyBeenSubmitted(
+                  args.placeId,
+                  entry._id,
+                )
+            )
+              throw new Error(
+                `Cannot finalize submission: Place ID '${args.placeId}' already has an approved entry`,
+              );
+
+            if (
+              !entries.isLocationWithinCompetitionBoundary(args.lat, args.lng)
+            )
+              throw new Error(
+                `Address "${entry.houseAddress.address}" is outside the competition area. Entries must be within the Port Geographe/Busselton region.`,
+              );
+
+            await db.patch(entry._id, {
+              status: "submitted" as const,
+              submittedAt: Date.now(),
+              houseAddress: {
+                address: entry.houseAddress.address,
+                lat: args.lat,
+                lng: args.lng,
+                placeId: args.placeId,
+              },
+            });
+          },
+
+          async revertToDraft() {
+            const entry = await query.get();
+
+            if (entry.status !== "submitting")
+              throw new Error(
+                `Entry '${entry._id}' is not in submitting status, cannot revert`,
+              );
+
+            // Revert back to draft, preserving the address data as optional draft format
+            const draftAddress =
+              typeof entry.houseAddress === "object" &&
+              "address" in entry.houseAddress &&
+              "placeId" in entry.houseAddress
+                ? {
+                    address: entry.houseAddress.address,
+                    placeId: entry.houseAddress.placeId,
+                  }
+                : undefined;
+
+            await db.patch(entry._id, {
+              status: "draft" as const,
+              houseAddress: draftAddress,
+            });
+          },
+        };
+      },
+
+      async wipeAll() {
+        const allEntries = await context.db.query("entries").collect();
+        let deletedCount = 0;
+        for (const entry of allEntries) {
+          // Use the proper delete method to clean up photos
+          await entries.mutate(context).forEntry(entry._id).delete();
+          deletedCount++;
+        }
+        return { deletedCount };
+      },
+
+      async getNextAvailableEntryNumber() {
+        const approvedEntries = await query.listApproved();
+        if (approvedEntries.length === 0)
+          return randomIntRange(0, MAX_ENTRY_NUMBER);
+
+        const usedNumbers = new Set(
+          approvedEntries.map((entry) => entry.entryNumber),
+        );
+
+        const availableNumbers = [];
+        for (let i = 0; i <= MAX_ENTRY_NUMBER; i++)
+          if (!usedNumbers.has(i)) availableNumbers.push(i);
+
+        if (availableNumbers.length > 0) {
+          const randomIndex = randomIntRange(0, availableNumbers.length - 1);
+          return availableNumbers[randomIndex];
+        }
+
+        return Math.max(...usedNumbers) + 1;
+      },
     };
-  },
-
-  async wipeAll(ctx: MutationCtx) {
-    const allEntries = await ctx.db.query("entries").collect();
-    let deletedCount = 0;
-    for (const entry of allEntries) {
-      // Use the proper delete method to clean up photos
-      await entries.forEntry(entry._id).delete(ctx);
-      deletedCount++;
-    }
-    return { deletedCount };
-  },
-
-  async getNextAvailableEntryNumber(db: DatabaseReader) {
-    const approvedEntries = await this.listApproved(db);
-    if (approvedEntries.length === 0)
-      return randomIntRange(0, MAX_ENTRY_NUMBER);
-
-    const usedNumbers = new Set(
-      approvedEntries.map((entry) => entry.entryNumber),
-    );
-
-    const availableNumbers = [];
-    for (let i = 0; i <= MAX_ENTRY_NUMBER; i++)
-      if (!usedNumbers.has(i)) availableNumbers.push(i);
-
-    if (availableNumbers.length > 0) {
-      const randomIndex = randomIntRange(0, availableNumbers.length - 1);
-      return availableNumbers[randomIndex];
-    }
-
-    return Math.max(...usedNumbers) + 1;
-  },
-
-  async findEntriesByPlaceId(db: DatabaseReader, placeId: string) {
-    return await db
-      .query("entries")
-      .withIndex("by_homeAddress_placeId", (q) =>
-        q.eq("houseAddress.placeId", placeId),
-      )
-      .take(100);
-  },
-
-  async hasEntryWithPlaceIdAlreadyBeenSubmitted(
-    db: DatabaseReader,
-    placeId: string,
-    excludeEntryId?: Id<"entries">,
-  ) {
-    const matchedEntries = await this.findEntriesByPlaceId(db, placeId);
-
-    const submitted = matchedEntries.filter((e) => {
-      // Exclude the current entry if specified
-      if (excludeEntryId && e._id === excludeEntryId) return false;
-
-      return match(e)
-        .with({ status: "draft" }, () => false)
-        .with({ status: "submitted" }, () => true)
-        .with({ status: "approved" }, () => true)
-        .with({ status: "rejected" }, () => false)
-        .with({ status: "submitting" }, () => true)
-        .exhaustive();
-    });
-
-    return submitted.length > 0;
   },
 
   /**
