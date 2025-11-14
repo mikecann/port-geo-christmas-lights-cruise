@@ -7,7 +7,7 @@ import { query } from "../_generated/server";
 export const list = myQuery({
   args: {},
   handler: async (ctx) => {
-    const entry = await entries.forUser(ctx.userId).get(ctx.db);
+    const entry = await entries.query(ctx).forUser(ctx.userId).get();
     return await photos.forEntry(entry._id).list(ctx.db);
   },
 });
@@ -22,7 +22,10 @@ export const listForEntry = query({
 export const beginUpload = myMutation({
   args: {},
   handler: async (ctx) => {
-    const entry = await entries.forUser(ctx.userId).getForModification(ctx.db);
+    const entry = await entries
+      .query(ctx)
+      .forUser(ctx.userId)
+      .getForModification();
     const uploadStartedAt = Date.now();
     return await photos.forEntry(entry._id).add(ctx, { uploadStartedAt });
   },
@@ -34,7 +37,7 @@ export const save = myMutation({
     photoId: v.id("photos"),
   },
   handler: async (ctx, args) => {
-    await entries.forUser(ctx.userId).ensureIsModifiable(ctx.db);
+    await entries.query(ctx).forUser(ctx.userId).ensureIsModifiable();
 
     await photos.forPhoto(args.photoId).save(ctx, {
       storageId: args.storageId,
@@ -49,7 +52,7 @@ export const remove = myMutation({
     photoId: v.id("photos"),
   },
   handler: async (ctx, args) => {
-    await entries.forUser(ctx.userId).ensureIsModifiable(ctx.db);
+    await entries.query(ctx).forUser(ctx.userId).ensureIsModifiable();
     await photos.forPhoto(args.photoId).delete(ctx);
     return null;
   },

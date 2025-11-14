@@ -8,7 +8,7 @@ export const startSubmitting = internalMutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    return await entries.forUser(args.userId).startSubmitting(ctx);
+    return await entries.mutate(ctx).forUser(args.userId).startSubmitting(ctx);
   },
 });
 
@@ -20,10 +20,10 @@ export const finalizeSubmission = internalMutation({
     placeId: v.string(),
   },
   handler: async (ctx, args) => {
-    const entry = await entries.forEntry(args.entryId).get(ctx.db);
+    const entry = await entries.query(ctx).forEntry(args.entryId).get();
     if (!entry) throw new Error(`Entry '${args.entryId}' not found`);
 
-    await entries.forUser(entry.submittedByUserId).finalizeSubmission(ctx.db, {
+    await entries.mutate(ctx).forUser(entry.submittedByUserId).finalizeSubmission({
       lat: args.lat,
       lng: args.lng,
       placeId: args.placeId,
@@ -42,7 +42,7 @@ export const revertToDraft = internalMutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    await entries.forUser(args.userId).revertToDraft(ctx.db);
+    await entries.mutate(ctx).forUser(args.userId).revertToDraft();
     return null;
   },
 });

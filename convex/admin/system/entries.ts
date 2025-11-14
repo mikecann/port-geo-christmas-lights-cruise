@@ -14,7 +14,7 @@ export const generateMock = userSystemAdminMutation({
     count: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await createMockEntries(ctx.db, { count: args.count ?? 10 });
+    await createMockEntries(ctx, { count: args.count ?? 10 });
   },
 });
 
@@ -25,7 +25,7 @@ export const wipeAll = userSystemAdminMutation({
     deletedCount: v.number(),
   }),
   handler: async (ctx) => {
-    const result = await entries.wipeAll(ctx);
+    const result = await entries.mutate(ctx).wipeAll();
 
     return {
       message: `Successfully deleted ${result.deletedCount} entries`,
@@ -78,7 +78,7 @@ export const deleteMine = userSystemAdminMutation({
   returns: v.null(),
   handler: async (ctx) => {
     const user = await ctx.getUser();
-    const myEntry = await entries.forUser(user._id).get(ctx.db);
+    const myEntry = await entries.query(ctx).forUser(user._id).get();
     if (!myEntry) throw new Error("No entry found for current user");
     await ctx.db.delete(myEntry._id);
     return null;
@@ -89,7 +89,7 @@ export const deleteById = userSystemAdminMutation({
   args: { entryId: v.id("entries") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await entries.forEntry(args.entryId).delete(ctx);
+    await entries.mutate(ctx).forEntry(args.entryId).delete();
     return null;
   },
 });

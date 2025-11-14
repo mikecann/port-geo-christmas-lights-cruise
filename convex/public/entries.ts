@@ -8,14 +8,14 @@ import { photos } from "../features/photos/model";
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    return await entries.listApproved(ctx.db);
+    return await entries.query(ctx).listApproved();
   },
 });
 
 export const listWithFirstPhoto = query({
   args: {},
   handler: async (ctx) => {
-    const docs = await entries.listApproved(ctx.db);
+    const docs = await entries.query(ctx).listApproved();
     return await Promise.all(
       docs.map(async (entry) => ({
         entry,
@@ -28,7 +28,7 @@ export const listWithFirstPhoto = query({
 export const listWithPhotos = query({
   args: {},
   handler: async (ctx) => {
-    const docs = await entries.listApproved(ctx.db);
+    const docs = await entries.query(ctx).listApproved();
     return await Promise.all(
       docs.map(async (entry) => ({
         entry,
@@ -41,14 +41,14 @@ export const listWithPhotos = query({
 export const count = query({
   args: {},
   handler: async (ctx) => {
-    return await entries.countApproved(ctx.db);
+    return await entries.query(ctx).countApproved();
   },
 });
 
 export const getRandomThree = query({
   args: {},
   handler: async (ctx) => {
-    const allApproved = await entries.listApproved(ctx.db);
+    const allApproved = await entries.query(ctx).listApproved();
 
     if (allApproved.length === 0) return [];
 
@@ -80,7 +80,7 @@ export const getRandomThree = query({
 export const get = query({
   args: { entryId: v.id("entries") },
   handler: async (ctx, args) => {
-    const entry = await entries.forEntry(args.entryId).getApproved(ctx.db);
+    const entry = await entries.query(ctx).forEntry(args.entryId).getApproved();
     return entry;
   },
 });
@@ -88,7 +88,7 @@ export const get = query({
 export const find = query({
   args: { entryId: v.id("entries") },
   handler: async (ctx, args) => {
-    const entry = await entries.forEntry(args.entryId).find(ctx.db);
+    const entry = await entries.query(ctx).forEntry(args.entryId).find();
     if (!entry) return null;
     if (entry.status !== "approved") throw new Error("Entry is not approved");
     return entry;
@@ -98,7 +98,7 @@ export const find = query({
 export const getWithPhotos = query({
   args: { entryId: v.id("entries") },
   handler: async (ctx, args) => {
-    const entry = await entries.forEntry(args.entryId).getApproved(ctx.db);
+    const entry = await entries.query(ctx).forEntry(args.entryId).getApproved();
     return {
       entry,
       photos: await photos.forEntry(args.entryId).list(ctx.db),

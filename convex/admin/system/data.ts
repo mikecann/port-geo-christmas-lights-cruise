@@ -13,7 +13,7 @@ export const wipeAllData = userSystemAdminMutation({
     await aggregateVotes.clearAll(ctx);
 
     // Wipe all entries (this also handles photos)
-    await entries.wipeAll(ctx);
+    await entries.mutate(ctx).wipeAll();
 
     // Delete all users except system and competition admins
     const allUsers = await ctx.db.query("users").collect();

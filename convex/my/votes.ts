@@ -87,7 +87,7 @@ export const vote = myMutation({
   },
   handler: async (ctx, args) => {
     // Validate entry exists
-    await entries.forEntry(args.entryId).get(ctx.db);
+    await entries.query(ctx).forEntry(args.entryId).get();
 
     await votes.forUser(ctx.userId).voteForEntry(ctx.db, {
       entryId: args.entryId,

@@ -28,7 +28,7 @@ export const email = {
     ctx: MutationCtx,
     args: { entryId: Id<"entries"> },
   ) {
-    const entry = await entries.forEntry(args.entryId).get(ctx.db);
+    const entry = await entries.query(ctx).forEntry(args.entryId).get();
     const admins = await users.listCompetitionAdmins(ctx.db);
     for (const admin of admins) {
       if (!admin.email) continue;
