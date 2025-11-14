@@ -63,10 +63,10 @@ export const entrySchema = v.union(
 
 export type EntryDoc = Doc<"entries">;
 export type EntryStatusKinds = EntryDoc["status"];
-export type EntryWithKind<T extends EntryStatusKinds> = EntryDoc & {
+export type EntryWithStatus<T extends EntryStatusKinds> = EntryDoc & {
   status: T;
 };
-export type ApprovedEntryDoc = EntryWithKind<"approved">;
+export type ApprovedEntryDoc = EntryWithStatus<"approved">;
 
 export const entryTable = defineTable(entrySchema)
   .index("by_status", ["status"])

@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { ensure } from "../../shared/ensure";
 import { triggers } from "../features/common/lib";
 import { convex } from "../schema";
+import { queryServicesMiddleware } from "../features/entries/services";
 
 // With middleware
 export const myQueryMiddleware = convex
@@ -23,7 +24,10 @@ export const myQueryMiddleware = convex
     });
   });
 
-export const myQuery = convex.query().use(myQueryMiddleware);
+export const myQuery = convex
+  .query()
+  .use(myQueryMiddleware)
+  .use(queryServicesMiddleware);
 
 export const myMutationMiddleware = convex
   .mutation()
