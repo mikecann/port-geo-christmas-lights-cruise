@@ -1,5 +1,4 @@
-import { myMutation } from "./lib";
-import { myQuery } from "./lib";
+import { myMutation, myQuery } from "./lib";
 import { votes } from "../features/votes/model";
 import { photos } from "../features/photos/model";
 import { v } from "convex/values";
@@ -9,43 +8,39 @@ import {
 } from "../features/votes/schema";
 import type { VoteCategory } from "../features/votes/schema";
 import { entries } from "../features/entries/model";
-import { vv } from "../schema";
-import { homeAddressValidator } from "../features/entries/schema";
 import type { Doc } from "../_generated/dataModel";
 
-export const list = myQuery({
-  args: {},
-  handler: async (ctx) => {
-    return await votes.forUser(ctx.userId).list(ctx.db);
-  },
-});
+export const list = myQuery
+  .input({})
+  .handler(async ({ context }) => {
+    return await votes.forUser(context.userId).list(context.db);
+  });
 
-export const hasVoted = myQuery({
-  args: {
+export const hasVoted = myQuery
+  .input({
     category: voteCategoryValidator,
-  },
-  handler: async (ctx, args) => {
+  })
+  .handler(async ({ context, input }) => {
     return await votes
-      .forUser(ctx.userId)
-      .hasVotedForCategory(ctx.db, args.category);
-  },
-});
+      .forUser(context.userId)
+      .hasVotedForCategory(context.db, input.category);
+  });
 
-export const getForCategory = myQuery({
-  args: {
+export const getForCategory = myQuery
+  .input({
     category: voteCategoryValidator,
-  },
-  handler: async (ctx, args) => {
+  })
+  .handler(async ({ context, input }) => {
     const vote = await votes
-      .forUser(ctx.userId)
-      .findVoteForCategory(ctx.db, args.category);
+      .forUser(context.userId)
+      .findVoteForCategory(context.db, input.category);
 
     if (!vote) return null;
 
-    const entry = await ctx.db.get(vote.entryId);
+    const entry = await context.db.get(vote.entryId);
     if (!entry || entry.status !== "approved") return null;
 
-    const entryPhotos = await photos.forEntry(vote.entryId).list(ctx.db);
+    const entryPhotos = await photos.forEntry(vote.entryId).list(context.db);
 
     return {
       vote,
@@ -57,12 +52,11 @@ export const getForCategory = myQuery({
         photos: entryPhotos,
       },
     };
-  },
-});
+  });
 
-export const getStatus = myQuery({
-  args: {},
-  handler: async (ctx) => {
+export const getStatus = myQuery
+  .input({})
+  .handler(async ({ context }) => {
     const votingStatus: Record<VoteCategory, Doc<"votes"> | null> = {
       best_display: null,
       most_jolly: null,
@@ -70,40 +64,41 @@ export const getStatus = myQuery({
 
     for (const category of VOTE_CATEGORIES) {
       const vote = await votes
-        .forUser(ctx.userId)
-        .findVoteForCategory(ctx.db, category);
+        .forUser(context.userId)
+        .findVoteForCategory(context.db, category);
 
       votingStatus[category] = vote;
     }
 
     return votingStatus;
-  },
-});
+  });
 
-export const vote = myMutation({
-  args: {
+export const vote = myMutation
+  .input({
     entryId: v.id("entries"),
     category: voteCategoryValidator,
-  },
-  handler: async (ctx, args) => {
+  })
+  .returns(v.null())
+  .handler(async ({ context, input }) => {
     // Validate entry exists
-    await entries.query(ctx).forEntry(args.entryId).get();
+    await entries.query(context).forEntry(input.entryId).get();
 
-    await votes.forUser(ctx.userId).voteForEntry(ctx.db, {
-      entryId: args.entryId,
-      category: args.category,
+    await votes.forUser(context.userId).voteForEntry(context.db, {
+      entryId: input.entryId,
+      category: input.category,
     });
 
     return null;
-  },
-});
+  });
 
-export const cancel = myMutation({
-  args: {
+export const cancel = myMutation
+  .input({
     voteId: v.id("votes"),
-  },
-  handler: async (ctx, args) => {
-    await votes.forVote(args.voteId).cancel(ctx.db, { userId: ctx.userId });
+  })
+  .returns(v.null())
+  .handler(async ({ context, input }) => {
+    await votes
+      .forVote(input.voteId)
+      .cancel(context.db, { userId: context.userId });
     return null;
-  },
-});
+  });

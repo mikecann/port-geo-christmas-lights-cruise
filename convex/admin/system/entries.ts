@@ -3,50 +3,52 @@ import { userSystemAdminMutation } from "./lib";
 import { entries } from "../../features/entries/model";
 import { photos } from "../../features/photos/model";
 import { api } from "../../_generated/api";
-import type { GenericMutationCtx } from "convex/server";
-import type { DataModel } from "../../_generated/dataModel";
 import { createMockEntries } from "../../features/entries/testing";
 
 // Mutations
 
-export const generateMock = userSystemAdminMutation({
-  args: {
+export const generateMock = userSystemAdminMutation
+  .input({
     count: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    await createMockEntries(ctx, { count: args.count ?? 10 });
-  },
-});
+  })
+  .returns(v.null())
+  .handler(async ({ context, input }) => {
+    await createMockEntries(context, { count: input.count ?? 10 });
+    return null;
+  });
 
-export const wipeAll = userSystemAdminMutation({
-  args: {},
-  returns: v.object({
-    message: v.string(),
-    deletedCount: v.number(),
-  }),
-  handler: async (ctx) => {
-    const result = await entries.mutate(ctx).wipeAll();
+export const wipeAll = userSystemAdminMutation
+  .input({})
+  .returns(
+    v.object({
+      message: v.string(),
+      deletedCount: v.number(),
+    }),
+  )
+  .handler(async ({ context }) => {
+    const result = await entries.mutate(context).wipeAll();
 
     return {
       message: `Successfully deleted ${result.deletedCount} entries`,
       deletedCount: result.deletedCount,
     };
-  },
-});
+  });
 
-export const wipeAllTestUsers = userSystemAdminMutation({
-  args: {},
-  returns: v.object({
-    message: v.string(),
-    deletedCount: v.number(),
-  }),
-  handler: async (ctx) => {
-    const allUsers = await ctx.db.query("users").collect();
+export const wipeAllTestUsers = userSystemAdminMutation
+  .input({})
+  .returns(
+    v.object({
+      message: v.string(),
+      deletedCount: v.number(),
+    }),
+  )
+  .handler(async ({ context }) => {
+    const allUsers = await context.db.query("users").collect();
     const testUsers = allUsers.filter((user) => user.isTestUser === true);
 
     let deletedCount = 0;
     for (const user of testUsers) {
-      await ctx.db.delete(user._id);
+      await context.db.delete(user._id);
       deletedCount++;
     }
 
@@ -54,42 +56,40 @@ export const wipeAllTestUsers = userSystemAdminMutation({
       message: `Successfully deleted ${deletedCount} test users`,
       deletedCount,
     };
-  },
-});
+  });
 
-export const wipeAllMockData = userSystemAdminMutation({
-  args: {},
-  returns: v.object({
-    message: v.string(),
-  }),
-  handler: async (ctx) => {
-    await ctx.runMutation(api.admin.system.entries.wipeAll, {});
-    await ctx.runMutation(api.admin.system.entries.wipeAllTestUsers, {});
-    await ctx.runMutation(api.admin.system.votes.wipeAll, {});
+export const wipeAllMockData = userSystemAdminMutation
+  .input({})
+  .returns(
+    v.object({
+      message: v.string(),
+    }),
+  )
+  .handler(async ({ context }) => {
+    await context.runMutation(api.admin.system.entries.wipeAll, {});
+    await context.runMutation(api.admin.system.entries.wipeAllTestUsers, {});
+    await context.runMutation(api.admin.system.votes.wipeAll, {});
 
     return {
       message: `Successfully deleted all entries and test users`,
     };
-  },
-});
+  });
 
-export const deleteMine = userSystemAdminMutation({
-  args: {},
-  returns: v.null(),
-  handler: async (ctx) => {
-    const user = await ctx.getUser();
-    const myEntry = await entries.query(ctx).forUser(user._id).get();
+export const deleteMine = userSystemAdminMutation
+  .input({})
+  .returns(v.null())
+  .handler(async ({ context }) => {
+    const user = await context.getUser();
+    const myEntry = await entries.query(context).forUser(user._id).get();
     if (!myEntry) throw new Error("No entry found for current user");
-    await ctx.db.delete(myEntry._id);
+    await context.db.delete(myEntry._id);
     return null;
-  },
-});
+  });
 
-export const deleteById = userSystemAdminMutation({
-  args: { entryId: v.id("entries") },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await entries.mutate(ctx).forEntry(args.entryId).delete();
+export const deleteById = userSystemAdminMutation
+  .input({ entryId: v.id("entries") })
+  .returns(v.null())
+  .handler(async ({ context, input }) => {
+    await entries.mutate(context).forEntry(input.entryId).delete();
     return null;
-  },
-});
+  });
