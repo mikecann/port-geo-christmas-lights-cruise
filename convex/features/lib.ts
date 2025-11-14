@@ -1,6 +1,6 @@
 import { Id } from "../_generated/dataModel";
 import { MutationCtx, QueryCtx } from "../_generated/server";
-import { QueryServices, Services } from "./services";
+import { QueryServices, MutationServices, Services } from "./services";
 
 export abstract class QueryService {
   constructor(
@@ -9,25 +9,36 @@ export abstract class QueryService {
   ) {}
 }
 
-export abstract class MutationService {
+export abstract class MutationService extends QueryService {
+  protected readonly queryServices: QueryServices;
+  protected readonly mutationServices: MutationServices;
+
   constructor(
     protected readonly context: MutationCtx,
     protected readonly services: Services,
-  ) {}
+  ) {
+    super(context, services);
+    this.queryServices = services;
+    this.mutationServices = services;
+  }
 }
 
-export abstract class UserQueryService {
+export abstract class UserQueryService extends QueryService {
   constructor(
     protected readonly context: QueryCtx,
     protected readonly services: QueryServices,
     protected readonly userId: Id<"users">,
-  ) {}
+  ) {
+    super(context, services);
+  }
 }
 
-export abstract class UserMutationService {
+export abstract class UserMutationService extends MutationService {
   constructor(
     protected readonly context: MutationCtx,
     protected readonly services: Services,
     protected readonly userId: Id<"users">,
-  ) {}
+  ) {
+    super(context, services);
+  }
 }
