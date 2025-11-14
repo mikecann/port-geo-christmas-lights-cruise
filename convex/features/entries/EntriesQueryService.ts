@@ -2,14 +2,10 @@ import { ensure } from "../../../shared/ensure";
 import { Id } from "../../_generated/dataModel";
 import { QueryCtx } from "../../_generated/server";
 import { EntryStatusKinds, EntryWithStatus } from "./schema";
-import { QueryServices } from "./services";
+import { QueryServices } from "../services";
+import { QueryService } from "../lib";
 
-export class EntriesService {
-  constructor(
-    private readonly context: QueryCtx,
-    private readonly services: QueryServices,
-  ) {}
-
+export class EntriesQueryService extends QueryService {
   async find({ entryId }: { entryId: Id<"entries"> }) {
     return await this.context.db.get(entryId);
   }
