@@ -1,13 +1,14 @@
 import type { Doc } from "../_generated/dataModel";
-import { query } from "../_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { convex } from "../schema";
 
-export const find = query({
-  handler: async (ctx): Promise<Me | null> => {
-    const userId = await getAuthUserId(ctx);
+export const find = convex
+  .query()
+  .input({})
+  .handler(async ({ context }): Promise<Me | null> => {
+    const userId = await getAuthUserId(context);
     if (userId === null) return null;
-    return await ctx.db.get(userId);
-  },
-});
+    return await context.db.get(userId);
+  });
 
 export type Me = Doc<"users">;

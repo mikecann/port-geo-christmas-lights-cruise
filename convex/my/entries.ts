@@ -5,54 +5,58 @@ import type { LatLng } from "../features/map/lib";
 import { geocodeAddress } from "../features/map/lib";
 import { internal } from "../../shared/api";
 
-export const find = myQuery.input({}).handler(async ({ context, input }) => {
+export const find = myQuery.input({}).handler(async ({ context }) => {
   return await entries.query(context).forUser(context.userId).find();
 });
 
-export const enter = myMutation({
-  args: {},
-  handler: async (ctx) => {
-    await entries.mutate(ctx).forUser(ctx.userId).create();
+export const enter = myMutation
+  .input({})
+  .returns(v.null())
+  .handler(async ({ context }) => {
+    await entries.mutate(context).forUser(context.userId).create();
     return null;
-  },
-});
+  });
 
-export const updateDraft = myMutation({
-  args: {
+export const updateDraft = myMutation
+  .input({
     houseAddress: v.optional(
       v.object({ address: v.string(), placeId: v.string() }),
     ),
     name: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    await entries.mutate(ctx).forUser(ctx.userId).updateBeforeSubmission(args);
+  })
+  .returns(v.null())
+  .handler(async ({ context, input }) => {
+    await entries
+      .mutate(context)
+      .forUser(context.userId)
+      .updateBeforeSubmission(input);
     return null;
-  },
-});
+  });
 
-export const remove = myMutation({
-  args: {},
-  handler: async (ctx) => {
-    await entries.mutate(ctx).forUser(ctx.userId).remove(ctx);
+export const remove = myMutation
+  .input({})
+  .returns(v.null())
+  .handler(async ({ context }) => {
+    await entries.mutate(context).forUser(context.userId).remove(context);
     return null;
-  },
-});
+  });
 
-export const updateApproved = myMutation({
-  args: {
+export const updateApproved = myMutation
+  .input({
     name: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    await entries.mutate(ctx).forUser(ctx.userId).updateApproved(args);
+  })
+  .returns(v.null())
+  .handler(async ({ context, input }) => {
+    await entries.mutate(context).forUser(context.userId).updateApproved(input);
     return null;
-  },
-});
+  });
 
-export const submit = myAction({
-  args: {},
-  handler: async (ctx) => {
-    const entry = await ctx.runMutation(internal.entries.startSubmitting, {
-      userId: ctx.userId,
+export const submit = myAction
+  .input({})
+  .returns(v.null())
+  .handler(async ({ context }) => {
+    const entry = await context.runMutation(internal.entries.startSubmitting, {
+      userId: context.userId,
     });
 
     if (entry.status != "submitting")
@@ -64,15 +68,15 @@ export const submit = myAction({
         latLng = await geocodeAddress(entry.houseAddress.address);
       } catch (error) {
         // Revert to draft if geocoding fails
-        await ctx.runMutation(internal.entries.revertToDraft, {
-          userId: ctx.userId,
+        await context.runMutation(internal.entries.revertToDraft, {
+          userId: context.userId,
         });
         throw new Error(
           `Unable to find your address "${entry.houseAddress.address}". Please check the address and try again, or contact support if you believe this is an error.`,
         );
       }
 
-      await ctx.runMutation(internal.entries.finalizeSubmission, {
+      await context.runMutation(internal.entries.finalizeSubmission, {
         entryId: entry._id,
         lat: latLng.lat,
         lng: latLng.lng,
@@ -83,8 +87,8 @@ export const submit = myAction({
     } catch (error) {
       // Revert entry to draft state on any error during submission
       try {
-        await ctx.runMutation(internal.entries.revertToDraft, {
-          userId: ctx.userId,
+        await context.runMutation(internal.entries.revertToDraft, {
+          userId: context.userId,
         });
       } catch (revertError) {
         // Log but don't throw - we want to propagate the original error
@@ -92,5 +96,4 @@ export const submit = myAction({
       }
       throw error;
     }
-  },
-});
+  });

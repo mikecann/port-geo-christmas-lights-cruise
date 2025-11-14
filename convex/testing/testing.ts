@@ -4,65 +4,72 @@ import { v } from "convex/values";
 import { entries } from "../features/entries/model";
 import { ensure } from "../../shared/ensure";
 
-export const clearAll = testingMutation({
-  handler: async ({ db, scheduler, storage }) => {
+export const clearAll = testingMutation
+  .input({})
+  .returns(v.null())
+  .handler(async ({ context }) => {
     for (const table of Object.keys(schema.tables)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const docs = await db.query(table as any).collect();
-      await Promise.all(docs.map((doc) => db.delete(doc._id)));
+      const docs = await context.db.query(table as any).collect();
+      await Promise.all(docs.map((doc) => context.db.delete(doc._id)));
     }
-    const scheduled = await db.system.query("_scheduled_functions").collect();
-    await Promise.all(scheduled.map((s) => scheduler.cancel(s._id)));
-    const storedFiles = await db.system.query("_storage").collect();
-    await Promise.all(storedFiles.map((s) => storage.delete(s._id)));
+    const scheduled = await context.db.system
+      .query("_scheduled_functions")
+      .collect();
+    await Promise.all(scheduled.map((s) => context.scheduler.cancel(s._id)));
+    const storedFiles = await context.db.system.query("_storage").collect();
+    await Promise.all(
+      storedFiles.map((s) => context.storage.delete(s._id)),
+    );
     console.log("Cleared all tables");
-  },
-});
+    return null;
+  });
 
-export const createMockEntries = testingMutation({
-  args: {
+export const createMockEntries = testingMutation
+  .input({
     count: v.number(),
-  },
-  handler: async (ctx, args) => {
-    return await entries.testing.createMockEntries(ctx, {
-      count: args.count,
+  })
+  .handler(async ({ context, input }) => {
+    return await entries.testing.createMockEntries(context, {
+      count: input.count,
     });
-  },
-});
+  });
 
-export const authenticateMe = testingMutation({
-  args: {
+export const authenticateMe = testingMutation
+  .input({
     name: v.optional(v.string()),
     email: v.optional(v.string()),
     isSystemAdmin: v.optional(v.boolean()),
     isCompetitionAdmin: v.optional(v.boolean()),
-  },
-  returns: v.object({
-    userId: v.id("users"),
-    accountId: v.id("authAccounts"),
-    sessionId: v.id("authSessions"),
-    token: v.string(),
-  }),
-  handler: async (ctx, args) => {
+  })
+  .returns(
+    v.object({
+      userId: v.id("users"),
+      accountId: v.id("authAccounts"),
+      sessionId: v.id("authSessions"),
+      token: v.string(),
+    }),
+  )
+  .handler(async ({ context, input }) => {
     // Create the user
-    const userId = await ctx.db.insert("users", {
-      name: args.name ?? "Test User",
-      email: args.email ?? "test@example.com",
+    const userId = await context.db.insert("users", {
+      name: input.name ?? "Test User",
+      email: input.email ?? "test@example.com",
       emailVerificationTime: Date.now(),
-      isSystemAdmin: args.isSystemAdmin ?? false,
-      isCompetitionAdmin: args.isCompetitionAdmin ?? false,
+      isSystemAdmin: input.isSystemAdmin ?? false,
+      isCompetitionAdmin: input.isCompetitionAdmin ?? false,
       isTestUser: true,
     });
 
     // Create an auth account for the user
-    const accountId = await ctx.db.insert("authAccounts", {
+    const accountId = await context.db.insert("authAccounts", {
       userId,
       provider: "google",
       providerAccountId: `test-${userId}`,
     });
 
     // Create an auth session
-    const sessionId = await ctx.db.insert("authSessions", {
+    const sessionId = await context.db.insert("authSessions", {
       userId,
       expirationTime: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
     });
@@ -76,43 +83,37 @@ export const authenticateMe = testingMutation({
       sessionId,
       token,
     };
-  },
-});
+  });
 
-export const findEntryForUser = testingMutation({
-  args: {
+export const findEntryForUser = testingMutation
+  .input({
     userId: v.id("users"),
-  },
+  })
+  .handler(async ({ context, input }) => {
+    return await entries.query(context).forUser(input.userId).find();
+  });
 
-  handler: async (ctx, args) => {
-    return await entries.query(ctx).forUser(args.userId).find();
-  },
-});
-
-export const getUserByEmail = testingQuery({
-  args: {
+export const getUserByEmail = testingQuery
+  .input({
     email: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const user = await ctx.db
+  })
+  .handler(async ({ context, input }) => {
+    const user = await context.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
+      .withIndex("email", (q) => q.eq("email", input.email))
       .unique();
 
-    return ensure(user, `User with email ${args.email} not found`);
-  },
-});
+    return ensure(user, `User with email ${input.email} not found`);
+  });
 
-export const listVotes = testingQuery({
-  args: {},
-  handler: async (ctx, args) => {
-    return await ctx.db.query("votes").collect();
-  },
-});
+export const listVotes = testingQuery
+  .input({})
+  .handler(async ({ context }) => {
+    return await context.db.query("votes").collect();
+  });
 
-export const listEntries = testingQuery({
-  args: {},
-  handler: async (ctx, args) => {
-    return await ctx.db.query("entries").collect();
-  },
-});
+export const listEntries = testingQuery
+  .input({})
+  .handler(async ({ context }) => {
+    return await context.db.query("entries").collect();
+  });

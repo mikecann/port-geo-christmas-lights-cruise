@@ -1,5 +1,4 @@
-import { userCompetitionAdminMutation } from "./lib";
-import { userCompetitionAdminQuery } from "./lib";
+import { userCompetitionAdminMutation, userCompetitionAdminQuery } from "./lib";
 import { entries } from "../../features/entries/model";
 import { photos } from "../../features/photos/model";
 import { email } from "../../features/email/model";
@@ -7,14 +6,14 @@ import { v } from "convex/values";
 
 // Queries
 
-export const listPending = userCompetitionAdminQuery({
-  args: {},
-  handler: async (ctx) => {
-    const pendingEntries = await entries.query(ctx).listPendingReview();
+export const listPending = userCompetitionAdminQuery
+  .input({})
+  .handler(async ({ context }) => {
+    const pendingEntries = await entries.query(context).listPendingReview();
 
     const entriesWithPhotos = await Promise.all(
       pendingEntries.map(async (entry) => {
-        const entryPhotos = await photos.forEntry(entry._id).list(ctx.db);
+        const entryPhotos = await photos.forEntry(entry._id).list(context.db);
         return {
           ...entry,
           photos: entryPhotos,
@@ -23,24 +22,22 @@ export const listPending = userCompetitionAdminQuery({
     );
 
     return entriesWithPhotos;
-  },
-});
+  });
 
-export const getStats = userCompetitionAdminQuery({
-  args: {},
-  handler: async (ctx) => {
-    return await entries.query(ctx).getStats();
-  },
-});
+export const getStats = userCompetitionAdminQuery
+  .input({})
+  .handler(async ({ context }) => {
+    return await entries.query(context).getStats();
+  });
 
-export const listApproved = userCompetitionAdminQuery({
-  args: {},
-  handler: async (ctx) => {
-    const approvedEntries = await entries.query(ctx).listApproved();
+export const listApproved = userCompetitionAdminQuery
+  .input({})
+  .handler(async ({ context }) => {
+    const approvedEntries = await entries.query(context).listApproved();
 
     const entriesWithPhotos = await Promise.all(
       approvedEntries.map(async (entry) => {
-        const entryPhotos = await photos.forEntry(entry._id).list(ctx.db);
+        const entryPhotos = await photos.forEntry(entry._id).list(context.db);
         return {
           ...entry,
           photos: entryPhotos,
@@ -49,17 +46,16 @@ export const listApproved = userCompetitionAdminQuery({
     );
 
     return entriesWithPhotos;
-  },
-});
+  });
 
-export const listRejected = userCompetitionAdminQuery({
-  args: {},
-  handler: async (ctx) => {
-    const rejectedEntries = await entries.query(ctx).listRejected();
+export const listRejected = userCompetitionAdminQuery
+  .input({})
+  .handler(async ({ context }) => {
+    const rejectedEntries = await entries.query(context).listRejected();
 
     const entriesWithPhotos = await Promise.all(
       rejectedEntries.map(async (entry) => {
-        const entryPhotos = await photos.forEntry(entry._id).list(ctx.db);
+        const entryPhotos = await photos.forEntry(entry._id).list(context.db);
         return {
           ...entry,
           photos: entryPhotos,
@@ -68,26 +64,24 @@ export const listRejected = userCompetitionAdminQuery({
     );
 
     return entriesWithPhotos;
-  },
-});
+  });
 
-export const get = userCompetitionAdminQuery({
-  args: { entryId: v.id("entries") },
-  handler: async (ctx, args) => {
-    const entry = await entries.query(ctx).forEntry(args.entryId).get();
-    const entryPhotos = await photos.forEntry(args.entryId).list(ctx.db);
+export const get = userCompetitionAdminQuery
+  .input({ entryId: v.id("entries") })
+  .handler(async ({ context, input }) => {
+    const entry = await entries.query(context).forEntry(input.entryId).get();
+    const entryPhotos = await photos.forEntry(input.entryId).list(context.db);
 
     return {
       ...entry,
       photos: entryPhotos,
     };
-  },
-});
+  });
 
-export const getUserDetails = userCompetitionAdminQuery({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+export const getUserDetails = userCompetitionAdminQuery
+  .input({ userId: v.id("users") })
+  .handler(async ({ context, input }) => {
+    const user = await context.db.get(input.userId);
     if (!user) return null;
 
     return {
@@ -100,18 +94,19 @@ export const getUserDetails = userCompetitionAdminQuery({
       emailVerificationTime: user.emailVerificationTime,
       phoneVerificationTime: user.phoneVerificationTime,
     };
-  },
-});
+  });
 
-export const getEntryValidationStatus = userCompetitionAdminQuery({
-  args: { entryId: v.id("entries") },
-  returns: v.object({
-    hasConflicts: v.boolean(),
-    isWithinBoundary: v.union(v.boolean(), v.null()),
-    isOnWhitelist: v.union(v.boolean(), v.null()),
-  }),
-  handler: async (ctx, args) => {
-    const entry = await entries.query(ctx).forEntry(args.entryId).get();
+export const getEntryValidationStatus = userCompetitionAdminQuery
+  .input({ entryId: v.id("entries") })
+  .returns(
+    v.object({
+      hasConflicts: v.boolean(),
+      isWithinBoundary: v.union(v.boolean(), v.null()),
+      isOnWhitelist: v.union(v.boolean(), v.null()),
+    }),
+  )
+  .handler(async ({ context, input }) => {
+    const entry = await entries.query(context).forEntry(input.entryId).get();
     if (
       !entry.houseAddress ||
       typeof entry.houseAddress !== "object" ||
@@ -125,8 +120,8 @@ export const getEntryValidationStatus = userCompetitionAdminQuery({
 
     const placeId = entry.houseAddress.placeId;
     const hasConflicts = await entries
-      .query(ctx)
-      .hasEntryWithPlaceIdAlreadyBeenSubmitted(placeId, args.entryId);
+      .query(context)
+      .hasEntryWithPlaceIdAlreadyBeenSubmitted(placeId, input.entryId);
 
     // Check if location is within competition boundary
     const houseAddress = entry.houseAddress;
@@ -145,60 +140,64 @@ export const getEntryValidationStatus = userCompetitionAdminQuery({
       );
 
     // Check if user email is on whitelist
-    const user = await ctx.db.get(entry.submittedByUserId);
+    const user = await context.db.get(entry.submittedByUserId);
     const isOnWhitelist = user
       ? entries.isUserEmailOnWhitelist(user.email)
       : null;
 
     return { hasConflicts, isWithinBoundary, isOnWhitelist };
-  },
-});
+  });
 
 // Mutations
 
-export const approve = userCompetitionAdminMutation({
-  args: {
+export const approve = userCompetitionAdminMutation
+  .input({
     entryId: v.id("entries"),
-  },
-  handler: async (ctx, args) => {
-    const entry = await entries.query(ctx).forEntry(args.entryId).get();
-    const entryNumber = await entries.mutate(ctx).getNextAvailableEntryNumber();
-    await entries.mutate(ctx).forEntry(args.entryId).approve({ entryNumber });
+  })
+  .returns(v.null())
+  .handler(async ({ context, input }) => {
+    const entry = await entries.query(context).forEntry(input.entryId).get();
+    const entryNumber = await entries
+      .mutate(context)
+      .getNextAvailableEntryNumber();
+    await entries
+      .mutate(context)
+      .forEntry(input.entryId)
+      .approve({ entryNumber });
 
-    const user = await ctx.db.get(entry.submittedByUserId);
+    const user = await context.db.get(entry.submittedByUserId);
     if (!user?.email) return null;
 
-    await email.sendEntryApprovalEmail(ctx, {
+    await email.sendEntryApprovalEmail(context, {
       to: user.email,
-      entry: await entries.query(ctx).forEntry(args.entryId).get(),
+      entry: await entries.query(context).forEntry(input.entryId).get(),
       entryNumber,
     });
 
     return null;
-  },
-});
+  });
 
-export const reject = userCompetitionAdminMutation({
-  args: {
+export const reject = userCompetitionAdminMutation
+  .input({
     entryId: v.id("entries"),
     rejectedReason: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const entry = await entries.query(ctx).forEntry(args.entryId).get();
+  })
+  .returns(v.null())
+  .handler(async ({ context, input }) => {
+    const entry = await entries.query(context).forEntry(input.entryId).get();
     await entries
-      .mutate(ctx)
-      .forEntry(args.entryId)
-      .reject({ rejectedReason: args.rejectedReason });
+      .mutate(context)
+      .forEntry(input.entryId)
+      .reject({ rejectedReason: input.rejectedReason });
 
-    const user = await ctx.db.get(entry.submittedByUserId);
+    const user = await context.db.get(entry.submittedByUserId);
     if (!user?.email) return null;
 
-    await email.sendEntryRejectionEmail(ctx, {
+    await email.sendEntryRejectionEmail(context, {
       to: user.email,
-      entry: await entries.query(ctx).forEntry(args.entryId).get(),
-      rejectedReason: args.rejectedReason,
+      entry: await entries.query(context).forEntry(input.entryId).get(),
+      rejectedReason: input.rejectedReason,
     });
 
     return null;
-  },
-});
+  });

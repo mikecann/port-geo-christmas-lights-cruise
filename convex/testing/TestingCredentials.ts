@@ -3,7 +3,7 @@ import type { DataModel, Id } from "../_generated/dataModel";
 import { ConvexError } from "convex/values";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import { internalMutation } from "../_generated/server";
+import { convex } from "../schema";
 
 /**
  * Testing-only auth provider that allows direct authentication with an email.
@@ -49,33 +49,34 @@ export const TestingCredentials = ConvexCredentials({
 /**
  * Internal mutation to find or create a test user
  */
-export const findOrCreateTestUser = internalMutation({
-  args: {
+export const findOrCreateTestUser = convex
+  .mutation()
+  .internal()
+  .input({
     email: v.string(),
     name: v.optional(v.string()),
     isSystemAdmin: v.boolean(),
     isCompetitionAdmin: v.boolean(),
-  },
-  returns: v.id("users"),
-  handler: async (ctx, args) => {
+  })
+  .returns(v.id("users"))
+  .handler(async ({ context, input }) => {
     // Look for existing user with this email
-    const existingUser = await ctx.db
+    const existingUser = await context.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
+      .withIndex("email", (q) => q.eq("email", input.email))
       .unique();
 
     if (existingUser) return existingUser._id;
 
     // Create new user
-    const userId = await ctx.db.insert("users", {
-      email: args.email,
-      name: args.name ?? "Test User",
+    const userId = await context.db.insert("users", {
+      email: input.email,
+      name: input.name ?? "Test User",
       emailVerificationTime: Date.now(),
-      isSystemAdmin: args.isSystemAdmin,
-      isCompetitionAdmin: args.isCompetitionAdmin,
+      isSystemAdmin: input.isSystemAdmin,
+      isCompetitionAdmin: input.isCompetitionAdmin,
       isTestUser: true,
     });
 
     return userId;
-  },
-});
+  });

@@ -1,49 +1,59 @@
-import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 import { entries } from "../features/entries/model";
 import { email } from "../features/email/model";
+import { convex } from "../schema";
 
-export const startSubmitting = internalMutation({
-  args: {
+export const startSubmitting = convex
+  .mutation()
+  .internal()
+  .input({
     userId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    return await entries.mutate(ctx).forUser(args.userId).startSubmitting(ctx);
-  },
-});
+  })
+  .handler(async ({ context, input }) => {
+    return await entries
+      .mutate(context)
+      .forUser(input.userId)
+      .startSubmitting(context);
+  });
 
-export const finalizeSubmission = internalMutation({
-  args: {
+export const finalizeSubmission = convex
+  .mutation()
+  .internal()
+  .input({
     entryId: v.id("entries"),
     lat: v.number(),
     lng: v.number(),
     placeId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const entry = await entries.query(ctx).forEntry(args.entryId).get();
-    if (!entry) throw new Error(`Entry '${args.entryId}' not found`);
+  })
+  .returns(v.null())
+  .handler(async ({ context, input }) => {
+    const entry = await entries.query(context).forEntry(input.entryId).get();
+    if (!entry) throw new Error(`Entry '${input.entryId}' not found`);
 
-    await entries.mutate(ctx).forUser(entry.submittedByUserId).finalizeSubmission({
-      lat: args.lat,
-      lng: args.lng,
-      placeId: args.placeId,
-    });
+    await entries
+      .mutate(context)
+      .forUser(entry.submittedByUserId)
+      .finalizeSubmission({
+        lat: input.lat,
+        lng: input.lng,
+        placeId: input.placeId,
+      });
 
-    await email.sendNewEntryNotificationToCompetitionAdmins(ctx, {
+    await email.sendNewEntryNotificationToCompetitionAdmins(context, {
       entryId: entry._id,
     });
 
     return null;
-  },
-});
+  });
 
-export const revertToDraft = internalMutation({
-  args: {
+export const revertToDraft = convex
+  .mutation()
+  .internal()
+  .input({
     userId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    await entries.mutate(ctx).forUser(args.userId).revertToDraft();
+  })
+  .returns(v.null())
+  .handler(async ({ context, input }) => {
+    await entries.mutate(context).forUser(input.userId).revertToDraft();
     return null;
-  },
-});
-
+  });

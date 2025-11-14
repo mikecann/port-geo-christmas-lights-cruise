@@ -1,19 +1,22 @@
-import { action } from "../../_generated/server";
+"use node";
+
 import { v } from "convex/values";
+import { convex } from "../../schema";
 
 // You'll need to add your Google Maps API key to your Convex environment
 // Run: npx convex env set GOOGLE_MAPS_API_KEY your_key_here
 
-export const geocodeAddress = action({
-  args: {
+export const geocodeAddress = convex
+  .action()
+  .input({
     address: v.string(),
-  },
-  handler: async (ctx, args) => {
+  })
+  .handler(async ({ context, input }) => {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) throw new Error("Google Maps API key not configured");
 
-    const encodedAddress = encodeURIComponent(args.address);
+    const encodedAddress = encodeURIComponent(input.address);
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
 
     try {
@@ -53,15 +56,15 @@ export const geocodeAddress = action({
         error: `Failed to geocode address: ${error}`,
       };
     }
-  },
-});
+  });
 
 // Helper function to geocode multiple addresses
-export const geocodeMultipleAddresses = action({
-  args: {
+export const geocodeMultipleAddresses = convex
+  .action()
+  .input({
     addresses: v.array(v.string()),
-  },
-  handler: async (ctx, args) => {
+  })
+  .handler(async ({ context, input }) => {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) throw new Error("Google Maps API key not configured");
@@ -69,7 +72,7 @@ export const geocodeMultipleAddresses = action({
     const results = [];
 
     // Process addresses one by one to avoid rate limiting
-    for (const address of args.addresses) {
+    for (const address of input.addresses) {
       const encodedAddress = encodeURIComponent(address);
       const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
 
@@ -119,5 +122,4 @@ export const geocodeMultipleAddresses = action({
     }
 
     return results;
-  },
-});
+  });

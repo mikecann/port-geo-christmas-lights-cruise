@@ -5,33 +5,36 @@ import { v } from "convex/values";
 
 // Mutations
 
-export const wipeAll = userSystemAdminMutation({
-  args: {},
-  returns: v.object({
-    message: v.string(),
-    deleted: v.number(),
-  }),
-  handler: async (ctx) => {
-    const result = await votes.wipeAll(ctx._db);
-    await aggregateVotes.clearAll(ctx);
+export const wipeAll = userSystemAdminMutation
+  .input({})
+  .returns(
+    v.object({
+      message: v.string(),
+      deleted: v.number(),
+    }),
+  )
+  .handler(async ({ context }) => {
+    const result = await votes.wipeAll(context._db);
+    await aggregateVotes.clearAll(context);
     return {
       message: `Successfully deleted ${result.deleted} votes`,
       deleted: result.deleted,
     };
-  },
-});
+  });
 
-export const generateMock = userSystemAdminMutation({
-  args: {
+export const generateMock = userSystemAdminMutation
+  .input({
     count: v.number(),
-  },
-  returns: v.object({
-    message: v.string(),
-    votesCreated: v.number(),
-    usersCreated: v.number(),
-  }),
-  handler: async (ctx, { count }) => {
-    const approvedEntries = await ctx.db
+  })
+  .returns(
+    v.object({
+      message: v.string(),
+      votesCreated: v.number(),
+      usersCreated: v.number(),
+    }),
+  )
+  .handler(async ({ context, input }) => {
+    const approvedEntries = await context.db
       .query("entries")
       .withIndex("by_status", (q) => q.eq("status", "approved"))
       .collect();
@@ -80,13 +83,13 @@ export const generateMock = userSystemAdminMutation({
       "mock.io",
     ];
 
-    for (let i = 0; i < Math.ceil(count / 2); i++) {
+    for (let i = 0; i < Math.ceil(input.count / 2); i++) {
       const firstName = firstNames[i % firstNames.length];
       const lastName = lastNames[(i + 3) % lastNames.length];
       const domain = domains[i % domains.length];
       const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@${domain}`;
 
-      const userId = await ctx.db.insert("users", {
+      const userId = await context.db.insert("users", {
         name: `${firstName} ${lastName}`,
         email,
         isTestUser: true,
@@ -95,12 +98,12 @@ export const generateMock = userSystemAdminMutation({
       mockUsers.push(userId);
 
       for (const category of categories) {
-        if (totalVotesCreated >= count) break;
+        if (totalVotesCreated >= input.count) break;
 
         const randomEntry =
           approvedEntries[Math.floor(Math.random() * approvedEntries.length)];
 
-        await ctx.db.insert("votes", {
+        await context.db.insert("votes", {
           entryId: randomEntry._id,
           votingUserId: userId,
           category,
@@ -109,7 +112,7 @@ export const generateMock = userSystemAdminMutation({
         totalVotesCreated++;
       }
 
-      if (totalVotesCreated >= count) break;
+      if (totalVotesCreated >= input.count) break;
     }
 
     return {
@@ -117,5 +120,4 @@ export const generateMock = userSystemAdminMutation({
       votesCreated: totalVotesCreated,
       usersCreated: mockUsers.length,
     };
-  },
-});
+  });
