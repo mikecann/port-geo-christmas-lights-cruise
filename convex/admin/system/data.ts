@@ -1,7 +1,6 @@
 import { userSystemAdminMutation } from "./lib";
 import { votes } from "../../features/votes/model";
 import { aggregateVotes } from "../../features/votes/lib";
-import { entries } from "../../features/entries/model";
 import type { Id } from "../../_generated/dataModel";
 import { v } from "convex/values";
 
@@ -14,7 +13,7 @@ export const wipeAllData = userSystemAdminMutation
     await aggregateVotes.clearAll(context);
 
     // Wipe all entries (this also handles photos)
-    await entries.mutate(context).wipeAll();
+    await context.services.entryManagement.wipeAll();
 
     // Delete all users except system and competition admins
     const allUsers = await context.db.query("users").collect();

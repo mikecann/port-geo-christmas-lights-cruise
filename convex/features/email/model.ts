@@ -2,8 +2,8 @@ import { components } from "../../_generated/api";
 import { Resend } from "@convex-dev/resend";
 import type { MutationCtx } from "../../_generated/server";
 import type { Doc, Id } from "../../_generated/dataModel";
-import { entries } from "../entries/model";
 import { users } from "../users/model";
+import { createQueryServices } from "../services";
 
 export const resend: Resend = new Resend(components.resend, {
   testMode: false,
@@ -28,7 +28,10 @@ export const email = {
     ctx: MutationCtx,
     args: { entryId: Id<"entries"> },
   ) {
-    const entry = await entries.query(ctx).forEntry(args.entryId).get();
+    const queryServices = createQueryServices(ctx);
+    const entry = await queryServices.entries.get({
+      entryId: args.entryId,
+    });
     const admins = await users.listCompetitionAdmins(ctx.db);
     for (const admin of admins) {
       if (!admin.email) continue;

@@ -1,22 +1,24 @@
-import { entries } from "../features/entries/model";
 import { v } from "convex/values";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "../_generated/api";
 import { photos } from "../features/photos/model";
 import { convex } from "../schema";
+import { queryServicesMiddleware } from "../features/services";
 
 export const list = convex
   .query()
+  .use(queryServicesMiddleware)
   .input({})
   .handler(async ({ context }) => {
-    return await entries.query(context).listApproved();
+    return await context.services.entries.listApproved();
   });
 
 export const listWithFirstPhoto = convex
   .query()
+  .use(queryServicesMiddleware)
   .input({})
   .handler(async ({ context }) => {
-    const docs = await entries.query(context).listApproved();
+    const docs = await context.services.entries.listApproved();
     return await Promise.all(
       docs.map(async (entry) => ({
         entry,
@@ -27,9 +29,10 @@ export const listWithFirstPhoto = convex
 
 export const listWithPhotos = convex
   .query()
+  .use(queryServicesMiddleware)
   .input({})
   .handler(async ({ context }) => {
-    const docs = await entries.query(context).listApproved();
+    const docs = await context.services.entries.listApproved();
     return await Promise.all(
       docs.map(async (entry) => ({
         entry,
@@ -40,16 +43,18 @@ export const listWithPhotos = convex
 
 export const count = convex
   .query()
+  .use(queryServicesMiddleware)
   .input({})
   .handler(async ({ context }) => {
-    return await entries.query(context).countApproved();
+    return await context.services.entries.countApproved();
   });
 
 export const getRandomThree = convex
   .query()
+  .use(queryServicesMiddleware)
   .input({})
   .handler(async ({ context }) => {
-    const allApproved = await entries.query(context).listApproved();
+    const allApproved = await context.services.entries.listApproved();
 
     if (allApproved.length === 0) return [];
 
@@ -79,20 +84,23 @@ export const getRandomThree = convex
 
 export const get = convex
   .query()
+  .use(queryServicesMiddleware)
   .input({ entryId: v.id("entries") })
   .handler(async ({ context, input }) => {
-    const entry = await entries
-      .query(context)
-      .forEntry(input.entryId)
-      .getApproved();
+    const entry = await context.services.entries.getApproved({
+      entryId: input.entryId,
+    });
     return entry;
   });
 
 export const find = convex
   .query()
+  .use(queryServicesMiddleware)
   .input({ entryId: v.id("entries") })
   .handler(async ({ context, input }) => {
-    const entry = await entries.query(context).forEntry(input.entryId).find();
+    const entry = await context.services.entries.find({
+      entryId: input.entryId,
+    });
     if (!entry) return null;
     if (entry.status !== "approved") throw new Error("Entry is not approved");
     return entry;
@@ -100,12 +108,12 @@ export const find = convex
 
 export const getWithPhotos = convex
   .query()
+  .use(queryServicesMiddleware)
   .input({ entryId: v.id("entries") })
   .handler(async ({ context, input }) => {
-    const entry = await entries
-      .query(context)
-      .forEntry(input.entryId)
-      .getApproved();
+    const entry = await context.services.entries.getApproved({
+      entryId: input.entryId,
+    });
     return {
       entry,
       photos: await photos.forEntry(input.entryId).list(context.db),

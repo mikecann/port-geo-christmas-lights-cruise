@@ -3,7 +3,7 @@ import schema from "../../../schema";
 import type { Doc, Id } from "../../../_generated/dataModel";
 import { ensure } from "../../../../shared/ensure";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { entries } from "../../entries/model";
+import { createQueryServices, createMutationServices } from "../../services";
 
 export const createConvexTest = () => {
   const t = convexTest(schema);
@@ -106,7 +106,8 @@ export const moveEntryToStatus = async (
 
   return t.run(async (ctx) => {
     // Get the current entry to preserve some fields
-    const currentEntry = await entries.query(ctx).forEntry(entryId).get();
+    const queryServices = createQueryServices(ctx);
+    const currentEntry = await queryServices.entries.get({ entryId });
     if (!currentEntry)
       throw new Error(`Entry '${entryId}' not found in moveEntryToStatus`);
 
@@ -159,7 +160,9 @@ export const moveEntryToStatus = async (
           : Date.now() - 1000; // Default to 1 second ago if not set
 
       // Get the next available entry number
-      const entryNumber = await entries.mutate(ctx).getNextAvailableEntryNumber();
+      const mutationServices = createMutationServices(ctx);
+      const entryNumber =
+        await mutationServices.entryManagement.getNextAvailableEntryNumber();
 
       const { houseAddress: overrideHouseAddress, ...restOverrides } =
         overrides;
@@ -204,7 +207,8 @@ export const createTestEntry = async (
         await ctx.db.patch(entryId, patchData as any);
     }
 
-    return await entries.query(ctx).forEntry(entryId).get();
+    const queryServices = createQueryServices(ctx);
+    return await queryServices.entries.get({ entryId });
   });
 };
 

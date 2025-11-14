@@ -1,8 +1,9 @@
 import schema from "../schema";
 import { testingMutation, testingQuery } from "./lib";
 import { v } from "convex/values";
-import { entries } from "../features/entries/model";
+import { createMockEntries as createMockEntriesHelper } from "../features/entries/testing";
 import { ensure } from "../../shared/ensure";
+import { queryServicesMiddleware, mutationServicesMiddleware } from "../features/services";
 
 export const clearAll = testingMutation
   .input({})
@@ -26,11 +27,12 @@ export const clearAll = testingMutation
   });
 
 export const createMockEntries = testingMutation
+  .use(mutationServicesMiddleware)
   .input({
     count: v.number(),
   })
   .handler(async ({ context, input }) => {
-    return await entries.testing.createMockEntries(context, {
+    return await createMockEntriesHelper(context, {
       count: input.count,
     });
   });
@@ -86,11 +88,14 @@ export const authenticateMe = testingMutation
   });
 
 export const findEntryForUser = testingMutation
+  .use(queryServicesMiddleware)
   .input({
     userId: v.id("users"),
   })
   .handler(async ({ context, input }) => {
-    return await entries.query(context).forUser(input.userId).find();
+    const { createUserQueryServices } = await import("../features/services");
+    const userServices = createUserQueryServices(context, input.userId);
+    return await userServices.entries.find();
   });
 
 export const getUserByEmail = testingQuery

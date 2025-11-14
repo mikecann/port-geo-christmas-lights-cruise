@@ -7,14 +7,11 @@ import {
   voteCategoryValidator,
 } from "../features/votes/schema";
 import type { VoteCategory } from "../features/votes/schema";
-import { entries } from "../features/entries/model";
 import type { Doc } from "../_generated/dataModel";
 
-export const list = myQuery
-  .input({})
-  .handler(async ({ context }) => {
-    return await votes.forUser(context.userId).list(context.db);
-  });
+export const list = myQuery.input({}).handler(async ({ context }) => {
+  return await votes.forUser(context.userId).list(context.db);
+});
 
 export const hasVoted = myQuery
   .input({
@@ -54,34 +51,31 @@ export const getForCategory = myQuery
     };
   });
 
-export const getStatus = myQuery
-  .input({})
-  .handler(async ({ context }) => {
-    const votingStatus: Record<VoteCategory, Doc<"votes"> | null> = {
-      best_display: null,
-      most_jolly: null,
-    };
+export const getStatus = myQuery.input({}).handler(async ({ context }) => {
+  const votingStatus: Record<VoteCategory, Doc<"votes"> | null> = {
+    best_display: null,
+    most_jolly: null,
+  };
 
-    for (const category of VOTE_CATEGORIES) {
-      const vote = await votes
-        .forUser(context.userId)
-        .findVoteForCategory(context.db, category);
+  for (const category of VOTE_CATEGORIES) {
+    const vote = await votes
+      .forUser(context.userId)
+      .findVoteForCategory(context.db, category);
 
-      votingStatus[category] = vote;
-    }
+    votingStatus[category] = vote;
+  }
 
-    return votingStatus;
-  });
+  return votingStatus;
+});
 
 export const vote = myMutation
   .input({
     entryId: v.id("entries"),
     category: voteCategoryValidator,
   })
-  .returns(v.null())
   .handler(async ({ context, input }) => {
     // Validate entry exists
-    await entries.query(context).forEntry(input.entryId).get();
+    await context.services.entries.get({ entryId: input.entryId });
 
     await votes.forUser(context.userId).voteForEntry(context.db, {
       entryId: input.entryId,

@@ -1,11 +1,10 @@
 import { myMutation, myQuery } from "./lib";
-import { entries } from "../features/entries/model";
 import { photos } from "../features/photos/model";
 import { v } from "convex/values";
 import { convex } from "../schema";
 
 export const list = myQuery.input({}).handler(async ({ context }) => {
-  const entry = await entries.query(context).forUser(context.userId).get();
+  const entry = await context.services.user.entries.get();
   return await photos.forEntry(entry._id).list(context.db);
 });
 
@@ -17,10 +16,7 @@ export const listForEntry = convex
   });
 
 export const beginUpload = myMutation.input({}).handler(async ({ context }) => {
-  const entry = await entries
-    .query(context)
-    .forUser(context.userId)
-    .getForModification();
+  const entry = await context.services.user.entries.getForModification();
   const uploadStartedAt = Date.now();
   return await photos.forEntry(entry._id).add(context, { uploadStartedAt });
 });
@@ -32,7 +28,8 @@ export const save = myMutation
   })
   .returns(v.null())
   .handler(async ({ context, input }) => {
-    await entries.query(context).forUser(context.userId).ensureIsModifiable();
+    const entry = await context.services.user.entries.get();
+    context.userQueryServices.entries.ensureIsModifiable(entry);
 
     await photos.forPhoto(input.photoId).save(context, {
       storageId: input.storageId,
@@ -47,7 +44,8 @@ export const remove = myMutation
   })
   .returns(v.null())
   .handler(async ({ context, input }) => {
-    await entries.query(context).forUser(context.userId).ensureIsModifiable();
+    const entry = await context.services.user.entries.get();
+    context.services.user.entries.ensureIsModifiable(entry);
     await photos.forPhoto(input.photoId).delete(context);
     return null;
   });
