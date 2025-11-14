@@ -1,7 +1,6 @@
 import { v } from "convex/values";
 import { userSystemAdminMutation } from "./lib";
 import { entries } from "../../features/entries/model";
-import { photos } from "../../features/photos/model";
 import { api } from "../../_generated/api";
 import { createMockEntries } from "../../features/entries/testing";
 
@@ -11,7 +10,6 @@ export const generateMock = userSystemAdminMutation
   .input({
     count: v.optional(v.number()),
   })
-  .returns(v.null())
   .handler(async ({ context, input }) => {
     await createMockEntries(context, { count: input.count ?? 10 });
     return null;
@@ -19,12 +17,6 @@ export const generateMock = userSystemAdminMutation
 
 export const wipeAll = userSystemAdminMutation
   .input({})
-  .returns(
-    v.object({
-      message: v.string(),
-      deletedCount: v.number(),
-    }),
-  )
   .handler(async ({ context }) => {
     const result = await entries.mutate(context).wipeAll();
 
@@ -36,12 +28,6 @@ export const wipeAll = userSystemAdminMutation
 
 export const wipeAllTestUsers = userSystemAdminMutation
   .input({})
-  .returns(
-    v.object({
-      message: v.string(),
-      deletedCount: v.number(),
-    }),
-  )
   .handler(async ({ context }) => {
     const allUsers = await context.db.query("users").collect();
     const testUsers = allUsers.filter((user) => user.isTestUser === true);
@@ -60,11 +46,6 @@ export const wipeAllTestUsers = userSystemAdminMutation
 
 export const wipeAllMockData = userSystemAdminMutation
   .input({})
-  .returns(
-    v.object({
-      message: v.string(),
-    }),
-  )
   .handler(async ({ context }) => {
     await context.runMutation(api.admin.system.entries.wipeAll, {});
     await context.runMutation(api.admin.system.entries.wipeAllTestUsers, {});
@@ -77,7 +58,6 @@ export const wipeAllMockData = userSystemAdminMutation
 
 export const deleteMine = userSystemAdminMutation
   .input({})
-  .returns(v.null())
   .handler(async ({ context }) => {
     const user = await context.getUser();
     const myEntry = await entries.query(context).forUser(user._id).get();
@@ -88,7 +68,6 @@ export const deleteMine = userSystemAdminMutation
 
 export const deleteById = userSystemAdminMutation
   .input({ entryId: v.id("entries") })
-  .returns(v.null())
   .handler(async ({ context, input }) => {
     await entries.mutate(context).forEntry(input.entryId).delete();
     return null;
