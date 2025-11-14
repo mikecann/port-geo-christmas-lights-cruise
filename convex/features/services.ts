@@ -9,8 +9,29 @@ import { convex } from "../schema";
 import { MutationCtx, QueryCtx } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
 import { EntryCreationService } from "./entries/services/EntryCreationService";
-import { QueryService, UserQueryService } from "./lib";
+import {
+  QueryService,
+  MutationService,
+  UserQueryService,
+  UserMutationService,
+} from "./lib";
 
+const queryServices = {
+  entries: EntriesQueryService,
+} satisfies Record<
+  string,
+  new (context: QueryCtx, services: QueryServices) => QueryService
+>;
+
+const mutationServices = {
+  entryApproval: EntryApprovalService,
+  entryRejection: EntryRejectionService,
+  entryMutation: EntryMutationService,
+  entryManagement: EntryManagementService,
+} satisfies Record<
+  string,
+  new (context: MutationCtx, services: Services) => MutationService
+>;
 
 const userQueryServices = {
   entries: UserEntriesQueryService,
@@ -24,25 +45,51 @@ const userQueryServices = {
 >;
 
 const userMutationServices = {
-  entries: UserEntriesQueryService,
+  entryCreation: EntryCreationService,
+  entries: UserEntryMutationService,
 } satisfies Record<
   string,
   new (
-    context: QueryCtx,
-    services: QueryServices,
+    context: MutationCtx,
+    services: Services,
     userId: Id<"users">,
-  ) => UserQueryService
+  ) => UserMutationService
 >;
+
+export const services = {
+  ...queryServices,
+  ...mutationServices,
+  ...userQueryServices,
+  ...userMutationServices,
+};
+
+function createServiceInstances<TServices extends Record<string, unknown>>(
+  serviceMap: Record<string, new (...args: unknown[]) => unknown>,
+  instantiate: (ServiceClass: new (...args: unknown[]) => unknown) => unknown,
+): TServices {
+  const instances = {} as TServices;
+  for (const [key, ServiceClass] of Object.entries(serviceMap))
+    instances[key as keyof TServices] = instantiate(
+      ServiceClass,
+    ) as TServices[keyof TServices];
+  return instances;
+}
 
 export type QueryServices = {
   entries: EntriesQueryService;
 };
 
 export const createQueryServices = (context: QueryCtx): QueryServices => {
-  // eslint-disable-next-line
-  let services = {} as QueryServices;
-  services.entries = new EntriesQueryService(context, services);
-  return services;
+  const serviceInstances = {} as QueryServices;
+  return createServiceInstances(
+    queryServices as Record<string, new (...args: unknown[]) => unknown>,
+    (ServiceClass) => {
+      return new (ServiceClass as new (
+        context: QueryCtx,
+        services: QueryServices,
+      ) => EntriesQueryService)(context, serviceInstances);
+    },
+  );
 };
 
 export type MutationServices = {
@@ -53,13 +100,18 @@ export type MutationServices = {
 };
 
 export const createMutationServices = (context: MutationCtx): Services => {
-  // eslint-disable-next-line
-  let services: Services = createQueryServices(context) as any;
-  services.entryApproval = new EntryApprovalService(context, services);
-  services.entryRejection = new EntryRejectionService(context, services);
-  services.entryMutation = new EntryMutationService(context, services);
-  services.entryManagement = new EntryManagementService(context, services);
-  return services;
+  const queryServices = createQueryServices(context);
+  const serviceInstances = { ...queryServices } as Services;
+  const mutationInstances = createServiceInstances(
+    mutationServices as Record<string, new (...args: unknown[]) => unknown>,
+    (ServiceClass) => {
+      return new (ServiceClass as new (
+        context: MutationCtx,
+        services: Services,
+      ) => MutationService)(context, serviceInstances);
+    },
+  );
+  return { ...serviceInstances, ...mutationInstances };
 };
 
 export type Services = QueryServices & MutationServices;
@@ -77,30 +129,34 @@ export const createUserQueryServices = (
   context: QueryCtx,
   userId: Id<"users">,
 ): UserQueryServices => {
-  // eslint-disable-next-line
-  let services = {} as UserQueryServices;
   const queryServices = createQueryServices(context);
-  services.entries = new UserEntriesQueryService(
-    context,
-    queryServices,
-    userId,
+  return createServiceInstances(
+    userQueryServices as Record<string, new (...args: unknown[]) => unknown>,
+    (ServiceClass) => {
+      return new (ServiceClass as new (
+        context: QueryCtx,
+        services: QueryServices,
+        userId: Id<"users">,
+      ) => UserQueryService)(context, queryServices, userId);
+    },
   );
-  return services;
 };
 
 export const createUserMutationServices = (
   context: MutationCtx,
   userId: Id<"users">,
 ): UserMutationServices => {
-  // eslint-disable-next-line
-  let services = {} as UserMutationServices;
   const mutationServices = createMutationServices(context);
-  services.entries = new UserEntryMutationService(
-    context,
-    mutationServices,
-    userId,
+  return createServiceInstances(
+    userMutationServices as Record<string, new (...args: unknown[]) => unknown>,
+    (ServiceClass) => {
+      return new (ServiceClass as new (
+        context: MutationCtx,
+        services: Services,
+        userId: Id<"users">,
+      ) => UserMutationService)(context, mutationServices, userId);
+    },
   );
-  return services;
 };
 
 export const queryServicesMiddleware = convex
