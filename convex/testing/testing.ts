@@ -24,7 +24,7 @@ export const createMockEntries = testingMutation({
     count: v.number(),
   },
   handler: async (ctx, args) => {
-    return await entries.testing.createMockEntries(ctx.db, {
+    return await entries.testing.createMockEntries(ctx, {
       count: args.count,
     });
   },
@@ -85,7 +85,7 @@ export const findEntryForUser = testingMutation({
   },
 
   handler: async (ctx, args) => {
-    return await entries.forUser(args.userId).find(ctx.db);
+    return await entries.query(ctx).forUser(args.userId).find();
   },
 });
 

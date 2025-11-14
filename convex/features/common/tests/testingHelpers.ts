@@ -106,7 +106,7 @@ export const moveEntryToStatus = async (
 
   return t.run(async (ctx) => {
     // Get the current entry to preserve some fields
-    const currentEntry = await entries.forEntry(entryId).get(ctx.db);
+    const currentEntry = await entries.query(ctx).forEntry(entryId).get();
     if (!currentEntry)
       throw new Error(`Entry '${entryId}' not found in moveEntryToStatus`);
 
@@ -159,7 +159,7 @@ export const moveEntryToStatus = async (
           : Date.now() - 1000; // Default to 1 second ago if not set
 
       // Get the next available entry number
-      const entryNumber = await entries.getNextAvailableEntryNumber(ctx.db);
+      const entryNumber = await entries.mutate(ctx).getNextAvailableEntryNumber();
 
       const { houseAddress: overrideHouseAddress, ...restOverrides } =
         overrides;
@@ -204,7 +204,7 @@ export const createTestEntry = async (
         await ctx.db.patch(entryId, patchData as any);
     }
 
-    return await entries.forEntry(entryId).get(ctx.db);
+    return await entries.query(ctx).forEntry(entryId).get();
   });
 };
 

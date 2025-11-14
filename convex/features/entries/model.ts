@@ -49,39 +49,6 @@ export const entries = {
               throw new Error("Entry is not approved");
             return entry;
           },
-
-          async approve({ entryNumber }: { entryNumber: number }) {
-            const entry = await this.get();
-
-            if (entry.status !== "submitted")
-              throw new Error(
-                `Entry '${entryId}' is not in submitted status and cannot be approved. Current status: ${entry.status}`,
-              );
-
-            await db.patch(entryId, {
-              status: "approved",
-              approvedAt: Date.now(),
-              entryNumber,
-            });
-          },
-
-          async reject(
-            db: DatabaseWriter,
-            { rejectedReason }: { rejectedReason: string },
-          ) {
-            const entry = await this.get(db);
-
-            if (entry.status !== "submitted")
-              throw new Error(
-                `Entry '${entryId}' is not in submitted status and cannot be rejected. Current status: ${entry.status}`,
-              );
-
-            await db.patch(entryId, {
-              status: "rejected",
-              rejectedAt: Date.now(),
-              rejectedReason,
-            });
-          },
         };
       },
 
@@ -344,7 +311,7 @@ export const entries = {
                 `Address ${entry.houseAddress.address} is already used!`,
               );
 
-            await ctx.db.patch(entry._id, {
+            await db.patch(entry._id, {
               status: "submitting" as const,
               name: ensure(
                 entry.name,

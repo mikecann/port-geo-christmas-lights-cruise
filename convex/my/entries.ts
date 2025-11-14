@@ -8,14 +8,14 @@ import { internal } from "../../shared/api";
 export const find = myQuery({
   args: {},
   handler: async (ctx) => {
-    return await entries.forUser(ctx.userId).find(ctx.db);
+    return await entries.query(ctx).forUser(ctx.userId).find();
   },
 });
 
 export const enter = myMutation({
   args: {},
   handler: async (ctx) => {
-    await entries.forUser(ctx.userId).create(ctx.db);
+    await entries.mutate(ctx).forUser(ctx.userId).create();
     return null;
   },
 });
@@ -28,7 +28,7 @@ export const updateDraft = myMutation({
     name: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await entries.forUser(ctx.userId).updateBeforeSubmission(ctx.db, args);
+    await entries.mutate(ctx).forUser(ctx.userId).updateBeforeSubmission(args);
     return null;
   },
 });
@@ -36,7 +36,7 @@ export const updateDraft = myMutation({
 export const remove = myMutation({
   args: {},
   handler: async (ctx) => {
-    await entries.forUser(ctx.userId).remove(ctx);
+    await entries.mutate(ctx).forUser(ctx.userId).remove(ctx);
     return null;
   },
 });
@@ -46,7 +46,7 @@ export const updateApproved = myMutation({
     name: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await entries.forUser(ctx.userId).updateApproved(ctx.db, args);
+    await entries.mutate(ctx).forUser(ctx.userId).updateApproved(args);
     return null;
   },
 });

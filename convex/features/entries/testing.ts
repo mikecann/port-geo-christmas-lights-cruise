@@ -1,4 +1,8 @@
-import type { DatabaseReader, DatabaseWriter } from "../../_generated/server";
+import type {
+  DatabaseReader,
+  DatabaseWriter,
+  MutationCtx,
+} from "../../_generated/server";
 import { entries } from "./model";
 
 // Mock data generators
@@ -270,7 +274,7 @@ function generateMockEntry(usedAddresses: Set<string>) {
 }
 
 export const createMockEntries = async (
-  db: DatabaseWriter,
+  ctx: MutationCtx,
   args: { count: number },
 ) => {
   const entryCount = args.count || 10;
@@ -280,10 +284,10 @@ export const createMockEntries = async (
   const usedUserNames = new Set<string>();
 
   for (let i = 0; i < entryCount; i++) {
-    const testUserId = await createTestUser(db, usedUserNames);
+    const testUserId = await createTestUser(ctx.db, usedUserNames);
 
     const mockData = generateMockEntry(usedAddresses);
-    const entryNumber = await entries.getNextAvailableEntryNumber(db);
+    const entryNumber = await entries.mutate(ctx).getNextAvailableEntryNumber();
 
     // Generate mock photos
     const mockPhotos: Array<{ kind: "mock"; mockPath: string }> = [];
@@ -308,7 +312,7 @@ export const createMockEntries = async (
         mockPath: shuffled[j],
       });
 
-    const entryId = await db.insert("entries", {
+    const entryId = await ctx.db.insert("entries", {
       name: mockData.name,
       houseAddress: mockData.houseAddress,
       status: "approved",
@@ -320,12 +324,12 @@ export const createMockEntries = async (
 
     // Create photos separately
     for (let j = 0; j < mockPhotos.length; j++)
-      await db.insert("photos", {
+      await ctx.db.insert("photos", {
         entryId,
         ...mockPhotos[j],
       });
 
-    const testUser = await db.get(testUserId);
+    const testUser = await ctx.db.get(testUserId);
 
     const userInfo =
       testUser && "name" in testUser && "email" in testUser
