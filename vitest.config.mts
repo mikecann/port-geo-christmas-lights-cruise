@@ -18,7 +18,7 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "edge-runtime",
-          server: { deps: { inline: ["convex-test"] } },
+          server: { deps: { inline: ["convex-test", "fluent-convex"] } },
           include: [
             "convex/**/*.test.ts",
             "shared/**/*.test.ts",
