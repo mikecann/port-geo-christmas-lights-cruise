@@ -7,55 +7,117 @@ import {
 import { ensure } from "../../shared/ensure";
 import { action, mutation, query } from "../_generated/server";
 import { triggers } from "../features/common/lib";
+import { convex } from "../schema";
 
-export const myQuery = customQuery(query, {
-  args: {},
-  input: async (ctx, _args) => {
-    const userId = await getAuthUserId(ctx);
+// With middleware
+export const myQueryMiddleware = convex
+  .query()
+  .middleware(async ({ context, next }) => {
+    const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
-    return {
-      ctx: {
+
+    return next({
+      context: {
+        ...context,
         userId,
         getUser: async () =>
           ensure(
-            await ctx.db.get(userId),
+            await context.db.get(userId),
             `couldnt find user with id ${userId}`,
           ),
       },
-      args: {},
-    };
-  },
-});
-export const myMutation = customMutation(mutation, {
-  args: {},
-  input: async (_ctx, _args) => {
-    const userId = await getAuthUserId(_ctx);
+    });
+  });
+
+export const myQuery = convex.query().use(myQueryMiddleware);
+
+// export const myQuery = customQuery(query, {
+//   args: {},
+//   input: async (ctx, _args) => {
+//     const userId = await getAuthUserId(ctx);
+//     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
+//     return {
+//       ctx: {
+//         userId,
+//         getUser: async () =>
+//           ensure(
+//             await ctx.db.get(userId),
+//             `couldnt find user with id ${userId}`,
+//           ),
+//       },
+//       args: {},
+//     };
+//   },
+// });
+
+export const myMutationMiddleware = convex
+  .mutation()
+  .middleware(async ({ context, next }) => {
+    const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
-    return {
-      ctx: {
-        ...triggers.wrapDB(_ctx),
+
+    return next({
+      context: {
+        ...context,
         userId,
         getUser: async () =>
           ensure(
-            await _ctx.db.get(userId),
+            await context.db.get(userId),
             `couldnt find user with id ${userId}`,
           ),
       },
-      args: {},
-    };
-  },
-});
-export const myAction = customAction(action, {
-  args: {},
-  input: async (ctx, _args) => {
-    const userId = await getAuthUserId(ctx);
+    });
+  });
+
+export const myMutation = convex.mutation().use(myMutationMiddleware);
+
+// export const myMutation = customMutation(mutation, {
+//   args: {},
+//   input: async (_ctx, _args) => {
+//     const userId = await getAuthUserId(_ctx);
+//     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
+//     return {
+//       ctx: {
+//         ...triggers.wrapDB(_ctx),
+//         userId,
+//         getUser: async () =>
+//           ensure(
+//             await _ctx.db.get(userId),
+//             `couldnt find user with id ${userId}`,
+//           ),
+//       },
+//       args: {},
+//     };
+//   },
+// });
+
+export const myActionMiddleware = convex
+  .action()
+  .middleware(async ({ context, next }) => {
+    const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
 
-    return {
-      ctx: {
+    return next({
+      context: {
+        ...context,
         userId,
       },
-      args: {},
-    };
-  },
-});
+    });
+  });
+
+export const myAction = convex.action().use(myActionMiddleware);
+
+// export const myAction = customAction(action, {
+//   args: {},
+//   input: async (ctx, _args) => {
+//     const userId = await getAuthUserId(ctx);
+//     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
+
+//     return {
+//       ctx: {
+//         userId,
+//       },
+//       args: {},
+//     };
+//   },
+// });

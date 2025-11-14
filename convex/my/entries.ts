@@ -5,11 +5,8 @@ import type { LatLng } from "../features/map/lib";
 import { geocodeAddress } from "../features/map/lib";
 import { internal } from "../../shared/api";
 
-export const find = myQuery({
-  args: {},
-  handler: async (ctx) => {
-    return await entries.query(ctx).forUser(ctx.userId).find();
-  },
+export const find = myQuery.input({}).handler(async ({ context, input }) => {
+  return await entries.query(context).forUser(context.userId).find();
 });
 
 export const enter = myMutation({

@@ -6,29 +6,44 @@ import {
 import { ensure } from "../../../shared/ensure";
 import { mutation, query } from "../../_generated/server";
 import { triggers } from "../../features/common/lib";
+import { convex } from "../../schema";
 
-export const userCompetitionAdminQuery = customQuery(query, {
-  args: {},
-  input: async (ctx, _args) => {
-    const userId = await getAuthUserId(ctx);
+export const userCompetitionAdminQueryMiddleware = convex
+  .query()
+  .middleware(async ({ context, next }) => {
+    const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
 
     const user = ensure(
-      await ctx.db.get(userId),
+      await context.db.get(userId),
       `couldnt find user with id ${userId}`,
     );
 
     if (!user.isCompetitionAdmin)
       throw new Error("User is not a competition admin");
 
-    return {
-      ctx: {
+    return next({
+      context: {
+        ...context,
         getUser: async () => user,
       },
-      args: {},
-    };
-  },
-});
+    });
+  });
+
+export const userCompetitionAdminQuery = convex
+  .query()
+  .use(userCompetitionAdminQueryMiddleware);
+
+// export const userCompetitionAdminQuery = customQuery(query, {
+//   args: {},
+//   input: async (ctx, _args) => {
+//     return {
+//       ctx: {},
+//       args: {},
+//     };
+//   },
+// });
+
 export const userCompetitionAdminMutation = customMutation(mutation, {
   args: {},
   input: async (_ctx, _args) => {
