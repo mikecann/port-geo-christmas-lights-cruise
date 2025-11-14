@@ -1,15 +1,19 @@
 import { userCompetitionAdminMutation, userCompetitionAdminQuery } from "./lib";
-import { entries } from "../../features/entries/model";
 import { photos } from "../../features/photos/model";
 import { email } from "../../features/email/model";
 import { v } from "convex/values";
+import type { Id } from "../../_generated/dataModel";
+import {
+  isLocationWithinCompetitionBoundary,
+  isUserEmailOnWhitelist,
+} from "../../features/entries/utils";
 
 // Queries
 
 export const listPending = userCompetitionAdminQuery
   .input({})
   .handler(async ({ context }) => {
-    const pendingEntries = await entries.query(context).listPendingReview();
+    const pendingEntries = await context.services.entries.listPendingReview();
 
     const entriesWithPhotos = await Promise.all(
       pendingEntries.map(async (entry) => {
@@ -27,13 +31,13 @@ export const listPending = userCompetitionAdminQuery
 export const getStats = userCompetitionAdminQuery
   .input({})
   .handler(async ({ context }) => {
-    return await entries.query(context).getStats();
+    return await context.services.entries.getStats();
   });
 
 export const listApproved = userCompetitionAdminQuery
   .input({})
   .handler(async ({ context }) => {
-    const approvedEntries = await entries.query(context).listApproved();
+    const approvedEntries = await context.services.entries.listApproved();
 
     const entriesWithPhotos = await Promise.all(
       approvedEntries.map(async (entry) => {
@@ -51,7 +55,7 @@ export const listApproved = userCompetitionAdminQuery
 export const listRejected = userCompetitionAdminQuery
   .input({})
   .handler(async ({ context }) => {
-    const rejectedEntries = await entries.query(context).listRejected();
+    const rejectedEntries = await context.services.entries.listRejected();
 
     const entriesWithPhotos = await Promise.all(
       rejectedEntries.map(async (entry) => {
@@ -69,7 +73,9 @@ export const listRejected = userCompetitionAdminQuery
 export const get = userCompetitionAdminQuery
   .input({ entryId: v.id("entries") })
   .handler(async ({ context, input }) => {
-    const entry = await entries.query(context).forEntry(input.entryId).get();
+    const entry = await context.services.entries.get({
+      entryId: input.entryId,
+    });
     const entryPhotos = await photos.forEntry(input.entryId).list(context.db);
 
     return {
@@ -106,7 +112,9 @@ export const getEntryValidationStatus = userCompetitionAdminQuery
     }),
   )
   .handler(async ({ context, input }) => {
-    const entry = await entries.query(context).forEntry(input.entryId).get();
+    const entry = await context.services.entries.get({
+      entryId: input.entryId,
+    });
     if (
       !entry.houseAddress ||
       typeof entry.houseAddress !== "object" ||
@@ -119,9 +127,11 @@ export const getEntryValidationStatus = userCompetitionAdminQuery
       };
 
     const placeId = entry.houseAddress.placeId;
-    const hasConflicts = await entries
-      .query(context)
-      .hasEntryWithPlaceIdAlreadyBeenSubmitted(placeId, input.entryId);
+    const hasConflicts =
+      await context.services.entries.hasEntryWithPlaceIdAlreadyBeenSubmitted(
+        placeId,
+        input.entryId,
+      );
 
     // Check if location is within competition boundary
     const houseAddress = entry.houseAddress;
@@ -134,16 +144,14 @@ export const getEntryValidationStatus = userCompetitionAdminQuery
       houseAddress.lat !== 0 &&
       houseAddress.lng !== 0
     )
-      isWithinBoundary = entries.isLocationWithinCompetitionBoundary(
+      isWithinBoundary = isLocationWithinCompetitionBoundary(
         houseAddress.lat,
         houseAddress.lng,
       );
 
     // Check if user email is on whitelist
-    const user = await context.db.get(entry.submittedByUserId);
-    const isOnWhitelist = user
-      ? entries.isUserEmailOnWhitelist(user.email)
-      : null;
+    const user = await context.db.get<"users">(entry.submittedByUserId);
+    const isOnWhitelist = user ? isUserEmailOnWhitelist(user.email) : null;
 
     return { hasConflicts, isWithinBoundary, isOnWhitelist };
   });
@@ -156,21 +164,24 @@ export const approve = userCompetitionAdminMutation
   })
   .returns(v.null())
   .handler(async ({ context, input }) => {
-    const entry = await entries.query(context).forEntry(input.entryId).get();
-    const entryNumber = await entries
-      .mutate(context)
-      .getNextAvailableEntryNumber();
-    await entries
-      .mutate(context)
-      .forEntry(input.entryId)
-      .approve({ entryNumber });
+    const entry = await context.services.entries.get({
+      entryId: input.entryId,
+    });
+    const entryNumber =
+      await context.services.entryManagement.getNextAvailableEntryNumber();
+    await context.services.entryApproval.approve({
+      entryId: input.entryId,
+      entryNumber,
+    });
 
-    const user = await context.db.get(entry.submittedByUserId);
-    if (!user?.email) return null;
+    const user = await context.db.get<"users">(entry.submittedByUserId);
+    if (!user || !user.email) return null;
 
     await email.sendEntryApprovalEmail(context, {
       to: user.email,
-      entry: await entries.query(context).forEntry(input.entryId).get(),
+      entry: await context.services.entries.get({
+        entryId: input.entryId,
+      }),
       entryNumber,
     });
 
@@ -184,18 +195,22 @@ export const reject = userCompetitionAdminMutation
   })
   .returns(v.null())
   .handler(async ({ context, input }) => {
-    const entry = await entries.query(context).forEntry(input.entryId).get();
-    await entries
-      .mutate(context)
-      .forEntry(input.entryId)
-      .reject({ rejectedReason: input.rejectedReason });
+    const entry = await context.services.entries.get({
+      entryId: input.entryId,
+    });
+    await context.services.entryRejection.reject({
+      entryId: input.entryId,
+      rejectedReason: input.rejectedReason,
+    });
 
-    const user = await context.db.get(entry.submittedByUserId);
-    if (!user?.email) return null;
+    const user = await context.db.get<"users">(entry.submittedByUserId);
+    if (!user || !user.email) return null;
 
     await email.sendEntryRejectionEmail(context, {
       to: user.email,
-      entry: await entries.query(context).forEntry(input.entryId).get(),
+      entry: await context.services.entries.get({
+        entryId: input.entryId,
+      }),
       rejectedReason: input.rejectedReason,
     });
 

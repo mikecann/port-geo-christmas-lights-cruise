@@ -1,19 +1,18 @@
 import { myAction, myMutation, myQuery } from "./lib";
-import { entries } from "../features/entries/model";
 import { v } from "convex/values";
 import type { LatLng } from "../features/map/lib";
 import { geocodeAddress } from "../features/map/lib";
 import { internal } from "../../shared/api";
 
-export const find = myQuery.input({}).handler(async ({ context }) => {
-  return await entries.query(context).forUser(context.userId).find();
-});
+export const find = myQuery
+  .input({})
+  .handler(async ({ context }) => context.services.user.entries.find());
 
 export const enter = myMutation
   .input({})
   .returns(v.null())
   .handler(async ({ context }) => {
-    await entries.mutate(context).forUser(context.userId).create();
+    await context.services.user.entries.create();
     return null;
   });
 
@@ -26,10 +25,7 @@ export const updateDraft = myMutation
   })
   .returns(v.null())
   .handler(async ({ context, input }) => {
-    await entries
-      .mutate(context)
-      .forUser(context.userId)
-      .updateBeforeSubmission(input);
+    await context.services.user.entries.updateBeforeSubmission(input);
     return null;
   });
 
@@ -37,7 +33,7 @@ export const remove = myMutation
   .input({})
   .returns(v.null())
   .handler(async ({ context }) => {
-    await entries.mutate(context).forUser(context.userId).remove(context);
+    await context.services.user.entries.remove();
     return null;
   });
 
@@ -47,7 +43,7 @@ export const updateApproved = myMutation
   })
   .returns(v.null())
   .handler(async ({ context, input }) => {
-    await entries.mutate(context).forUser(context.userId).updateApproved(input);
+    await context.services.user.entries.updateApproved(input);
     return null;
   });
 

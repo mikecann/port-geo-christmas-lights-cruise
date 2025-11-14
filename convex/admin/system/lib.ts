@@ -2,6 +2,10 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { ensure } from "../../../shared/ensure";
 import { triggers } from "../../features/common/lib";
 import { convex } from "../../schema";
+import {
+  queryServicesMiddleware,
+  mutationServicesMiddleware,
+} from "../../features/services";
 
 export const userSystemAdminQueryMiddleware = convex
   .query()
@@ -26,7 +30,8 @@ export const userSystemAdminQueryMiddleware = convex
 
 export const userSystemAdminQuery = convex
   .query()
-  .use(userSystemAdminQueryMiddleware);
+  .use(userSystemAdminQueryMiddleware)
+  .use(queryServicesMiddleware);
 
 export const userSystemAdminMutationMiddleware = convex
   .mutation()
@@ -53,4 +58,5 @@ export const userSystemAdminMutationMiddleware = convex
 
 export const userSystemAdminMutation = convex
   .mutation()
-  .use(userSystemAdminMutationMiddleware);
+  .use(userSystemAdminMutationMiddleware)
+  .use(mutationServicesMiddleware);

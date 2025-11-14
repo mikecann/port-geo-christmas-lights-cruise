@@ -1,5 +1,5 @@
-import { Id } from "../../_generated/dataModel";
-import { MutationService } from "../lib";
+import { Id } from "../../../_generated/dataModel";
+import { MutationService } from "../../lib";
 
 export class EntryApprovalService extends MutationService {
   async approve({

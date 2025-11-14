@@ -1,8 +1,8 @@
 import { v } from "convex/values";
 import { userSystemAdminMutation } from "./lib";
-import { entries } from "../../features/entries/model";
 import { api } from "../../_generated/api";
 import { createMockEntries } from "../../features/entries/testing";
+import { createUserQueryServices } from "../../features/services";
 
 // Mutations
 
@@ -18,7 +18,7 @@ export const generateMock = userSystemAdminMutation
 export const wipeAll = userSystemAdminMutation
   .input({})
   .handler(async ({ context }) => {
-    const result = await entries.mutate(context).wipeAll();
+    const result = await context.services.entryManagement.wipeAll();
 
     return {
       message: `Successfully deleted ${result.deletedCount} entries`,
@@ -60,15 +60,15 @@ export const deleteMine = userSystemAdminMutation
   .input({})
   .handler(async ({ context }) => {
     const user = await context.getUser();
-    const myEntry = await entries.query(context).forUser(user._id).get();
-    if (!myEntry) throw new Error("No entry found for current user");
-    await context.db.delete(myEntry._id);
+    const userServices = createUserQueryServices(context, user._id);
+    const myEntry = await userServices.entries.get();
+    await context.services.entryManagement.delete({ entryId: myEntry._id });
     return null;
   });
 
 export const deleteById = userSystemAdminMutation
   .input({ entryId: v.id("entries") })
   .handler(async ({ context, input }) => {
-    await entries.mutate(context).forEntry(input.entryId).delete();
+    await context.services.entryManagement.delete({ entryId: input.entryId });
     return null;
   });

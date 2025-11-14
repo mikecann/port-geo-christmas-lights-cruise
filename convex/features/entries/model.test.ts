@@ -10,7 +10,11 @@ import {
   moveEntryToStatus,
   signInAsTestUser,
 } from "../common/tests/testingHelpers";
-import { entries } from "./model";
+import {
+  createQueryServices,
+  createMutationServices,
+  createUserMutationServices,
+} from "../services";
 import type { Doc } from "../../_generated/dataModel";
 import { MAX_ENTRY_NUMBER } from "../../../shared/constants";
 
@@ -27,7 +31,8 @@ describe("getNextAvailableEntryNumber", () => {
 
   it(`should return a random number between 0-${MAX_ENTRY_NUMBER} when no approved entries exist`, async () => {
     const result = await t.run(async (ctx) => {
-      return await entries.mutate(ctx).getNextAvailableEntryNumber();
+      const services = createMutationServices(ctx);
+      return await services.entryManagement.getNextAvailableEntryNumber();
     });
 
     expect(result).toBeGreaterThanOrEqual(0);
@@ -51,12 +56,14 @@ describe("getNextAvailableEntryNumber", () => {
 
     // Get the entry number that was assigned
     const approvedEntry = await t.run(async (ctx) => {
-      return await entries.query(ctx).forEntry(entry._id).getApproved();
+      const services = createQueryServices(ctx);
+      return await services.entries.getApproved({ entryId: entry._id });
     });
 
     // Act
     const result = await t.run(async (ctx) => {
-      return await entries.mutate(ctx).getNextAvailableEntryNumber();
+      const services = createMutationServices(ctx);
+      return await services.entryManagement.getNextAvailableEntryNumber();
     });
 
     // Assert - should be between 0-MAX_ENTRY_NUMBER and not the same as the existing entry
@@ -106,13 +113,15 @@ describe("getNextAvailableEntryNumber", () => {
 
     // Get all approved entries
     const approvedEntries = await t.run(async (ctx) => {
-      return await entries.query(ctx).listApproved();
+      const services = createQueryServices(ctx);
+      return await services.entries.listApproved();
     });
     const usedNumbers = new Set(approvedEntries.map((e) => e.entryNumber));
 
     // Act
     const result = await t.run(async (ctx) => {
-      return await entries.mutate(ctx).getNextAvailableEntryNumber();
+      const services = createMutationServices(ctx);
+      return await services.entryManagement.getNextAvailableEntryNumber();
     });
 
     // Assert - should be between 0-MAX_ENTRY_NUMBER and not already used
@@ -155,12 +164,14 @@ describe("getNextAvailableEntryNumber", () => {
 
     // Get the approved entry number
     const approved = await t.run(async (ctx) => {
-      return await entries.query(ctx).forEntry(approvedEntry._id).getApproved();
+      const services = createQueryServices(ctx);
+      return await services.entries.getApproved({ entryId: approvedEntry._id });
     });
 
     // Act
     const result = await t.run(async (ctx) => {
-      return await entries.mutate(ctx).getNextAvailableEntryNumber();
+      const services = createMutationServices(ctx);
+      return await services.entryManagement.getNextAvailableEntryNumber();
     });
 
     // Assert - should be in range and not the same as the one approved entry
@@ -199,7 +210,8 @@ describe("getNextAvailableEntryNumber", () => {
 
     // Act
     const result = await t.run(async (ctx) => {
-      return await entries.mutate(ctx).getNextAvailableEntryNumber();
+      const services = createMutationServices(ctx);
+      return await services.entryManagement.getNextAvailableEntryNumber();
     });
 
     // Assert - should be MAX_ENTRY_NUMBER + 1 (41)
@@ -235,12 +247,14 @@ describe("revertToDraft", () => {
 
     // Act
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user._id).revertToDraft();
+      const userServices = createUserMutationServices(ctx, user._id);
+      await userServices.entries.revertToDraft();
     });
 
     // Assert
     const revertedEntry = await t.run(async (ctx) => {
-      return await entries.query(ctx).forEntry(entry._id).get();
+      const services = createQueryServices(ctx);
+      return await services.entries.get({ entryId: entry._id });
     });
 
     expect(revertedEntry.status).toBe("draft");
@@ -267,12 +281,14 @@ describe("revertToDraft", () => {
 
     // Act
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user._id).revertToDraft();
+      const userServices = createUserMutationServices(ctx, user._id);
+      await userServices.entries.revertToDraft();
     });
 
     // Assert
     const revertedEntry = await t.run(async (ctx) => {
-      return await entries.query(ctx).forEntry(entry._id).get();
+      const services = createQueryServices(ctx);
+      return await services.entries.get({ entryId: entry._id });
     });
 
     expect(revertedEntry.status).toBe("draft");
@@ -303,7 +319,8 @@ describe("revertToDraft", () => {
     // Act & Assert
     await expect(
       t.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user._id).revertToDraft();
+        const userServices = createUserMutationServices(ctx, user._id);
+        await userServices.entries.revertToDraft();
       }),
     ).rejects.toThrow(/not in submitting status, cannot revert/);
   });
@@ -325,12 +342,14 @@ describe("revertToDraft", () => {
 
     // Act
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user._id).revertToDraft();
+      const userServices = createUserMutationServices(ctx, user._id);
+      await userServices.entries.revertToDraft();
     });
 
     // Assert
     const revertedEntry = await t.run(async (ctx) => {
-      return await entries.query(ctx).forEntry(entryId).get();
+      const services = createQueryServices(ctx);
+      return await services.entries.get({ entryId });
     });
 
     expect(revertedEntry.status).toBe("draft");
@@ -371,7 +390,9 @@ describe("submission error reversion", () => {
     // Act & Assert - finalizeSubmission should fail
     await expect(
       t.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user1._id).finalizeSubmission({
+        const services = createMutationServices(ctx);
+        const userServices = createUserMutationServices(ctx, user1._id);
+        await userServices.entries.finalizeSubmission({
           lat: outsideBoundaryLat,
           lng: outsideBoundaryLng,
           placeId: entry.houseAddress?.placeId || "",
@@ -381,7 +402,8 @@ describe("submission error reversion", () => {
 
     // Verify entry is still in submitting status (needs manual revert)
     const entryAfterError = await t.run(async (ctx) => {
-      return await entries.query(ctx).forEntry(entry._id).get();
+      const services = createQueryServices(ctx);
+      return await services.entries.get({ entryId: entry._id });
     });
     expect(entryAfterError.status).toBe("submitting");
   });
@@ -426,7 +448,9 @@ describe("submission error reversion", () => {
     // Act & Assert - should fail due to conflict
     await expect(
       t2.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user2._id).finalizeSubmission({
+        const services = createMutationServices(ctx);
+        const userServices = createUserMutationServices(ctx, user2._id);
+        await userServices.entries.finalizeSubmission({
           lat: -33.63,
           lng: 115.39,
           placeId,
@@ -436,7 +460,8 @@ describe("submission error reversion", () => {
 
     // Verify entry2 is still in submitting status
     const entryAfterError = await t2.run(async (ctx) => {
-      return await entries.query(ctx).forEntry(entry2._id).get();
+      const services = createQueryServices(ctx);
+      return await services.entries.get({ entryId: entry2._id });
     });
     expect(entryAfterError.status).toBe("submitting");
   });
@@ -461,7 +486,8 @@ describe("submission error reversion", () => {
 
     // Act
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user1._id).finalizeSubmission({
+      const userServices = createUserMutationServices(ctx, user1._id);
+      await userServices.entries.finalizeSubmission({
         lat: withinBoundaryLat,
         lng: withinBoundaryLng,
         placeId: entry.houseAddress?.placeId || "",
@@ -470,7 +496,8 @@ describe("submission error reversion", () => {
 
     // Assert - entry should be in submitted status
     const finalizedEntry = await t.run(async (ctx) => {
-      return await entries.query(ctx).forEntry(entry._id).get();
+      const services = createQueryServices(ctx);
+      return await services.entries.get({ entryId: entry._id });
     });
 
     expect(finalizedEntry.status).toBe("submitted");
@@ -542,7 +569,9 @@ describe("finalizeSubmission", () => {
     // Try to finalize entry2 - should throw an error
     await expect(
       t.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user2._id).finalizeSubmission({
+        const services = createMutationServices(ctx);
+        const userServices = createUserMutationServices(ctx, user2._id);
+        await userServices.entries.finalizeSubmission({
           lat: -33.63,
           lng: 115.39,
           placeId: sharedPlaceId,
@@ -573,7 +602,8 @@ describe("finalizeSubmission", () => {
 
     // Finalize should succeed - use coordinates within the competition boundary
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user1._id).finalizeSubmission({
+      const userServices = createUserMutationServices(ctx, user1._id);
+      await userServices.entries.finalizeSubmission({
         lat: -33.63,
         lng: 115.39,
         placeId: uniquePlaceId,
@@ -582,7 +612,8 @@ describe("finalizeSubmission", () => {
 
     // Verify the entry was finalized successfully
     const finalizedEntry = await t.run(async (ctx) => {
-      return await entries.query(ctx).forEntry(entry._id).get();
+      const services = createQueryServices(ctx);
+      return await services.entries.get({ entryId: entry._id });
     });
 
     expect(finalizedEntry.status).toBe("submitted");
@@ -650,7 +681,8 @@ describe("finalizeSubmission", () => {
     // Finalize should succeed since only draft and rejected entries exist with this placeId
     // Use coordinates within the competition boundary
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user1._id).finalizeSubmission({
+      const userServices = createUserMutationServices(ctx, user1._id);
+      await userServices.entries.finalizeSubmission({
         lat: -33.63,
         lng: 115.39,
         placeId: sharedPlaceId,
@@ -659,7 +691,8 @@ describe("finalizeSubmission", () => {
 
     // Verify the entry was finalized successfully
     const finalizedEntry = await t.run(async (ctx) => {
-      return await entries.query(ctx).forEntry(entryToFinalize._id).get();
+      const services = createQueryServices(ctx);
+      return await services.entries.get({ entryId: entryToFinalize._id });
     });
 
     expect(finalizedEntry.status).toBe("submitted");
@@ -706,7 +739,9 @@ describe("finalizeSubmission", () => {
     // Try to finalize entry2 - should throw an error because entry1 is already submitting
     await expect(
       t.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user2._id).finalizeSubmission({
+        const services = createMutationServices(ctx);
+        const userServices = createUserMutationServices(ctx, user2._id);
+        await userServices.entries.finalizeSubmission({
           lat: 10,
           lng: 20,
           placeId: sharedPlaceId,
@@ -758,7 +793,9 @@ describe("finalizeSubmission", () => {
     // Try to finalize entry2 - should throw an error because entry1 is already submitted
     await expect(
       t.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user2._id).finalizeSubmission({
+        const services = createMutationServices(ctx);
+        const userServices = createUserMutationServices(ctx, user2._id);
+        await userServices.entries.finalizeSubmission({
           lat: 15,
           lng: 25,
           placeId: sharedPlaceId,

@@ -1,24 +1,27 @@
 import { v } from "convex/values";
-import { entries } from "../features/entries/model";
 import { email } from "../features/email/model";
 import { convex } from "../schema";
+import {
+  mutationServicesMiddleware,
+  createUserMutationServices,
+} from "../features/services";
 
 export const startSubmitting = convex
   .mutation()
   .internal()
+  .use(mutationServicesMiddleware)
   .input({
     userId: v.id("users"),
   })
   .handler(async ({ context, input }) => {
-    return await entries
-      .mutate(context)
-      .forUser(input.userId)
-      .startSubmitting(context);
+    const userServices = createUserMutationServices(context, input.userId);
+    return await userServices.entries.startSubmitting();
   });
 
 export const finalizeSubmission = convex
   .mutation()
   .internal()
+  .use(mutationServicesMiddleware)
   .input({
     entryId: v.id("entries"),
     lat: v.number(),
@@ -27,17 +30,19 @@ export const finalizeSubmission = convex
   })
   .returns(v.null())
   .handler(async ({ context, input }) => {
-    const entry = await entries.query(context).forEntry(input.entryId).get();
-    if (!entry) throw new Error(`Entry '${input.entryId}' not found`);
+    const entry = await context.services.entries.get({
+      entryId: input.entryId,
+    });
 
-    await entries
-      .mutate(context)
-      .forUser(entry.submittedByUserId)
-      .finalizeSubmission({
-        lat: input.lat,
-        lng: input.lng,
-        placeId: input.placeId,
-      });
+    const userServices = createUserMutationServices(
+      context,
+      entry.submittedByUserId,
+    );
+    await userServices.entries.finalizeSubmission({
+      lat: input.lat,
+      lng: input.lng,
+      placeId: input.placeId,
+    });
 
     await email.sendNewEntryNotificationToCompetitionAdmins(context, {
       entryId: entry._id,
@@ -49,11 +54,13 @@ export const finalizeSubmission = convex
 export const revertToDraft = convex
   .mutation()
   .internal()
+  .use(mutationServicesMiddleware)
   .input({
     userId: v.id("users"),
   })
   .returns(v.null())
   .handler(async ({ context, input }) => {
-    await entries.mutate(context).forUser(input.userId).revertToDraft();
+    const userServices = createUserMutationServices(context, input.userId);
+    await userServices.entries.revertToDraft();
     return null;
   });
