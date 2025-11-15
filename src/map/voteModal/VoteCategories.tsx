@@ -47,7 +47,7 @@ const CATEGORIES_CONFIG: CategoryConfig[] = [
     title: "Most Jolly",
     description: "Festive spirit, warmth and joy conveyed by the display",
     longDescription:
-      "Vote for the home that brings the most Christmas cheer and warm fuzzy feelings.",
+      "Vote for the home that brings the most Christmas cheer and warm fuzzy feelings. Look for homes that have gone the extra mile, dressing up, dancing, singing and welcoming boats!",
     IconComponent: IconMoodSmile,
     color: "grape",
   },
