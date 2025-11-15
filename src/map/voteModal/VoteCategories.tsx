@@ -78,7 +78,7 @@ export default function VoteCategories({
   return (
     <Stack gap="md">
       {/* Info Alert */}
-      <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
+      {/* <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
         <Stack gap="sm">
           <div>
             <Text size="sm" fw={500}>
@@ -100,7 +100,7 @@ export default function VoteCategories({
             Competition Details
           </Button>
         </Stack>
-      </Alert>
+      </Alert> */}
 
       <Tabs value={activeTab} onChange={setActiveTab}>
         <Tabs.List>
