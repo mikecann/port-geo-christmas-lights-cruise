@@ -350,7 +350,7 @@ export const entries = {
             if (
               !entries.isLocationWithinCompetitionBoundary(args.lat, args.lng)
             )
-              throw new Error(
+              throw new ConvexError(
                 `Address "${entry.houseAddress.address}" is outside the competition area. Entries must be within the Port Geographe/Busselton region.`,
               );
 
