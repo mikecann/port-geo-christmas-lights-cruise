@@ -43,29 +43,16 @@ export const myMutationMiddleware = convex
     const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
 
-    const mutationServices = createMutationServices(context);
-    const userQueryServices = createUserQueryServices(context, userId);
-    const userMutationServices = createUserMutationServices(context, userId);
-
-    const mergedEntries = Object.assign(
-      {},
-      userQueryServices.entries,
-      userMutationServices.entries,
-    );
-
     return next({
       context: {
         ...triggers.wrapDB(context),
         userId,
         services: {
-          ...mutationServices,
+          ...createMutationServices(context),
           user: {
-            ...userQueryServices,
-            ...userMutationServices,
-            entries: mergedEntries,
+            ...createUserMutationServices(context, userId),
           },
         },
-        userQueryServices,
         getUser: async () =>
           ensure(
             await context.db.get(userId),
