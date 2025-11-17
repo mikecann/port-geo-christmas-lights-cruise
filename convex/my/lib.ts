@@ -2,12 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { ensure } from "../../shared/ensure";
 import { triggers } from "../features/common/lib";
 import { convex } from "../schema";
-import {
-  createUserQueryServices,
-  createUserMutationServices,
-  createQueryServices,
-  createMutationServices,
-} from "../features/services";
+import { queryServicesMiddleware } from "../features/services";
 
 // With middleware
 export const myQueryMiddleware = convex
@@ -20,12 +15,6 @@ export const myQueryMiddleware = convex
       context: {
         ...context,
         userId,
-        services: {
-          ...createQueryServices(context),
-          user: {
-            ...createUserQueryServices(context, userId),
-          },
-        },
         getUser: async () =>
           ensure(
             await context.db.get(userId),
@@ -35,7 +24,10 @@ export const myQueryMiddleware = convex
     });
   });
 
-export const myQuery = convex.query().use(myQueryMiddleware);
+export const myQuery = convex
+  .query()
+  .use(myQueryMiddleware)
+  .use(queryServicesMiddleware);
 
 export const myMutationMiddleware = convex
   .mutation()
@@ -47,12 +39,6 @@ export const myMutationMiddleware = convex
       context: {
         ...triggers.wrapDB(context),
         userId,
-        services: {
-          ...createMutationServices(context),
-          user: {
-            ...createUserMutationServices(context, userId),
-          },
-        },
         getUser: async () =>
           ensure(
             await context.db.get(userId),

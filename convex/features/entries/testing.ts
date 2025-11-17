@@ -3,7 +3,7 @@ import type {
   DatabaseWriter,
   MutationCtx,
 } from "../../_generated/server";
-import { createMutationServices } from "../services";
+import { entries } from "./model";
 
 // Mock data generators
 const mockNames = [
@@ -287,9 +287,7 @@ export const createMockEntries = async (
     const testUserId = await createTestUser(ctx.db, usedUserNames);
 
     const mockData = generateMockEntry(usedAddresses);
-    const mutationServices = createMutationServices(ctx);
-    const entryNumber =
-      await mutationServices.entryManagement.getNextAvailableEntryNumber();
+    const entryNumber = await entries.mutate(ctx).getNextAvailableEntryNumber();
 
     // Generate mock photos
     const mockPhotos: Array<{ kind: "mock"; mockPath: string }> = [];
