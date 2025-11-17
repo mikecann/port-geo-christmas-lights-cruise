@@ -2,10 +2,6 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { ensure } from "../../../shared/ensure";
 import { triggers } from "../../features/common/lib";
 import { convex } from "../../schema";
-import {
-  queryServicesMiddleware,
-  mutationServicesMiddleware,
-} from "../../features/services";
 
 export const userCompetitionAdminQueryMiddleware = convex
   .query()
@@ -31,8 +27,7 @@ export const userCompetitionAdminQueryMiddleware = convex
 
 export const userCompetitionAdminQuery = convex
   .query()
-  .use(userCompetitionAdminQueryMiddleware)
-  .use(queryServicesMiddleware);
+  .use(userCompetitionAdminQueryMiddleware);
 
 // export const userCompetitionAdminQuery = customQuery(query, {
 //   args: {},
@@ -68,5 +63,4 @@ export const userCompetitionAdminMutationMiddleware = convex
 
 export const userCompetitionAdminMutation = convex
   .mutation()
-  .use(userCompetitionAdminMutationMiddleware)
-  .use(mutationServicesMiddleware);
+  .use(userCompetitionAdminMutationMiddleware);
