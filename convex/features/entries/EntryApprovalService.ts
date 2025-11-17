@@ -1,7 +1,13 @@
+import { MutationCtx } from "fluent-convex";
 import { Id } from "../../_generated/dataModel";
-import { MutationService } from "../lib";
+import { Services } from "./services";
 
-export class EntryApprovalService extends MutationService {
+export class EntryApprovalService {
+  constructor(
+    private readonly context: MutationCtx,
+    private readonly services: Services,
+  ) {}
+
   async approve({
     entryNumber,
     entryId,

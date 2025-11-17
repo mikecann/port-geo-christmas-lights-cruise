@@ -1,16 +1,16 @@
-import { EntriesQueryService } from "./entries/EntriesQueryService";
-import { EntryApprovalService } from "./entries/EntryApprovalService";
-import { convex } from "../schema";
-import { MutationCtx, QueryCtx } from "../_generated/server";
+import { EntriesService } from "./EntriesQueryService";
+import { EntryApprovalService } from "./EntryApprovalService";
+import { convex } from "../../schema";
+import { MutationCtx, QueryCtx } from "../../_generated/server";
 
 export type QueryServices = {
-  entries: EntriesQueryService;
+  entries: EntriesService;
 };
 
 export const createQueryServices = (context: QueryCtx): QueryServices => {
   // eslint-disable-next-line
   let services = {} as QueryServices;
-  services.entries = new EntriesQueryService(context, services);
+  services.entries = new EntriesService(context, services);
   return services;
 };
 

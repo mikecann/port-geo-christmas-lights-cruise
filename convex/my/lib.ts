@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { ensure } from "../../shared/ensure";
 import { triggers } from "../features/common/lib";
 import { convex } from "../schema";
-import { queryServicesMiddleware } from "../features/services";
+import { queryServicesMiddleware } from "../features/entries/services";
 
 // With middleware
 export const myQueryMiddleware = convex
