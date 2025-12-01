@@ -8,9 +8,10 @@ import {
   Divider,
   Badge,
   Tabs,
+  Button,
 } from "@mantine/core";
-import { IconListCheck } from "@tabler/icons-react";
-import { useQuery } from "convex/react";
+import { IconListCheck, IconDownload } from "@tabler/icons-react";
+import { useQuery, useAction } from "convex/react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { useMe } from "../../../auth/useMeHooks";
@@ -28,6 +29,9 @@ export default function VoteManagementPage() {
   const jollyCount = useQuery(api.admin.competition.votes.countForCategory, {
     category: "most_jolly",
   });
+  const getAllVotes = useAction(
+    api.admin.competition.votes.getAllVotesForExport,
+  );
 
   const breadcrumbItems = [
     {
@@ -61,16 +65,82 @@ export default function VoteManagementPage() {
       <Stack gap="xl">
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Stack gap="lg">
-            <Group>
-              <IconListCheck size={32} color="var(--mantine-color-blue-6)" />
-              <div>
-                <Text size="lg" fw={500}>
-                  Public Voting Overview
-                </Text>
-                <Text size="sm" c="dimmed">
-                  Review votes by category and see who voted for each entry
-                </Text>
-              </div>
+            <Group justify="space-between">
+              <Group>
+                <IconListCheck size={32} color="var(--mantine-color-blue-6)" />
+                <div>
+                  <Text size="lg" fw={500}>
+                    Public Voting Overview
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    Review votes by category and see who voted for each entry
+                  </Text>
+                </div>
+              </Group>
+              <Button
+                leftSection={<IconDownload size={16} />}
+                variant="light"
+                onClick={async () => {
+                  const allVotes = await getAllVotes();
+
+                  const csvHeaders = [
+                    "vote category",
+                    "date and time of vote",
+                    "entry number",
+                    "voter email",
+                    "voter name",
+                  ];
+
+                  const csvRows = allVotes.map((vote) => {
+                    const escapeCSV = (value: string | number | undefined) => {
+                      if (value === undefined || value === null) return "";
+                      const str = String(value);
+                      if (
+                        str.includes(",") ||
+                        str.includes('"') ||
+                        str.includes("\n")
+                      )
+                        return `"${str.replace(/"/g, '""')}"`;
+                      return str;
+                    };
+
+                    const dateTime = new Date(vote.dateTime).toISOString();
+
+                    return [
+                      escapeCSV(vote.voteCategory),
+                      escapeCSV(dateTime),
+                      escapeCSV(vote.entryNumber),
+                      escapeCSV(vote.voterEmail),
+                      escapeCSV(vote.voterName),
+                    ].join(",");
+                  });
+
+                  const csvContent = [csvHeaders.join(","), ...csvRows].join(
+                    "\n",
+                  );
+                  const blob = new Blob([csvContent], {
+                    type: "text/csv;charset=utf-8;",
+                  });
+                  const link = document.createElement("a");
+                  const url = URL.createObjectURL(blob);
+
+                  const now = new Date();
+                  const dateTimeStr = now
+                    .toISOString()
+                    .replace(/[:.]/g, "-")
+                    .slice(0, -5);
+                  const filename = `votes-${dateTimeStr}.csv`;
+
+                  link.setAttribute("href", url);
+                  link.setAttribute("download", filename);
+                  link.style.visibility = "hidden";
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              >
+                Download CSV
+              </Button>
             </Group>
 
             <Divider />

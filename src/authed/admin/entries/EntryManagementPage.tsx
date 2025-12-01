@@ -10,7 +10,7 @@ import {
   Divider,
   Tabs,
 } from "@mantine/core";
-import { IconClipboardList } from "@tabler/icons-react";
+import { IconClipboardList, IconDownload } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useMe } from "../../../auth/useMeHooks";
@@ -23,6 +23,7 @@ import RejectedEntries from "./RejectedEntries";
 export default function EntryManagementPage() {
   const me = useMe();
   const stats = useQuery(api.admin.competition.entries.getStats);
+  const allEntries = useQuery(api.admin.competition.entries.getAllEntriesForExport);
 
   if (!me?.isCompetitionAdmin)
     return (
@@ -44,6 +45,56 @@ export default function EntryManagementPage() {
     },
   ];
 
+  const downloadCSV = () => {
+    if (!allEntries) return;
+
+    const csvHeaders = [
+      "user email",
+      "user name",
+      "entry number",
+      "entry name",
+      "entry address",
+    ];
+
+    const csvRows = allEntries.map((entry) => {
+      const escapeCSV = (value: string | number | undefined) => {
+        if (value === undefined || value === null) return "";
+        const str = String(value);
+        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      return [
+        escapeCSV(entry.userEmail),
+        escapeCSV(entry.userName),
+        escapeCSV(entry.entryNumber),
+        escapeCSV(entry.entryName),
+        escapeCSV(entry.entryAddress),
+      ].join(",");
+    });
+
+    const csvContent = [csvHeaders.join(","), ...csvRows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+
+    const now = new Date();
+    const dateTimeStr = now
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, -5);
+    const filename = `entrants-${dateTimeStr}.csv`;
+
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <Container size="md" py="xl">
       <Title order={1} mb="sm">
@@ -55,19 +106,29 @@ export default function EntryManagementPage() {
       <Stack gap="xl">
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Stack gap="lg">
-            <Group>
-              <IconClipboardList
-                size={32}
-                color="var(--mantine-color-green-6)"
-              />
-              <div>
-                <Text size="lg" fw={500}>
-                  Competition Entry Review
-                </Text>
-                <Text size="sm" c="dimmed">
-                  Review and manage all competition entries
-                </Text>
-              </div>
+            <Group justify="space-between">
+              <Group>
+                <IconClipboardList
+                  size={32}
+                  color="var(--mantine-color-green-6)"
+                />
+                <div>
+                  <Text size="lg" fw={500}>
+                    Competition Entry Review
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    Review and manage all competition entries
+                  </Text>
+                </div>
+              </Group>
+              <Button
+                leftSection={<IconDownload size={16} />}
+                variant="light"
+                onClick={downloadCSV}
+                disabled={!allEntries}
+              >
+                Download CSV
+              </Button>
             </Group>
 
             <Divider />
