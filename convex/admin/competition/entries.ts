@@ -148,6 +148,33 @@ export const getEntryValidationStatus = userCompetitionAdminQuery
     return { hasConflicts, isWithinBoundary, isOnWhitelist };
   });
 
+export const getAllEntriesForExport = userCompetitionAdminQuery
+  .input({})
+  .handler(async ({ context }) => {
+    const allEntries = await context.db.query("entries").collect();
+
+    const entriesWithUsers = await Promise.all(
+      allEntries.map(async (entry) => {
+        const user = await context.db.get(entry.submittedByUserId);
+        return {
+          userEmail: user?.email || "",
+          userName: user?.name || "",
+          entryNumber:
+            entry.status === "approved" ? entry.entryNumber : undefined,
+          entryName: entry.name || "",
+          entryAddress:
+            entry.houseAddress && typeof entry.houseAddress === "object"
+              ? entry.houseAddress.address
+              : typeof entry.houseAddress === "string"
+                ? entry.houseAddress
+                : "",
+        };
+      }),
+    );
+
+    return entriesWithUsers;
+  });
+
 // Mutations
 
 export const approve = userCompetitionAdminMutation

@@ -64,3 +64,21 @@ export const userCompetitionAdminMutationMiddleware = convex
 export const userCompetitionAdminMutation = convex
   .mutation()
   .use(userCompetitionAdminMutationMiddleware);
+
+export const userCompetitionAdminActionMiddleware = convex
+  .action()
+  .middleware(async ({ context, next }) => {
+    const userId = await getAuthUserId(context);
+    if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
+
+    return next({
+      context: {
+        ...context,
+        userId,
+      },
+    });
+  });
+
+export const userCompetitionAdminAction = convex
+  .action()
+  .use(userCompetitionAdminActionMiddleware);
