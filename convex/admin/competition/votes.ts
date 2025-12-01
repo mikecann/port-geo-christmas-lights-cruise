@@ -90,6 +90,7 @@ export const getUserForAdminCheck = convex
   .returns(
     v.object({
       isCompetitionAdmin: v.boolean(),
+      isSystemAdmin: v.boolean(),
     }),
   )
   .handler(async ({ context, input }) => {
@@ -97,6 +98,7 @@ export const getUserForAdminCheck = convex
     if (!user) throw new Error("User not found");
     return {
       isCompetitionAdmin: user.isCompetitionAdmin,
+      isSystemAdmin: user.isSystemAdmin,
     };
   });
 
@@ -171,8 +173,8 @@ export const getAllVotesForExport = userCompetitionAdminAction
       },
     );
 
-    if (!userCheck.isCompetitionAdmin)
-      throw new Error("User is not a competition admin");
+    if (!userCheck.isCompetitionAdmin && !userCheck.isSystemAdmin)
+      throw new Error("User is not a competition admin or system admin");
 
     const allVotes: Array<{
       voteCategory: "best_display" | "most_jolly";
