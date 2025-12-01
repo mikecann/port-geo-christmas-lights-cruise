@@ -84,8 +84,8 @@ export const checkAdminStatus = convex
     const user = await context.db.get(input.userId);
     if (!user) throw new Error("User not found");
     return {
-      isCompetitionAdmin: user.isCompetitionAdmin,
-      isSystemAdmin: user.isSystemAdmin,
+      isCompetitionAdmin: user.isCompetitionAdmin ?? false,
+      isSystemAdmin: user.isSystemAdmin ?? false,
     };
   });
 
