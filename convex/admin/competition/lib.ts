@@ -14,8 +14,10 @@ export const userCompetitionAdminQueryMiddleware = convex
       `couldnt find user with id ${userId}`,
     );
 
-    if (!user.isCompetitionAdmin)
-      throw new Error("User is not a competition admin");
+    if (!user.isCompetitionAdmin && !user.isSystemAdmin)
+      throw new Error(
+        "User is not a competition admin or system admin",
+      );
 
     return next({
       context: {
@@ -50,8 +52,10 @@ export const userCompetitionAdminMutationMiddleware = convex
       `couldnt find user with id ${userId}`,
     );
 
-    if (!user.isCompetitionAdmin)
-      throw new Error("User is not a competition admin");
+    if (!user.isCompetitionAdmin && !user.isSystemAdmin)
+      throw new Error(
+        "User is not a competition admin or system admin",
+      );
 
     return next({
       context: {
