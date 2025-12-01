@@ -1,4 +1,9 @@
-import { userCompetitionAdminQuery, userCompetitionAdminAction } from "./lib";
+import {
+  userCompetitionAdminQuery,
+  userCompetitionAdminAction,
+  userCompetitionAdminQueryMiddleware,
+  userCompetitionAdminActionMiddleware,
+} from "./lib";
 import { voteCategoryValidator } from "../../features/votes/schema";
 import { v } from "convex/values";
 import { aggregateVotes } from "../../features/votes/lib";
@@ -6,7 +11,6 @@ import { isNotNullOrUndefined } from "../../../shared/filter";
 import { convex } from "../../schema";
 import { internal } from "../../../convex/_generated/api";
 import { paginationOptsValidator } from "convex/server";
-import { ensure } from "../../../shared/ensure";
 
 // Queries
 
@@ -81,27 +85,6 @@ export const countForCategory = userCompetitionAdminQuery
     return count;
   });
 
-export const getUserForAdminCheck = convex
-  .query()
-  .internal()
-  .input({
-    userId: v.id("users"),
-  })
-  .returns(
-    v.object({
-      isCompetitionAdmin: v.boolean(),
-      isSystemAdmin: v.boolean(),
-    }),
-  )
-  .handler(async ({ context, input }) => {
-    const user = await context.db.get(input.userId);
-    if (!user) throw new Error("User not found");
-    return {
-      isCompetitionAdmin: user.isCompetitionAdmin,
-      isSystemAdmin: user.isSystemAdmin,
-    };
-  });
-
 export const getAllVotesForExportPage = convex
   .query()
   .internal()
@@ -154,6 +137,7 @@ export const getAllVotesForExportPage = convex
 
 export const getAllVotesForExport = userCompetitionAdminAction
   .input({})
+  .use(userCompetitionAdminActionMiddleware)
   .returns(
     v.array(
       v.object({
@@ -166,16 +150,6 @@ export const getAllVotesForExport = userCompetitionAdminAction
     ),
   )
   .handler(async ({ context }) => {
-    const userCheck = await context.runQuery(
-      internal.admin.competition.votes.getUserForAdminCheck,
-      {
-        userId: context.userId,
-      },
-    );
-
-    if (!userCheck.isCompetitionAdmin && !userCheck.isSystemAdmin)
-      throw new Error("User is not a competition admin or system admin");
-
     const allVotes: Array<{
       voteCategory: "best_display" | "most_jolly";
       dateTime: number;
