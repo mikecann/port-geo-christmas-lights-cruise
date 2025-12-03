@@ -29,6 +29,7 @@ export const photos = {
 
         if (photo.uploadState.status == "uploaded") {
           await ctx.storage.delete(photo.uploadState.storageId);
+          await ctx.db.delete(photoId);
           return;
         }
 
