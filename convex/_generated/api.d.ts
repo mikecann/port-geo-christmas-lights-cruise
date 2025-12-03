@@ -30,6 +30,7 @@ import type * as features_users_model from "../features/users/model.js";
 import type * as features_votes_lib from "../features/votes/lib.js";
 import type * as features_votes_model from "../features/votes/model.js";
 import type * as http from "../http.js";
+import type * as internal_cleanupOrphanedPhotos from "../internal/cleanupOrphanedPhotos.js";
 import type * as internal_entries from "../internal/entries.js";
 import type * as my_entries from "../my/entries.js";
 import type * as my_lib from "../my/lib.js";
@@ -71,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   "features/votes/lib": typeof features_votes_lib;
   "features/votes/model": typeof features_votes_model;
   http: typeof http;
+  "internal/cleanupOrphanedPhotos": typeof internal_cleanupOrphanedPhotos;
   "internal/entries": typeof internal_entries;
   "my/entries": typeof my_entries;
   "my/lib": typeof my_lib;
