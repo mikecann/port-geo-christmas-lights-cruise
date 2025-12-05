@@ -71,3 +71,7 @@ Create a `.env` in the root of the project and set `OPENAI_API_KEY` or `GOOGLE_G
 To make OG tags work (sharing on facebook etc) this project uses a tag-injection cloudflare worker (this project is hosted on cloudflare workers).
 
 Thus `VITE_CONVEX_SITE_URL` is defined in `.env.local` which points to your deployment site url e.g. https://blessed-meadowlark-999.convex.site you will need to update this when going to production too.
+
+### Todo
+
++ Support videos for entries
