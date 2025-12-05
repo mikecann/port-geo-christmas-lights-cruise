@@ -66,6 +66,12 @@ export const email = {
   ) {
     const baseUrl = process.env.SITE_URL;
     const myEntriesUrl = baseUrl ? `${baseUrl}/my/entries` : "/my/entries";
+    const entryCount = await entries.query(ctx).countApproved();
+    const showSignCollection = entryCount <= 40;
+
+    const signCollectionStep = showSignCollection
+      ? `<li><strong>Collect Your Sign:</strong> Every entrant will receive an A1 corflute sign with a unique number to display on your canal side. Signs can be collected from Sunday 30th onwards from Mike Cann at 35 Keel Retreat.</li>`
+      : "";
 
     await resend.sendEmail(ctx, {
       from: email.adminFromAddress,
@@ -84,7 +90,7 @@ export const email = {
 
         <h3>Next Steps:</h3>
         <ol>
-          <li><strong>Collect Your Sign:</strong> Every entrant will receive an A1 corflute sign with a unique number to display on your canal side. Signs can be collected from Sunday 30th onwards from Mike Cann at 35 Keel Retreat.</li>
+          ${signCollectionStep}
           <li><strong>Decorate Your Home:</strong> Make sure your Christmas lights display is ready for the cruise dates in December 2025.</li>
           <li><strong>Be Visible:</strong> Ensure your lights are switched on during cruise hours (we'll send you the schedule closer to the date).</li>
           <li><strong>Share the Joy:</strong> Tell your friends and neighbours about the event!</li>
