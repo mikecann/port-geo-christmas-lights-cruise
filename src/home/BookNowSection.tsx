@@ -18,6 +18,24 @@ export default function BookNowSection() {
               return (
                 <Stack gap="0">
                   <Button
+                    onClick={() => setVoteOpen(true)}
+                    size="xl"
+                    radius="md"
+                    variant="filled"
+                    color="#fab15f"
+                    fullWidth
+                    mt="md"
+                    styles={{
+                      root: {
+                        height: 80,
+                        fontSize: 24,
+                        fontWeight: 700,
+                      },
+                    }}
+                  >
+                    Vote for Entry
+                  </Button>
+                  <Button
                     component="a"
                     {...routes.tickets().link}
                     size="xl"
@@ -36,24 +54,7 @@ export default function BookNowSection() {
                   >
                     Book Tickets
                   </Button>
-                  <Button
-                    onClick={() => setVoteOpen(true)}
-                    size="xl"
-                    radius="md"
-                    variant="filled"
-                    color="#fab15f"
-                    fullWidth
-                    mt="md"
-                    styles={{
-                      root: {
-                        height: 80,
-                        fontSize: 24,
-                        fontWeight: 700,
-                      },
-                    }}
-                  >
-                    Vote for Entry
-                  </Button>
+
                 </Stack>
               );
             }
@@ -83,7 +84,7 @@ export default function BookNowSection() {
                   size="xl"
                   radius="md"
                   variant="filled"
-                    color="#fab15f"
+                  color="#fab15f"
                   mt="md"
                   styles={{
                     root: {
