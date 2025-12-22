@@ -29,15 +29,6 @@ export default function FooterNavigation() {
         </Anchor>
         <Anchor
           component="a"
-          {...routes.tickets().link}
-          c="gray.4"
-          td="none"
-          style={{ fontSize: 14 }}
-        >
-          Book Tickets
-        </Anchor>
-        <Anchor
-          component="a"
           {...routes.map().link}
           c="gray.4"
           td="none"
