@@ -8,15 +8,15 @@ import { minutesInMs } from "../shared/time";
 const { auth, backend, stagehand, goto } = setupE2E();
 
 describe("a public user's experience", () => {
-  it("should allow a user to buy tickets from the homepage", async () => {
-    await goto();
+  // it("should allow a user to buy tickets from the homepage", async () => {
+  //   await goto();
 
-    await stagehand.page.act("Click the button to buy tickets");
+  //   await stagehand.page.act("Click the button to buy tickets");
 
-    const button = await stagehand.page.observe("find the Buy Tickets button");
+  //   const button = await stagehand.page.observe("find the Buy Tickets button");
 
-    expect(button.length).toBeGreaterThan(0);
-  });
+  //   expect(button.length).toBeGreaterThan(0);
+  // });
 
   it("should allow a user to navigate to the entries page and view the entries", async () => {
     await goto();

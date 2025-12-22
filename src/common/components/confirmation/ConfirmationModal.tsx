@@ -27,7 +27,7 @@ export default function ConfirmationModal({
   confirmButtonVariant = "filled",
 }: ConfirmationModalProps) {
   return (
-    <Modal opened={opened} onClose={onClose} title={title}>
+    <Modal opened={opened} onClose={onClose} title={title} zIndex={300}>
       <Stack gap="md">
         {typeof children === "string" ? (
           <Text size="sm">{children}</Text>
