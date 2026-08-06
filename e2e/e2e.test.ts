@@ -21,14 +21,18 @@ describe("a public user's experience", () => {
   it("should allow a user to navigate to the entries page and view the entries", async () => {
     await goto();
 
-    await stagehand.act("Click the entries button from the top bar");
-
     const mocks = await backend.client.mutation(
       api.testing.testing.createMockEntries,
       {
         count: 9,
       },
     );
+
+    // This is deliberately a deterministic click. Stagehand v3 can identify this
+    // link through act(), but currently drops the returned action before clicking.
+    const page = stagehand.context.pages()[0];
+    if (!page) throw new Error("Stagehand did not create a browser page");
+    await page.locator('header a[href="/entries"]').click();
 
     const { entries } = await stagehand.extract(
       "find the entries listed",

@@ -103,7 +103,9 @@ export const setupE2E = () => {
         const page = getPage();
 
         // Navigate to the test auth page
-        await page.goto(`${frontend.frontendUrl}${routes.testAuth().href}`);
+        await page.goto(`${frontend.frontendUrl}${routes.testAuth().href}`, {
+          waitUntil: "networkidle",
+        });
 
         // Fill in the email
         if (options.email) {
@@ -155,8 +157,10 @@ export const setupE2E = () => {
     },
     goto: (route?: Route<typeof routes>) => {
       const page = getPage();
-      if (!route) return page.goto(frontend.frontendUrl!);
-      return page.goto(`${frontend.frontendUrl}${route.href}`);
+      const url = route
+        ? `${frontend.frontendUrl}${route.href}`
+        : frontend.frontendUrl!;
+      return page.goto(url, { waitUntil: "networkidle" });
     },
   };
 };
