@@ -11,7 +11,7 @@ export default function FooterEventInfo() {
           Port Geographe Christmas Lights Cruise
         </Text>
         <Text c="gray.4" size="sm">
-          December 2025
+          2026 dates to be announced
         </Text>
         <Text c="gray.4" size="sm">
           Busselton, Western Australia
