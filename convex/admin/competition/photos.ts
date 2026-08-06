@@ -4,10 +4,13 @@ import { v } from "convex/values";
 
 export const beginUpload = userCompetitionAdminMutation
   .input({ entryId: v.id("entries") })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const uploadStartedAt = Date.now();
-    return await photos.forEntry(input.entryId).add(context, { uploadStartedAt });
-  });
+    return await photos
+      .forEntry(input.entryId)
+      .add(context, { uploadStartedAt });
+  })
+  .public();
 
 export const save = userCompetitionAdminMutation
   .input({
@@ -15,20 +18,21 @@ export const save = userCompetitionAdminMutation
     photoId: v.id("photos"),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     await photos.forPhoto(input.photoId).save(context, {
       storageId: input.storageId,
     });
     return null;
-  });
+  })
+  .public();
 
 export const remove = userCompetitionAdminMutation
   .input({
     photoId: v.id("photos"),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     await photos.forPhoto(input.photoId).delete(context);
     return null;
-  });
-
+  })
+  .public();

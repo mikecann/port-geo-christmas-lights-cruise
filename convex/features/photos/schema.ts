@@ -27,7 +27,7 @@ export const photoTable = defineTable(
         v.object({
           status: v.literal("uploaded"),
           storageId: v.id("_storage"),
-          url: v.string(), 
+          url: v.string(),
         }),
       ),
     }),

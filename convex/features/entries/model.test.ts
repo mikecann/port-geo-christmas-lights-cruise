@@ -371,11 +371,14 @@ describe("submission error reversion", () => {
     // Act & Assert - finalizeSubmission should fail
     await expect(
       t.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user1._id).finalizeSubmission({
-          lat: outsideBoundaryLat,
-          lng: outsideBoundaryLng,
-          placeId: entry.houseAddress?.placeId || "",
-        });
+        await entries
+          .mutate(ctx)
+          .forUser(user1._id)
+          .finalizeSubmission({
+            lat: outsideBoundaryLat,
+            lng: outsideBoundaryLng,
+            placeId: entry.houseAddress?.placeId || "",
+          });
       }),
     ).rejects.toThrow(/outside the competition area/);
 
@@ -461,11 +464,14 @@ describe("submission error reversion", () => {
 
     // Act
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user1._id).finalizeSubmission({
-        lat: withinBoundaryLat,
-        lng: withinBoundaryLng,
-        placeId: entry.houseAddress?.placeId || "",
-      });
+      await entries
+        .mutate(ctx)
+        .forUser(user1._id)
+        .finalizeSubmission({
+          lat: withinBoundaryLat,
+          lng: withinBoundaryLng,
+          placeId: entry.houseAddress?.placeId || "",
+        });
     });
 
     // Assert - entry should be in submitted status

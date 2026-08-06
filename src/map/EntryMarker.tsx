@@ -27,8 +27,6 @@ export function EntryMarker({
   const [markerRef, marker] = useAdvancedMarkerRef();
   const photoUrl = usePhotoUrl(entry.photo, { size: "xs" }); // Small thumbnails for map markers
 
-
-
   const { lat, lng } = entry.entry.houseAddress;
 
   const scale = isHovered || isSelected ? 1.2 : 1.0;

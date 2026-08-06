@@ -21,7 +21,7 @@ describe("a public user's experience", () => {
   it("should allow a user to navigate to the entries page and view the entries", async () => {
     await goto();
 
-    await stagehand.page.act("Click the entries button from the top bar");
+    await stagehand.act("Click the entries button from the top bar");
 
     const mocks = await backend.client.mutation(
       api.testing.testing.createMockEntries,
@@ -30,9 +30,9 @@ describe("a public user's experience", () => {
       },
     );
 
-    const { entries } = await stagehand.page.extract({
-      instruction: "find the entries listed",
-      schema: z.object({
+    const { entries } = await stagehand.extract(
+      "find the entries listed",
+      z.object({
         entries: z.array(
           z.object({
             entryName: z.string(),
@@ -40,7 +40,7 @@ describe("a public user's experience", () => {
           }),
         ),
       }),
-    });
+    );
 
     expect(entries.length).toBe(9);
     for (const mock of mocks) {
@@ -58,9 +58,9 @@ describe("a public user's experience", () => {
 
     await goto(routes.entry({ entryId: mockEntries[0].id }));
 
-    await stagehand.page.act("Click the sign in to vote button");
+    await stagehand.act("Click the sign in to vote button");
 
-    expect(stagehand.page.url()).toContain(
+    expect(stagehand.context.pages()[0]?.url()).toContain(
       routes.signin({ returnTo: "" }).href,
     );
   });
@@ -75,23 +75,18 @@ describe("a public user's experience", () => {
       },
     );
 
-    await stagehand.page.act({
-      action: "Click the map button from the top bar",
+    await stagehand.act("Click the map button from the top bar");
+
+    await stagehand.act(
+      `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
+      { model: "openai/gpt-5" },
+    );
+
+    await stagehand.act("Click view details button in the popup that opens", {
+      model: "openai/gpt-5",
     });
 
-    await stagehand.page.act({
-      modelName: "openai/gpt-5",
-      action: `Click the marker for entry number "${mockEntries[0].entryNumber}"`,
-      iframes: true,
-    });
-
-    await stagehand.page.act({
-      modelName: "openai/gpt-5",
-      action: `Click view details button in the popup that opens`,
-      iframes: true,
-    });
-
-    expect(stagehand.page.url()).toContain(
+    expect(stagehand.context.pages()[0]?.url()).toContain(
       routes.entry({ entryId: mockEntries[0].id }).href,
     );
   });
@@ -115,11 +110,11 @@ describe("a voter's experience", () => {
 
     await goto(routes.entry({ entryId: entries[0].id }));
 
-    await stagehand.page.act(`Click the vote button`);
+    await stagehand.act(`Click the vote button`);
 
-    await stagehand.page.act(`Click the most jolly category button`);
+    await stagehand.act(`Click the most jolly category button`);
 
-    await stagehand.page.act(`Click the button to cast the vote`);
+    await stagehand.act(`Click the button to cast the vote`);
 
     const votes = await backend.client.query(api.testing.testing.listVotes);
 
@@ -175,36 +170,36 @@ describe("a voter's experience", () => {
     await goto(routes.entry({ entryId: entries[0].id }));
 
     // First vote button click - modal should open
-    await stagehand.page.act("Click the vote button");
+    await stagehand.act("Click the vote button");
 
     // Verify modal opened by checking for vote categories
-    const firstModalCheck = await stagehand.page.extract({
-      instruction: "find the vote modal with categories tabs",
-      schema: z.object({
+    const firstModalCheck = await stagehand.extract(
+      "find the vote modal with categories tabs",
+      z.object({
         hasBestDisplayTab: z.boolean(),
         hasMostJollyTab: z.boolean(),
       }),
-    });
+    );
     expect(firstModalCheck.hasBestDisplayTab).toBe(true);
     expect(firstModalCheck.hasMostJollyTab).toBe(true);
 
     // Close the modal by clicking the X button
-    await stagehand.page.act("Close the vote modal by clicking the X button");
+    await stagehand.act("Close the vote modal by clicking the X button");
 
     // Observe that the modal is no longer open
-    await stagehand.page.observe("confirm that there is no vote modal opened");
+    await stagehand.observe("confirm that there is no vote modal opened");
 
     // Click vote button again - modal should reopen
-    await stagehand.page.act("Click the vote button again");
+    await stagehand.act("Click the vote button again");
 
     // Verify modal reopened by checking for vote categories again
-    const secondModalCheck = await stagehand.page.extract({
-      instruction: "find the vote modal with categories tabs",
-      schema: z.object({
+    const secondModalCheck = await stagehand.extract(
+      "find the vote modal with categories tabs",
+      z.object({
         hasBestDisplayTab: z.boolean(),
         hasMostJollyTab: z.boolean(),
       }),
-    });
+    );
     expect(secondModalCheck.hasBestDisplayTab).toBe(true);
     expect(secondModalCheck.hasMostJollyTab).toBe(true);
   });

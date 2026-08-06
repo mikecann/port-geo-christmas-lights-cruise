@@ -21,10 +21,16 @@ export default [
       ".vite",
       ".convex",
       "build",
-      "e2e"
+      "e2e",
     ],
   },
   js.configs.recommended,
+  {
+    files: ["scripts/**/*.js"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
   ...tseslint.configs.recommended,
   {
     files: ["**/*.{ts,tsx}"],
@@ -60,7 +66,6 @@ export default [
       "no-negated-condition": "warn",
       "no-extra-boolean-cast": "error",
       "no-unneeded-ternary": "error",
-
 
       "@typescript-eslint/no-non-null-assertion": "error",
       "@typescript-eslint/prefer-as-const": "error",

@@ -13,8 +13,7 @@ export const createConvexTest = () => {
 export type ConvexTest = ReturnType<typeof createConvexTest>;
 export type AuthenticatedConvexTest = ReturnType<typeof signInAsTestUser>;
 export type TestOrAuthenticatedConvexTest =
-  | ConvexTest
-  | AuthenticatedConvexTest;
+  ConvexTest | AuthenticatedConvexTest;
 
 export const createTestUser = async (
   t: ConvexTest,
@@ -159,7 +158,9 @@ export const moveEntryToStatus = async (
           : Date.now() - 1000; // Default to 1 second ago if not set
 
       // Get the next available entry number
-      const entryNumber = await entries.mutate(ctx).getNextAvailableEntryNumber();
+      const entryNumber = await entries
+        .mutate(ctx)
+        .getNextAvailableEntryNumber();
 
       const { houseAddress: overrideHouseAddress, ...restOverrides } =
         overrides;

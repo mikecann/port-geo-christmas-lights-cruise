@@ -26,7 +26,10 @@ export default function EntryPhotosSection({
           </SimpleGrid>
         )}
 
-        <AdminPhotoUpload entryId={entry._id} currentPhotoCount={photos.length} />
+        <AdminPhotoUpload
+          entryId={entry._id}
+          currentPhotoCount={photos.length}
+        />
       </Stack>
     </Card>
   );

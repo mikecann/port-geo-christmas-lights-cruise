@@ -51,7 +51,6 @@ export const TestingCredentials = ConvexCredentials({
  */
 export const findOrCreateTestUser = convex
   .mutation()
-  .internal()
   .input({
     email: v.string(),
     name: v.optional(v.string()),
@@ -59,7 +58,7 @@ export const findOrCreateTestUser = convex
     isCompetitionAdmin: v.boolean(),
   })
   .returns(v.id("users"))
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     // Look for existing user with this email
     const existingUser = await context.db
       .query("users")
@@ -79,4 +78,5 @@ export const findOrCreateTestUser = convex
     });
 
     return userId;
-  });
+  })
+  .internal();

@@ -8,14 +8,15 @@ import { convex } from "../schema";
 export const list = convex
   .query()
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     return await entries.query(context).listApproved();
-  });
+  })
+  .public();
 
 export const listWithFirstPhoto = convex
   .query()
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const docs = await entries.query(context).listApproved();
     return await Promise.all(
       docs.map(async (entry) => ({
@@ -23,12 +24,13 @@ export const listWithFirstPhoto = convex
         photo: await photos.forEntry(entry._id).findFirst(context.db),
       })),
     );
-  });
+  })
+  .public();
 
 export const listWithPhotos = convex
   .query()
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const docs = await entries.query(context).listApproved();
     return await Promise.all(
       docs.map(async (entry) => ({
@@ -36,19 +38,21 @@ export const listWithPhotos = convex
         photos: await photos.forEntry(entry._id).list(context.db),
       })),
     );
-  });
+  })
+  .public();
 
 export const count = convex
   .query()
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     return await entries.query(context).countApproved();
-  });
+  })
+  .public();
 
 export const getRandomThree = convex
   .query()
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const allApproved = await entries.query(context).listApproved();
 
     if (allApproved.length === 0) return [];
@@ -75,33 +79,36 @@ export const getRandomThree = convex
         photo: await photos.forEntry(entry._id).findFirst(context.db),
       })),
     );
-  });
+  })
+  .public();
 
 export const get = convex
   .query()
   .input({ entryId: v.id("entries") })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const entry = await entries
       .query(context)
       .forEntry(input.entryId)
       .getApproved();
     return entry;
-  });
+  })
+  .public();
 
 export const find = convex
   .query()
   .input({ entryId: v.id("entries") })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const entry = await entries.query(context).forEntry(input.entryId).find();
     if (!entry) return null;
     if (entry.status !== "approved") throw new Error("Entry is not approved");
     return entry;
-  });
+  })
+  .public();
 
 export const getWithPhotos = convex
   .query()
   .input({ entryId: v.id("entries") })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const entry = await entries
       .query(context)
       .forEntry(input.entryId)
@@ -110,7 +117,8 @@ export const getWithPhotos = convex
       entry,
       photos: await photos.forEntry(input.entryId).list(context.db),
     };
-  });
+  })
+  .public();
 
 export type EntryWithFirstPhoto = FunctionReturnType<
   typeof api.public.entries.listWithFirstPhoto
