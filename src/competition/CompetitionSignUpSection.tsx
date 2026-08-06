@@ -25,6 +25,7 @@ export default function CompetitionSignUpSection() {
             Please sign in first to create your entry
           </Text>
           <Button
+            data-testid="competition-sign-in"
             component="a"
             {...routes.signin({
               returnTo: window.location.pathname + window.location.search,
@@ -61,6 +62,7 @@ function AuthenticatedContent() {
         {hasEntry ? "View your competition entry" : "Ready to participate?"}
       </Text>
       <Button
+        data-testid="competition-entry-link"
         component="a"
         {...routes.myEntries().link}
         size="lg"

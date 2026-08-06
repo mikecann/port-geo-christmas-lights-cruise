@@ -14,6 +14,7 @@ import EntryMarkerCarousel from "./EntryMarkerCarousel";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { VOTING_ENABLED } from "../../shared/eventStatus";
 
 interface EntryMarkerPopupProps {
   entryId: Id<"entries">;
@@ -56,14 +57,17 @@ export default function EntryMarkerPopup({ entryId }: EntryMarkerPopupProps) {
           >
             View Details
           </Button>
-          <Button
-            size="sm"
-            color="yellow"
-            onClick={() => routes.entryVote({ entryId: entry._id }).push()}
-            fullWidth
-          >
-            Vote
-          </Button>
+          {VOTING_ENABLED ? (
+            <Button
+              data-testid="map-vote-entry"
+              size="sm"
+              color="yellow"
+              onClick={() => routes.entryVote({ entryId: entry._id }).push()}
+              fullWidth
+            >
+              Vote
+            </Button>
+          ) : null}
         </Stack>
       </Stack>
     </Card>

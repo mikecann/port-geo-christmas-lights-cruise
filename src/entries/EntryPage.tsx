@@ -17,6 +17,7 @@ import VoteModal from "../map/voteModal/VoteModal";
 import ShareModal from "./ShareModal";
 import { PhotoSlide } from "./PhotoSlide";
 import { Route } from "type-route";
+import { VOTING_ENABLED } from "../../shared/eventStatus";
 
 export default function EntryPage({
   route,
@@ -132,7 +133,7 @@ export default function EntryPage({
       />
 
       {/* Vote Modal */}
-      {route.name == "entryVote" ? (
+      {VOTING_ENABLED && route.name == "entryVote" ? (
         <VoteModal
           entryId={entryId}
           opened={true}
