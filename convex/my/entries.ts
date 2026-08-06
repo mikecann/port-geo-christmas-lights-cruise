@@ -5,17 +5,21 @@ import type { LatLng } from "../features/map/lib";
 import { geocodeAddress } from "../features/map/lib";
 import { internal } from "../../shared/api";
 
-export const find = myQuery.input({}).handler(async ({ context }) => {
-  return await entries.query(context).forUser(context.userId).find();
-});
+export const find = myQuery
+  .input({})
+  .handler(async (context) => {
+    return await entries.query(context).forUser(context.userId).find();
+  })
+  .public();
 
 export const enter = myMutation
   .input({})
   .returns(v.null())
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     await entries.mutate(context).forUser(context.userId).create();
     return null;
-  });
+  })
+  .public();
 
 export const updateDraft = myMutation
   .input({
@@ -25,36 +29,39 @@ export const updateDraft = myMutation
     name: v.optional(v.string()),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     await entries
       .mutate(context)
       .forUser(context.userId)
       .updateBeforeSubmission(input);
     return null;
-  });
+  })
+  .public();
 
 export const remove = myMutation
   .input({})
   .returns(v.null())
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     await entries.mutate(context).forUser(context.userId).remove(context);
     return null;
-  });
+  })
+  .public();
 
 export const updateApproved = myMutation
   .input({
     name: v.optional(v.string()),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     await entries.mutate(context).forUser(context.userId).updateApproved(input);
     return null;
-  });
+  })
+  .public();
 
 export const submit = myAction
   .input({})
   .returns(v.null())
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const entry = await context.runMutation(internal.entries.startSubmitting, {
       userId: context.userId,
     });
@@ -71,8 +78,11 @@ export const submit = myAction
         await context.runMutation(internal.entries.revertToDraft, {
           userId: context.userId,
         });
-        throw new Error(
-          `Unable to find your address "${entry.houseAddress.address}". Please check the address and try again, or contact support if you believe this is an error.`,
+        throw Object.assign(
+          new Error(
+            `Unable to find your address "${entry.houseAddress.address}". Please check the address and try again, or contact support if you believe this is an error.`,
+          ),
+          { cause: error },
         );
       }
 
@@ -96,4 +106,5 @@ export const submit = myAction
       }
       throw error;
     }
-  });
+  })
+  .public();

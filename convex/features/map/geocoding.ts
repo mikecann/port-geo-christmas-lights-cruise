@@ -11,7 +11,7 @@ export const geocodeAddress = convex
   .input({
     address: v.string(),
   })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) throw new Error("Google Maps API key not configured");
@@ -56,7 +56,8 @@ export const geocodeAddress = convex
         error: `Failed to geocode address: ${error}`,
       };
     }
-  });
+  })
+  .public();
 
 // Helper function to geocode multiple addresses
 export const geocodeMultipleAddresses = convex
@@ -64,7 +65,7 @@ export const geocodeMultipleAddresses = convex
   .input({
     addresses: v.array(v.string()),
   })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) throw new Error("Google Maps API key not configured");
@@ -122,4 +123,5 @@ export const geocodeMultipleAddresses = convex
     }
 
     return results;
-  });
+  })
+  .public();

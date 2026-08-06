@@ -74,4 +74,4 @@ Thus `VITE_CONVEX_SITE_URL` is defined in `.env.local` which points to your depl
 
 ### Todo
 
-+ Support videos for entries
+- Support videos for entries

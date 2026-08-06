@@ -13,14 +13,15 @@ export const wipeAll = userSystemAdminMutation
       deleted: v.number(),
     }),
   )
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const result = await votes.wipeAll(context._db);
     await aggregateVotes.clearAll(context);
     return {
       message: `Successfully deleted ${result.deleted} votes`,
       deleted: result.deleted,
     };
-  });
+  })
+  .public();
 
 export const generateMock = userSystemAdminMutation
   .input({
@@ -33,7 +34,7 @@ export const generateMock = userSystemAdminMutation
       usersCreated: v.number(),
     }),
   )
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const approvedEntries = await context.db
       .query("entries")
       .withIndex("by_status", (q) => q.eq("status", "approved"))
@@ -120,4 +121,5 @@ export const generateMock = userSystemAdminMutation
       votesCreated: totalVotesCreated,
       usersCreated: mockUsers.length,
     };
-  });
+  })
+  .public();

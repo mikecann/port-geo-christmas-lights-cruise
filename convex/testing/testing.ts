@@ -7,7 +7,7 @@ import { ensure } from "../../shared/ensure";
 export const clearAll = testingMutation
   .input({})
   .returns(v.null())
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     for (const table of Object.keys(schema.tables)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const docs = await context.db.query(table as any).collect();
@@ -18,22 +18,22 @@ export const clearAll = testingMutation
       .collect();
     await Promise.all(scheduled.map((s) => context.scheduler.cancel(s._id)));
     const storedFiles = await context.db.system.query("_storage").collect();
-    await Promise.all(
-      storedFiles.map((s) => context.storage.delete(s._id)),
-    );
+    await Promise.all(storedFiles.map((s) => context.storage.delete(s._id)));
     console.log("Cleared all tables");
     return null;
-  });
+  })
+  .public();
 
 export const createMockEntries = testingMutation
   .input({
     count: v.number(),
   })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     return await entries.testing.createMockEntries(context, {
       count: input.count,
     });
-  });
+  })
+  .public();
 
 export const authenticateMe = testingMutation
   .input({
@@ -50,7 +50,7 @@ export const authenticateMe = testingMutation
       token: v.string(),
     }),
   )
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     // Create the user
     const userId = await context.db.insert("users", {
       name: input.name ?? "Test User",
@@ -83,37 +83,42 @@ export const authenticateMe = testingMutation
       sessionId,
       token,
     };
-  });
+  })
+  .public();
 
 export const findEntryForUser = testingMutation
   .input({
     userId: v.id("users"),
   })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     return await entries.query(context).forUser(input.userId).find();
-  });
+  })
+  .public();
 
 export const getUserByEmail = testingQuery
   .input({
     email: v.string(),
   })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const user = await context.db
       .query("users")
       .withIndex("email", (q) => q.eq("email", input.email))
       .unique();
 
     return ensure(user, `User with email ${input.email} not found`);
-  });
+  })
+  .public();
 
 export const listVotes = testingQuery
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     return await context.db.query("votes").collect();
-  });
+  })
+  .public();
 
 export const listEntries = testingQuery
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     return await context.db.query("entries").collect();
-  });
+  })
+  .public();

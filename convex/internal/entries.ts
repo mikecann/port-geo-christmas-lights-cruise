@@ -5,20 +5,19 @@ import { convex } from "../schema";
 
 export const startSubmitting = convex
   .mutation()
-  .internal()
   .input({
     userId: v.id("users"),
   })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     return await entries
       .mutate(context)
       .forUser(input.userId)
       .startSubmitting(context);
-  });
+  })
+  .internal();
 
 export const finalizeSubmission = convex
   .mutation()
-  .internal()
   .input({
     entryId: v.id("entries"),
     lat: v.number(),
@@ -26,7 +25,7 @@ export const finalizeSubmission = convex
     placeId: v.string(),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const entry = await entries.query(context).forEntry(input.entryId).get();
     if (!entry) throw new Error(`Entry '${input.entryId}' not found`);
 
@@ -44,16 +43,17 @@ export const finalizeSubmission = convex
     });
 
     return null;
-  });
+  })
+  .internal();
 
 export const revertToDraft = convex
   .mutation()
-  .internal()
   .input({
     userId: v.id("users"),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     await entries.mutate(context).forUser(input.userId).revertToDraft();
     return null;
-  });
+  })
+  .internal();

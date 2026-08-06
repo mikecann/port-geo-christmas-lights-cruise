@@ -23,7 +23,9 @@ import RejectedEntries from "./RejectedEntries";
 export default function EntryManagementPage() {
   const me = useMe();
   const stats = useQuery(api.admin.competition.entries.getStats);
-  const allEntries = useQuery(api.admin.competition.entries.getAllEntriesForExport);
+  const allEntries = useQuery(
+    api.admin.competition.entries.getAllEntriesForExport,
+  );
 
   if (!me?.isCompetitionAdmin)
     return (
@@ -45,6 +47,8 @@ export default function EntryManagementPage() {
     },
   ];
 
+  // Keeping this named avoids burying the CSV generation flow inside the button JSX.
+  // eslint-disable-next-line local/no-hoisted-single-use-handlers
   const downloadCSV = () => {
     if (!allEntries) return;
 
@@ -60,9 +64,8 @@ export default function EntryManagementPage() {
       const escapeCSV = (value: string | number | undefined) => {
         if (value === undefined || value === null) return "";
         const str = String(value);
-        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+        if (str.includes(",") || str.includes('"') || str.includes("\n"))
           return `"${str.replace(/"/g, '""')}"`;
-        }
         return str;
       };
 
@@ -81,10 +84,7 @@ export default function EntryManagementPage() {
     const url = URL.createObjectURL(blob);
 
     const now = new Date();
-    const dateTimeStr = now
-      .toISOString()
-      .replace(/[:.]/g, "-")
-      .slice(0, -5);
+    const dateTimeStr = now.toISOString().replace(/[:.]/g, "-").slice(0, -5);
     const filename = `entrants-${dateTimeStr}.csv`;
 
     link.setAttribute("href", url);

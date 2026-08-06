@@ -8,7 +8,7 @@ import { v } from "convex/values";
 
 export const listPending = userCompetitionAdminQuery
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const pendingEntries = await entries.query(context).listPendingReview();
 
     const entriesWithPhotos = await Promise.all(
@@ -22,17 +22,19 @@ export const listPending = userCompetitionAdminQuery
     );
 
     return entriesWithPhotos;
-  });
+  })
+  .public();
 
 export const getStats = userCompetitionAdminQuery
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     return await entries.query(context).getStats();
-  });
+  })
+  .public();
 
 export const listApproved = userCompetitionAdminQuery
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const approvedEntries = await entries.query(context).listApproved();
 
     const entriesWithPhotos = await Promise.all(
@@ -46,11 +48,12 @@ export const listApproved = userCompetitionAdminQuery
     );
 
     return entriesWithPhotos;
-  });
+  })
+  .public();
 
 export const listRejected = userCompetitionAdminQuery
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const rejectedEntries = await entries.query(context).listRejected();
 
     const entriesWithPhotos = await Promise.all(
@@ -64,11 +67,12 @@ export const listRejected = userCompetitionAdminQuery
     );
 
     return entriesWithPhotos;
-  });
+  })
+  .public();
 
 export const get = userCompetitionAdminQuery
   .input({ entryId: v.id("entries") })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const entry = await entries.query(context).forEntry(input.entryId).get();
     const entryPhotos = await photos.forEntry(input.entryId).list(context.db);
 
@@ -76,11 +80,12 @@ export const get = userCompetitionAdminQuery
       ...entry,
       photos: entryPhotos,
     };
-  });
+  })
+  .public();
 
 export const getUserDetails = userCompetitionAdminQuery
   .input({ userId: v.id("users") })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const user = await context.db.get(input.userId);
     if (!user) return null;
 
@@ -94,7 +99,8 @@ export const getUserDetails = userCompetitionAdminQuery
       emailVerificationTime: user.emailVerificationTime,
       phoneVerificationTime: user.phoneVerificationTime,
     };
-  });
+  })
+  .public();
 
 export const getEntryValidationStatus = userCompetitionAdminQuery
   .input({ entryId: v.id("entries") })
@@ -105,7 +111,7 @@ export const getEntryValidationStatus = userCompetitionAdminQuery
       isOnWhitelist: v.union(v.boolean(), v.null()),
     }),
   )
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const entry = await entries.query(context).forEntry(input.entryId).get();
     if (
       !entry.houseAddress ||
@@ -146,11 +152,12 @@ export const getEntryValidationStatus = userCompetitionAdminQuery
       : null;
 
     return { hasConflicts, isWithinBoundary, isOnWhitelist };
-  });
+  })
+  .public();
 
 export const getAllEntriesForExport = userCompetitionAdminQuery
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const allEntries = await context.db.query("entries").collect();
 
     const entriesWithUsers = await Promise.all(
@@ -173,7 +180,8 @@ export const getAllEntriesForExport = userCompetitionAdminQuery
     );
 
     return entriesWithUsers;
-  });
+  })
+  .public();
 
 // Mutations
 
@@ -182,7 +190,7 @@ export const approve = userCompetitionAdminMutation
     entryId: v.id("entries"),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const entry = await entries.query(context).forEntry(input.entryId).get();
     const entryNumber = await entries
       .mutate(context)
@@ -202,7 +210,8 @@ export const approve = userCompetitionAdminMutation
     });
 
     return null;
-  });
+  })
+  .public();
 
 export const reject = userCompetitionAdminMutation
   .input({
@@ -210,7 +219,7 @@ export const reject = userCompetitionAdminMutation
     rejectedReason: v.string(),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const entry = await entries.query(context).forEntry(input.entryId).get();
     await entries
       .mutate(context)
@@ -227,4 +236,5 @@ export const reject = userCompetitionAdminMutation
     });
 
     return null;
-  });
+  })
+  .public();

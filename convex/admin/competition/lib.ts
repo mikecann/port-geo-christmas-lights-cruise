@@ -7,7 +7,7 @@ import { internal } from "../../../convex/_generated/api";
 
 export const userCompetitionAdminQueryMiddleware = convex
   .query()
-  .middleware(async ({ context, next }) => {
+  .createMiddleware(async (context, next) => {
     const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
 
@@ -20,10 +20,8 @@ export const userCompetitionAdminQueryMiddleware = convex
       throw new Error("User is not a competition admin or system admin");
 
     return next({
-      context: {
-        ...context,
-        getUser: async () => user,
-      },
+      ...context,
+      getUser: async () => user,
     });
   });
 
@@ -43,7 +41,7 @@ export const userCompetitionAdminQuery = convex
 
 export const userCompetitionAdminMutationMiddleware = convex
   .mutation()
-  .middleware(async ({ context, next }) => {
+  .createMiddleware(async (context, next) => {
     const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
 
@@ -56,10 +54,8 @@ export const userCompetitionAdminMutationMiddleware = convex
       throw new Error("User is not a competition admin or system admin");
 
     return next({
-      context: {
-        ...triggers.wrapDB(context),
-        getUser: async () => user,
-      },
+      ...triggers.wrapDB(context),
+      getUser: async () => user,
     });
   });
 
@@ -70,7 +66,6 @@ export const userCompetitionAdminMutation = convex
 // Internal query to check admin status (used by action middleware)
 export const checkAdminStatus = convex
   .query()
-  .internal()
   .input({
     userId: v.id("users"),
   })
@@ -80,18 +75,19 @@ export const checkAdminStatus = convex
       isSystemAdmin: v.boolean(),
     }),
   )
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const user = await context.db.get(input.userId);
     if (!user) throw new Error("User not found");
     return {
       isCompetitionAdmin: user.isCompetitionAdmin ?? false,
       isSystemAdmin: user.isSystemAdmin ?? false,
     };
-  });
+  })
+  .internal();
 
 export const userCompetitionAdminActionMiddleware = convex
   .action()
-  .middleware(async ({ context, next }) => {
+  .createMiddleware(async (context, next) => {
     const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
 
@@ -107,10 +103,8 @@ export const userCompetitionAdminActionMiddleware = convex
       throw new Error("User is not a competition admin or system admin");
 
     return next({
-      context: {
-        ...context,
-        userId,
-      },
+      ...context,
+      userId,
     });
   });
 

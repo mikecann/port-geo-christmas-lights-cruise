@@ -41,10 +41,9 @@ export const setupE2E = () => {
 
   const stagehand = new Stagehand({
     env: "LOCAL",
-    modelName: model.name,
+    model: model.name,
     localBrowserLaunchOptions: {
       headless: Boolean(process.env.CI),
-      recordVideo: { dir: "e2e-videos/" },
     },
     verbose: 2,
     logger: createDetailedStagehandLogger(),
@@ -54,7 +53,7 @@ export const setupE2E = () => {
     await backend.init();
 
     await frontend.init({ convexUrl: backend.backendUrl! });
-    
+
     await stagehand.init();
 
     const authKeys = await generateTestKeys();
@@ -67,22 +66,29 @@ export const setupE2E = () => {
     await backend.stop();
     await stagehand.close();
     console.log("--- Run Finished ---");
-    logExpenseEstimate();
+    await logExpenseEstimate();
   });
 
   beforeEach(async () => {
     await backend.client.mutation(api.testing.testing.clearAll);
   });
 
-  const logExpenseEstimate = () => {
+  const getPage = () => {
+    const page = stagehand.context.pages()[0];
+    if (!page) throw new Error("Stagehand did not create a browser page");
+    return page;
+  };
+
+  const logExpenseEstimate = async () => {
+    const metrics = await stagehand.metrics;
     console.log({
-      totalPromptTokens: stagehand.metrics.totalPromptTokens,
-      totalCompletionTokens: stagehand.metrics.totalCompletionTokens,
+      totalPromptTokens: metrics.totalPromptTokens,
+      totalCompletionTokens: metrics.totalCompletionTokens,
     });
 
     const estimatedCost =
-      stagehand.metrics.totalPromptTokens * model.inputPricePerToken +
-      stagehand.metrics.totalCompletionTokens * model.outputPricePerToken;
+      metrics.totalPromptTokens * model.inputPricePerToken +
+      metrics.totalCompletionTokens * model.outputPricePerToken;
 
     console.log(`Estimated cost (${model.name}): $${estimatedCost.toFixed(5)}`);
   };
@@ -94,68 +100,47 @@ export const setupE2E = () => {
     logExpenseEstimate,
     auth: {
       signInAs: async (options: AuthenticateOptions) => {
+        const page = getPage();
+
         // Navigate to the test auth page
-        await stagehand.page.goto(
-          `${frontend.frontendUrl}${routes.testAuth().href}`,
-        );
+        await page.goto(`${frontend.frontendUrl}${routes.testAuth().href}`);
 
         // Fill in the email
         if (options.email) {
-          const emailInput = await stagehand.page.$(
-            '[data-testid="test-auth-email"]',
-          );
-          if (emailInput) {
-            await emailInput.fill(options.email);
-          }
+          await page
+            .locator('[data-testid="test-auth-email"]')
+            .fill(options.email);
         }
 
         // Fill in the name
         if (options.name) {
-          const nameInput = await stagehand.page.$(
-            '[data-testid="test-auth-name"]',
-          );
-          if (nameInput) {
-            await nameInput.fill(options.name);
-          }
+          await page
+            .locator('[data-testid="test-auth-name"]')
+            .fill(options.name);
         }
 
         // Set system admin checkbox
         if (options.isSystemAdmin) {
-          const checkbox = await stagehand.page.$(
-            '[data-testid="test-auth-system-admin"]',
-          );
-          if (checkbox) {
-            await checkbox.check();
-          }
+          await page.locator('[data-testid="test-auth-system-admin"]').click();
         }
 
         // Set competition admin checkbox
         if (options.isCompetitionAdmin) {
-          const checkbox = await stagehand.page.$(
-            '[data-testid="test-auth-competition-admin"]',
-          );
-          if (checkbox) {
-            await checkbox.check();
-          }
+          await page
+            .locator('[data-testid="test-auth-competition-admin"]')
+            .click();
         }
 
         // Click the authenticate button
-        const submitButton = await stagehand.page.$(
-          '[data-testid="test-auth-submit"]',
-        );
-        if (submitButton) {
-          await submitButton.click();
-        }
+        await page.locator('[data-testid="test-auth-submit"]').click();
 
         // Wait for authentication to complete
-        await stagehand.page.waitForFunction(
-          () => {
-            const statusElement = document.querySelector(
-              '[data-testid="test-auth-status"]',
-            );
-            return statusElement?.textContent === "Authenticated!";
-          },
-          { timeout: 10000 },
+        await waitFor(
+          async () =>
+            (await page
+              .locator('[data-testid="test-auth-status"]')
+              .textContent()) === "Authenticated!",
+          10_000,
         );
 
         const user = await backend.client.query(
@@ -169,11 +154,21 @@ export const setupE2E = () => {
       },
     },
     goto: (route?: Route<typeof routes>) => {
-      if (!route) return stagehand.page.goto(frontend.frontendUrl!);
-      return stagehand.page.goto(`${frontend.frontendUrl}${route.href}`);
+      const page = getPage();
+      if (!route) return page.goto(frontend.frontendUrl!);
+      return page.goto(`${frontend.frontendUrl}${route.href}`);
     },
   };
 };
+
+async function waitFor(check: () => Promise<boolean>, timeoutMs: number) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await check()) return;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`Timed out after ${timeoutMs}ms`);
+}
 
 type AuthenticateOptions = {
   email: string;

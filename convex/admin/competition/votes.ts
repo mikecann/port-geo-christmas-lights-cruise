@@ -30,7 +30,7 @@ export const listPageForCategory = userCompetitionAdminQuery
       }),
     ),
   )
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const total = await aggregateVotes.count(context, {
       namespace: input.category,
     });
@@ -71,23 +71,24 @@ export const listPageForCategory = userCompetitionAdminQuery
     );
 
     return votesData.filter(isNotNullOrUndefined);
-  });
+  })
+  .public();
 
 export const countForCategory = userCompetitionAdminQuery
   .input({
     category: voteCategoryValidator,
   })
   .returns(v.number())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const count = await aggregateVotes.count(context, {
       namespace: input.category,
     });
     return count;
-  });
+  })
+  .public();
 
 export const getAllVotesForExportPage = convex
   .query()
-  .internal()
   .input({
     paginationOpts: paginationOptsValidator,
   })
@@ -106,7 +107,7 @@ export const getAllVotesForExportPage = convex
       continueCursor: v.union(v.string(), v.null()),
     }),
   )
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const result = await context.db
       .query("votes")
       .order("asc")
@@ -133,7 +134,8 @@ export const getAllVotesForExportPage = convex
       isDone: result.isDone,
       continueCursor: result.continueCursor,
     };
-  });
+  })
+  .internal();
 
 export const getAllVotesForExport = userCompetitionAdminAction
   .input({})
@@ -149,7 +151,7 @@ export const getAllVotesForExport = userCompetitionAdminAction
       }),
     ),
   )
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const allVotes: Array<{
       voteCategory: "best_display" | "most_jolly";
       dateTime: number;
@@ -188,4 +190,5 @@ export const getAllVotesForExport = userCompetitionAdminAction
     }
 
     return allVotes;
-  });
+  })
+  .public();

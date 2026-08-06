@@ -12,25 +12,27 @@ import type { Doc } from "../_generated/dataModel";
 
 export const list = myQuery
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     return await votes.forUser(context.userId).list(context.db);
-  });
+  })
+  .public();
 
 export const hasVoted = myQuery
   .input({
     category: voteCategoryValidator,
   })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     return await votes
       .forUser(context.userId)
       .hasVotedForCategory(context.db, input.category);
-  });
+  })
+  .public();
 
 export const getForCategory = myQuery
   .input({
     category: voteCategoryValidator,
   })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const vote = await votes
       .forUser(context.userId)
       .findVoteForCategory(context.db, input.category);
@@ -52,11 +54,12 @@ export const getForCategory = myQuery
         photos: entryPhotos,
       },
     };
-  });
+  })
+  .public();
 
 export const getStatus = myQuery
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const votingStatus: Record<VoteCategory, Doc<"votes"> | null> = {
       best_display: null,
       most_jolly: null,
@@ -71,7 +74,8 @@ export const getStatus = myQuery
     }
 
     return votingStatus;
-  });
+  })
+  .public();
 
 export const vote = myMutation
   .input({
@@ -79,7 +83,7 @@ export const vote = myMutation
     category: voteCategoryValidator,
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     // Validate entry exists
     await entries.query(context).forEntry(input.entryId).get();
 
@@ -89,16 +93,18 @@ export const vote = myMutation
     });
 
     return null;
-  });
+  })
+  .public();
 
 export const cancel = myMutation
   .input({
     voteId: v.id("votes"),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     await votes
       .forVote(input.voteId)
       .cancel(context.db, { userId: context.userId });
     return null;
-  });
+  })
+  .public();

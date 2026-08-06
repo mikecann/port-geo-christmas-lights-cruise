@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { api } from "../../_generated/api";
-import type {
-  AuthenticatedConvexTest} from "../common/tests/testingHelpers";
+import type { AuthenticatedConvexTest } from "../common/tests/testingHelpers";
 import {
   createConvexTestWithUser,
   createTestEntry,
