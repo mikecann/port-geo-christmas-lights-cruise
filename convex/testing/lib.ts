@@ -9,7 +9,7 @@ export const testingQueryMiddleware = convex
         "Calling a test only function in an unexpected environment",
       );
 
-    return next({ context });
+    return next(context);
   });
 
 export const testingQuery = convex.query().use(testingQueryMiddleware);
@@ -22,7 +22,7 @@ export const testingMutationMiddleware = convex
         "Calling a test only function in an unexpected environment",
       );
 
-    return next({ context });
+    return next(context);
   });
 
 export const testingMutation = convex.mutation().use(testingMutationMiddleware);
@@ -35,7 +35,7 @@ export const testingActionMiddleware = convex
         "Calling a test only function in an unexpected environment",
       );
 
-    return next({ context });
+    return next(context);
   });
 
 export const testingAction = convex.action().use(testingActionMiddleware);
