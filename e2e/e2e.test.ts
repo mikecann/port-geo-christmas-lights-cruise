@@ -5,7 +5,7 @@ import { api } from "../convex/_generated/api";
 import { z } from "zod";
 import { minutesInMs } from "../shared/time";
 
-const { auth, backend, stagehand, goto } = setupE2E();
+const { auth, backend, stagehand, goto, waitFor } = setupE2E();
 
 describe("a public user's experience", () => {
   // it("should allow a user to buy tickets from the homepage", async () => {
@@ -34,23 +34,21 @@ describe("a public user's experience", () => {
     if (!page) throw new Error("Stagehand did not create a browser page");
     await page.locator('header a[href="/entries"]').click();
 
-    const { entries } = await stagehand.extract(
-      "find the entries listed",
-      z.object({
-        entries: z.array(
-          z.object({
-            entryName: z.string(),
-            entryNumber: z.number(),
-          }),
-        ),
-      }),
+    await waitFor(
+      async () =>
+        (await page.locator('[data-testid="entry-gallery-card"]').count()) ===
+        mocks.length,
+      10_000,
     );
 
-    expect(entries.length).toBe(9);
     for (const mock of mocks) {
-      expect(entries.some((e) => e.entryNumber === mock.entryNumber)).toBe(
-        true,
-      );
+      expect(
+        await page
+          .locator(
+            `[data-testid="entry-gallery-card"][data-entry-number="${mock.entryNumber}"]`,
+          )
+          .count(),
+      ).toBe(1);
     }
   });
 
@@ -114,11 +112,25 @@ describe("a voter's experience", () => {
 
     await goto(routes.entry({ entryId: entries[0].id }));
 
-    await stagehand.act(`Click the vote button`);
+    const page = stagehand.context.pages()[0];
+    if (!page) throw new Error("Stagehand did not create a browser page");
+    await page.locator('[data-testid="vote-entry"]').click();
+    await waitFor(
+      async () =>
+        (await page
+          .locator('[data-testid="vote-category-most_jolly"]')
+          .count()) === 1,
+      10_000,
+    );
+    await page.locator('[data-testid="vote-category-most_jolly"]').click();
+    await page.locator('[data-testid="cast-vote-most_jolly"]').click();
 
-    await stagehand.act(`Click the most jolly category button`);
-
-    await stagehand.act(`Click the button to cast the vote`);
+    await waitFor(
+      async () =>
+        (await backend.client.query(api.testing.testing.listVotes)).length ===
+        1,
+      10_000,
+    );
 
     const votes = await backend.client.query(api.testing.testing.listVotes);
 

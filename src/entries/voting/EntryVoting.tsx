@@ -46,6 +46,7 @@ export default function EntryVoting({ entryId }: Props) {
         <Center>
           {isAuthenticated ? (
             <Button
+              data-testid="vote-entry"
               size="md"
               color="yellow"
               variant="filled"

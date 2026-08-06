@@ -30,6 +30,8 @@ export default function EntryGalleryCard({
 
   return (
     <Card
+      data-testid="entry-gallery-card"
+      data-entry-number={entry.entryNumber}
       shadow="sm"
       padding={0}
       radius="lg"
