@@ -2,22 +2,10 @@ import { describe, it, expect } from "vitest";
 import { setupE2E } from "./lib";
 import { routes } from "../src/routes";
 import { api } from "../convex/_generated/api";
-import { z } from "zod";
-import { minutesInMs } from "../shared/time";
 
 const { auth, backend, stagehand, goto, waitFor } = setupE2E();
 
 describe("a public user's experience", () => {
-  // it("should allow a user to buy tickets from the homepage", async () => {
-  //   await goto();
-
-  //   await stagehand.page.act("Click the button to buy tickets");
-
-  //   const button = await stagehand.page.observe("find the Buy Tickets button");
-
-  //   expect(button.length).toBeGreaterThan(0);
-  // });
-
   it("should allow a user to navigate to the entries page and view the entries", async () => {
     await goto();
 
@@ -52,7 +40,7 @@ describe("a public user's experience", () => {
     }
   });
 
-  it("should allow the user to sign in to vote from the entry page", async () => {
+  it("should show that voting is closed on an entry page", async () => {
     const mockEntries = await backend.client.mutation(
       api.testing.testing.createMockEntries,
       { count: 3 },
@@ -60,11 +48,38 @@ describe("a public user's experience", () => {
 
     await goto(routes.entry({ entryId: mockEntries[0].id }));
 
-    await stagehand.act("Click the sign in to vote button");
+    const page = stagehand.context.pages()[0];
+    if (!page) throw new Error("Stagehand did not create a browser page");
+    expect(await page.locator('[data-testid="voting-closed"]').count()).toBe(1);
+    expect(await page.locator('[data-testid="vote-entry"]').count()).toBe(0);
+  });
 
-    expect(stagehand.context.pages()[0]?.url()).toContain(
-      routes.signin({ returnTo: "" }).href,
-    );
+  it("should keep competition signup available", async () => {
+    await goto(routes.competitionDetails());
+
+    const page = stagehand.context.pages()[0];
+    if (!page) throw new Error("Stagehand did not create a browser page");
+    expect(
+      await page.locator('[data-testid="competition-prize-pool"]').count(),
+    ).toBe(1);
+    expect(
+      await page.locator('[data-testid="competition-sign-in"]').count(),
+    ).toBe(1);
+  });
+
+  it("should show that 2026 tickets are coming soon", async () => {
+    await goto(routes.tickets());
+
+    const page = stagehand.context.pages()[0];
+    if (!page) throw new Error("Stagehand did not create a browser page");
+    expect(
+      await page.locator('[data-testid="tickets-coming-soon"]').count(),
+    ).toBe(1);
+    expect(
+      await page
+        .locator("#eventbrite-widget-modal-trigger-1813094407179")
+        .count(),
+    ).toBe(0);
   });
 
   it("should allow a user to navigate to the map page and open an entry marker popup", async () => {
@@ -84,6 +99,12 @@ describe("a public user's experience", () => {
       { model: "openai/gpt-5" },
     );
 
+    const page = stagehand.context.pages()[0];
+    if (!page) throw new Error("Stagehand did not create a browser page");
+    expect(await page.locator('[data-testid="map-vote-entry"]').count()).toBe(
+      0,
+    );
+
     await stagehand.act("Click view details button in the popup that opens", {
       model: "openai/gpt-5",
     });
@@ -94,81 +115,8 @@ describe("a public user's experience", () => {
   });
 });
 
-describe("a voter's experience", () => {
-  it("should allow a user to submit an entry", async () => {
-    await goto();
-
-    const me = await auth.signInAs({
-      email: "test@example.com",
-      name: "Test User",
-      isSystemAdmin: false,
-      isCompetitionAdmin: false,
-    });
-
-    const entries = await backend.client.mutation(
-      api.testing.testing.createMockEntries,
-      { count: 1 },
-    );
-
-    await goto(routes.entry({ entryId: entries[0].id }));
-
-    const page = stagehand.context.pages()[0];
-    if (!page) throw new Error("Stagehand did not create a browser page");
-    await page.locator('[data-testid="vote-entry"]').click();
-    await waitFor(
-      async () =>
-        (await page
-          .locator('[data-testid="vote-category-most_jolly"]')
-          .count()) === 1,
-      10_000,
-    );
-    await page.locator('[data-testid="vote-category-most_jolly"]').click();
-    await page.locator('[data-testid="cast-vote-most_jolly"]').click();
-
-    await waitFor(
-      async () =>
-        (await backend.client.query(api.testing.testing.listVotes)).length ===
-        1,
-      10_000,
-    );
-
-    const votes = await backend.client.query(api.testing.testing.listVotes);
-
-    expect(votes.length).toBe(1);
-    expect(votes[0].votingUserId).toBe(me?._id);
-    expect(votes[0].entryId).toBe(entries[0].id);
-    expect(votes[0].category).toBe("most_jolly");
-  });
-
-  it(
-    "agentically enable voting for an entry in the most jolly category",
-    async () => {
-      await goto();
-
-      const entries = await backend.client.mutation(
-        api.testing.testing.createMockEntries,
-        {
-          count: 3,
-        },
-      );
-
-      const agent = await stagehand.agent();
-
-      await agent.execute({
-        instruction: `Vote for an entry #${entries[1].entryNumber} in the "most jolly" category`,
-        maxSteps: 30,
-      });
-
-      const votes = await backend.client.query(api.testing.testing.listVotes);
-
-      expect(votes.length).toBe(1);
-      expect(votes[0].entryId).toBe(entries[1].id);
-      expect(votes[0].category).toBe("most_jolly");
-    },
-    minutesInMs(5),
-  );
-
-  it("should reopen the vote modal after closing it", async () => {
+describe("voting is paused", () => {
+  it("keeps direct vote links read-only", async () => {
     await auth.signInAs({
       email: "test@example.com",
       name: "Test User",
@@ -183,41 +131,13 @@ describe("a voter's experience", () => {
       },
     );
 
-    await goto(routes.entry({ entryId: entries[0].id }));
+    await goto(routes.entryVote({ entryId: entries[0].id }));
 
-    // First vote button click - modal should open
-    await stagehand.act("Click the vote button");
-
-    // Verify modal opened by checking for vote categories
-    const firstModalCheck = await stagehand.extract(
-      "find the vote modal with categories tabs",
-      z.object({
-        hasBestDisplayTab: z.boolean(),
-        hasMostJollyTab: z.boolean(),
-      }),
-    );
-    expect(firstModalCheck.hasBestDisplayTab).toBe(true);
-    expect(firstModalCheck.hasMostJollyTab).toBe(true);
-
-    // Close the modal by clicking the X button
-    await stagehand.act("Close the vote modal by clicking the X button");
-
-    // Observe that the modal is no longer open
-    await stagehand.observe("confirm that there is no vote modal opened");
-
-    // Click vote button again - modal should reopen
-    await stagehand.act("Click the vote button again");
-
-    // Verify modal reopened by checking for vote categories again
-    const secondModalCheck = await stagehand.extract(
-      "find the vote modal with categories tabs",
-      z.object({
-        hasBestDisplayTab: z.boolean(),
-        hasMostJollyTab: z.boolean(),
-      }),
-    );
-    expect(secondModalCheck.hasBestDisplayTab).toBe(true);
-    expect(secondModalCheck.hasMostJollyTab).toBe(true);
+    const page = stagehand.context.pages()[0];
+    if (!page) throw new Error("Stagehand did not create a browser page");
+    expect(await page.locator('[data-testid="voting-closed"]').count()).toBe(1);
+    expect(await page.locator('[role="dialog"]').count()).toBe(0);
+    expect(await page.locator('[data-testid="vote-entry"]').count()).toBe(0);
   });
 });
 

@@ -8,29 +8,23 @@ import {
   Box,
   AspectRatio,
   Center,
-  Button,
 } from "@mantine/core";
-import { IconMapPin, IconPhoto, IconX } from "@tabler/icons-react";
+import { IconMapPin, IconPhoto } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { routes } from "../../routes";
 import { getAddressString } from "../../../shared/misc";
 import { usePhotoUrl } from "../../common/hooks/usePhotoUrl";
-import { useErrorCatchingMutation } from "../../common/errors";
 
 type Props = {
   entryId: Id<"entries">;
-  voteId: Id<"votes">;
 };
 
-export default function MyVoteEntryCard({ entryId, voteId }: Props) {
+export default function MyVoteEntryCard({ entryId }: Props) {
   const entryWithPhotos = useQuery(api.public.entries.getWithPhotos, {
     entryId,
   });
-  const [cancelVote, isCancelling] = useErrorCatchingMutation(
-    api.my.votes.cancel,
-  );
 
   // Always call hooks before any early returns
   const firstPhotoUrl = usePhotoUrl(entryWithPhotos?.photos?.[0], {
@@ -107,19 +101,6 @@ export default function MyVoteEntryCard({ entryId, voteId }: Props) {
             </Stack>
           </Stack>
         </Card>
-        <Button
-          size="xs"
-          variant="light"
-          color="red"
-          leftSection={<IconX size={14} />}
-          fullWidth
-          onClick={(e) => {
-            e.stopPropagation();
-            cancelVote({ voteId });
-          }}
-        >
-          Cancel Vote
-        </Button>
       </Stack>
     </Card>
   );

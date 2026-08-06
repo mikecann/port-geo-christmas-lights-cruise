@@ -9,6 +9,7 @@ import {
   Badge,
   SimpleGrid,
   Button,
+  Alert,
 } from "@mantine/core";
 import { useQuery } from "convex/react";
 import { useMemo } from "react";
@@ -93,6 +94,9 @@ export default function MyVotesPage() {
         </Group>
 
         <Stack gap="md">
+          <Alert color="yellow" variant="light" title="Voting is closed">
+            Your previous votes are preserved here as a read-only record.
+          </Alert>
           {VOTE_CATEGORIES.map((category) => {
             const categoryConfig = VOTE_CATEGORIES_CONFIG.find(
               (config) => config.key === category,
@@ -127,7 +131,6 @@ export default function MyVotesPage() {
                         <MyVoteEntryCard
                           key={vote._id}
                           entryId={vote.entryId}
-                          voteId={vote._id}
                         />
                       ))}
                     </SimpleGrid>

@@ -9,6 +9,14 @@ import {
 import type { VoteCategory } from "../features/votes/schema";
 import { entries } from "../features/entries/model";
 import type { Doc } from "../_generated/dataModel";
+import {
+  VOTING_CLOSED_MESSAGE,
+  VOTING_ENABLED,
+} from "../../shared/eventStatus";
+
+function requireVotingToBeOpen() {
+  if (!VOTING_ENABLED) throw new Error(VOTING_CLOSED_MESSAGE);
+}
 
 export const list = myQuery
   .input({})
@@ -84,6 +92,8 @@ export const vote = myMutation
   })
   .returns(v.null())
   .handler(async (context, input) => {
+    requireVotingToBeOpen();
+
     // Validate entry exists
     await entries.query(context).forEntry(input.entryId).get();
 
@@ -102,6 +112,8 @@ export const cancel = myMutation
   })
   .returns(v.null())
   .handler(async (context, input) => {
+    requireVotingToBeOpen();
+
     await votes
       .forVote(input.voteId)
       .cancel(context.db, { userId: context.userId });
