@@ -98,6 +98,7 @@ export const setupE2E = () => {
     frontend,
     stagehand,
     logExpenseEstimate,
+    waitFor,
     auth: {
       signInAs: async (options: AuthenticateOptions) => {
         const page = getPage();
