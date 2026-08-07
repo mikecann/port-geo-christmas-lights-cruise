@@ -11,7 +11,9 @@ export default function EntryPhotosSection({
   entry: Doc<"entries">;
 }) {
   const photos =
-    useQuery(api.public.photos.listForEntry, { entryId: entry._id }) ?? [];
+    useQuery(api.admin.competition.photos.listForEntry, {
+      entryId: entry._id,
+    }) ?? [];
 
   return (
     <Card withBorder p="md">

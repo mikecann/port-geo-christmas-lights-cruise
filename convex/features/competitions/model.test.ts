@@ -65,6 +65,14 @@ describe("competition seasons", () => {
         category: "best_display",
       });
 
+      await expect(
+        votes.forUser(votingUserId).voteForEntry(ctx.db, {
+          competitionId: current._id,
+          entryId: currentEntryId,
+          category: "best_display",
+        }),
+      ).rejects.toThrow("has already voted");
+
       expect(
         await votes
           .forUser(votingUserId)

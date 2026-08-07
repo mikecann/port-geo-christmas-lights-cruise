@@ -13,7 +13,7 @@ import { api } from "../../../../convex/_generated/api";
 export function WipeEntriesButton() {
   const [isWiping, setIsWiping] = useState(false);
   const [wipeAllEntries] = useErrorCatchingMutation(
-    api.admin.system.entries.wipeAll,
+    api.admin.system.entries.wipeCurrentCompetition,
   );
   const { confirm } = useConfirmation();
 
@@ -24,21 +24,22 @@ export function WipeEntriesButton() {
       leftSection={<IconTrash size={16} />}
       onClick={async () => {
         const confirmed = await confirm({
-          title: "Wipe All Entries",
+          title: "Wipe Current Competition Entries",
           content: (
             <>
               <Text size="sm" mb="md">
                 <strong>Warning:</strong> This action will permanently delete
-                ALL entries from the database. This action cannot be undone.
+                all entries from the current competition. This action cannot be
+                undone.
               </Text>
               <Text size="sm" c="dimmed">
-                This will remove all competition entries including draft,
-                submitted, approved, and rejected entries. Use this to reset the
-                database for testing purposes.
+                Archived competition entries are preserved. This removes draft,
+                submitted, approved, and rejected entries from the current
+                competition only.
               </Text>
             </>
           ),
-          confirmButton: "Wipe All Entries",
+          confirmButton: "Wipe Current Entries",
           confirmButtonColor: "red",
         });
         if (!confirmed) return;
@@ -48,7 +49,7 @@ export function WipeEntriesButton() {
           await wipeAllEntries({});
           notifications.show({
             title: "Success!",
-            message: "All entries wiped successfully",
+            message: "Current competition entries wiped successfully",
             color: "green",
             icon: <IconCheck size={16} />,
           });
@@ -60,7 +61,7 @@ export function WipeEntriesButton() {
       }}
       loading={isWiping}
     >
-      Wipe All Entries
+      Wipe Current Entries
     </Button>
   );
 }
@@ -68,7 +69,7 @@ export function WipeEntriesButton() {
 export function WipeVotesButton() {
   const [isWipingVotes, setIsWipingVotes] = useState(false);
   const [wipeAllVotes] = useErrorCatchingMutation(
-    api.admin.system.votes.wipeAll,
+    api.admin.system.votes.wipeCurrentCompetition,
   );
   const { confirm } = useConfirmation();
 
@@ -79,19 +80,20 @@ export function WipeVotesButton() {
       leftSection={<IconTrash size={16} />}
       onClick={async () => {
         const confirmed = await confirm({
-          title: "Wipe All Votes",
+          title: "Wipe Current Competition Votes",
           content: (
             <>
               <Text size="sm" mb="md">
                 <strong>Warning:</strong> This action will permanently delete
-                ALL votes from the database. This action cannot be undone.
+                all votes from the current competition. This action cannot be
+                undone.
               </Text>
               <Text size="sm" c="dimmed">
-                Use this to reset public voting.
+                Archived competition votes are preserved.
               </Text>
             </>
           ),
-          confirmButton: "Wipe All Votes",
+          confirmButton: "Wipe Current Votes",
           confirmButtonColor: "red",
         });
         if (!confirmed) return;
@@ -101,7 +103,7 @@ export function WipeVotesButton() {
           await wipeAllVotes({});
           notifications.show({
             title: "Success!",
-            message: "All votes wiped successfully",
+            message: "Current competition votes wiped successfully",
             color: "green",
             icon: <IconCheck size={16} />,
           });
@@ -113,7 +115,7 @@ export function WipeVotesButton() {
       }}
       loading={isWipingVotes}
     >
-      Wipe All Votes
+      Wipe Current Votes
     </Button>
   );
 }

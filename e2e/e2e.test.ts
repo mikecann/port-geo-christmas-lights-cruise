@@ -101,6 +101,11 @@ describe("a public user's experience", () => {
 
     const page = stagehand.context.pages()[0];
     if (!page) throw new Error("Stagehand did not create a browser page");
+    await waitFor(
+      async () =>
+        (await page.locator('a:has-text("View Details")').count()) === 1,
+      10_000,
+    );
     expect(await page.locator('[data-testid="map-vote-entry"]').count()).toBe(
       0,
     );

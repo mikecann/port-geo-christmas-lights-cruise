@@ -21,14 +21,14 @@ export const generateMock = userSystemAdminMutation
   })
   .public();
 
-export const wipeAll = userSystemAdminMutation
+export const wipeCurrentCompetition = userSystemAdminMutation
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
     const result = await entries.mutate(context).wipeAll(competition._id);
 
     return {
-      message: `Successfully deleted ${result.deletedCount} entries`,
+      message: `Successfully deleted ${result.deletedCount} current competition entries`,
       deletedCount: result.deletedCount,
     };
   })
@@ -56,9 +56,15 @@ export const wipeAllTestUsers = userSystemAdminMutation
 export const wipeAllMockData = userSystemAdminMutation
   .input({})
   .handler(async (context) => {
-    await context.runMutation(api.admin.system.entries.wipeAll, {});
+    await context.runMutation(
+      api.admin.system.entries.wipeCurrentCompetition,
+      {},
+    );
     await context.runMutation(api.admin.system.entries.wipeAllTestUsers, {});
-    await context.runMutation(api.admin.system.votes.wipeAll, {});
+    await context.runMutation(
+      api.admin.system.votes.wipeCurrentCompetition,
+      {},
+    );
 
     return {
       message: `Successfully deleted all entries and test users`,

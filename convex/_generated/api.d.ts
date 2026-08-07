@@ -26,7 +26,6 @@ import type * as features_competitions_model from "../features/competitions/mode
 import type * as features_email_model from "../features/email/model.js";
 import type * as features_entries_model from "../features/entries/model.js";
 import type * as features_entries_testing from "../features/entries/testing.js";
-import type * as features_map_geocoding from "../features/map/geocoding.js";
 import type * as features_map_lib from "../features/map/lib.js";
 import type * as features_photos_model from "../features/photos/model.js";
 import type * as features_users_model from "../features/users/model.js";
@@ -37,8 +36,6 @@ import type * as internal_cleanup from "../internal/cleanup.js";
 import type * as internal_competitions from "../internal/competitions.js";
 import type * as internal_entries from "../internal/entries.js";
 import type * as internal_users from "../internal/users.js";
-import type * as internal_voteAggregateData from "../internal/voteAggregateData.js";
-import type * as internal_voteAggregateMaintenance from "../internal/voteAggregateMaintenance.js";
 import type * as my_entries from "../my/entries.js";
 import type * as my_lib from "../my/lib.js";
 import type * as my_photos from "../my/photos.js";
@@ -76,7 +73,6 @@ declare const fullApi: ApiFromModules<{
   "features/email/model": typeof features_email_model;
   "features/entries/model": typeof features_entries_model;
   "features/entries/testing": typeof features_entries_testing;
-  "features/map/geocoding": typeof features_map_geocoding;
   "features/map/lib": typeof features_map_lib;
   "features/photos/model": typeof features_photos_model;
   "features/users/model": typeof features_users_model;
@@ -87,8 +83,6 @@ declare const fullApi: ApiFromModules<{
   "internal/competitions": typeof internal_competitions;
   "internal/entries": typeof internal_entries;
   "internal/users": typeof internal_users;
-  "internal/voteAggregateData": typeof internal_voteAggregateData;
-  "internal/voteAggregateMaintenance": typeof internal_voteAggregateMaintenance;
   "my/entries": typeof my_entries;
   "my/lib": typeof my_lib;
   "my/photos": typeof my_photos;

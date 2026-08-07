@@ -1,14 +1,22 @@
-import { userCompetitionAdminMutation } from "./lib";
-import { photos } from "../../features/photos/model";
 import { v } from "convex/values";
+import { photos } from "../../features/photos/model";
+import { userCompetitionAdminMutation, userCompetitionAdminQuery } from "./lib";
+
+/** Photos for admin review, including entries that are not public yet. */
+export const listForEntry = userCompetitionAdminQuery
+  .input({ entryId: v.id("entries") })
+  .handler(async (ctx, input) => {
+    return await photos.forEntry(input.entryId).list(ctx.db);
+  })
+  .public();
 
 export const beginUpload = userCompetitionAdminMutation
   .input({ entryId: v.id("entries") })
   .handler(async (context, input) => {
     const uploadStartedAt = Date.now();
-    return await photos
-      .forEntry(input.entryId)
-      .add(context, { uploadStartedAt });
+    return await photos.forEntry(input.entryId).add(context, {
+      uploadStartedAt,
+    });
   })
   .public();
 

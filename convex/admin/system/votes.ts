@@ -5,7 +5,7 @@ import { competitions } from "../../features/competitions/model";
 
 // Mutations
 
-export const wipeAll = userSystemAdminMutation
+export const wipeCurrentCompetition = userSystemAdminMutation
   .input({})
   .returns(
     v.object({
@@ -17,7 +17,7 @@ export const wipeAll = userSystemAdminMutation
     const competition = await competitions.query(context).current();
     const result = await votes.wipeAll(context.db, competition._id);
     return {
-      message: `Successfully deleted ${result.deleted} votes`,
+      message: `Successfully deleted ${result.deleted} current competition votes`,
       deleted: result.deleted,
     };
   })
