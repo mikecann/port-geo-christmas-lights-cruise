@@ -3,6 +3,7 @@ import { entries } from "../features/entries/model";
 import { email } from "../features/email/model";
 import { convex } from "../schema";
 import { competitions } from "../features/competitions/model";
+import type { MutationCtx } from "../_generated/server";
 
 export const startSubmitting = convex
   .mutation()
@@ -66,6 +67,60 @@ export const revertToDraft = convex
   })
   .internal();
 
+export async function repairCurrentReturningEntryNumbersForContext(
+  context: MutationCtx,
+) {
+  const competition = await competitions.query(context).current();
+  const approvedEntries = await entries
+    .query(context)
+    .listApproved(competition._id);
+  const currentEntryByNumber = new Map(
+    approvedEntries.map((entry) => [entry.entryNumber, entry]),
+  );
+  const pendingRepairs = new Map<
+    (typeof approvedEntries)[number]["_id"],
+    { entry: (typeof approvedEntries)[number]; entryNumber: number }
+  >();
+
+  for (const entry of approvedEntries) {
+    const previousEntry = await entries
+      .query(context)
+      .forUser(entry.submittedByUserId)
+      .findPreviousCompetitionApproved(competition._id);
+    if (!previousEntry || previousEntry.entryNumber === entry.entryNumber)
+      continue;
+
+    pendingRepairs.set(entry._id, {
+      entry,
+      entryNumber: previousEntry.entryNumber,
+    });
+  }
+
+  let repairedCount = 0;
+  let madeProgress = true;
+  while (madeProgress) {
+    madeProgress = false;
+
+    // A move can free the number needed by another returning entrant, so keep
+    // retrying the remaining repairs until a complete pass makes no progress.
+    for (const [entryId, repair] of pendingRepairs) {
+      const conflictingEntry = currentEntryByNumber.get(repair.entryNumber);
+      if (conflictingEntry && conflictingEntry._id !== entryId) continue;
+
+      currentEntryByNumber.delete(repair.entry.entryNumber);
+      currentEntryByNumber.set(repair.entryNumber, repair.entry);
+      await entries.mutate(context).forEntry(entryId).setEntryNumber({
+        entryNumber: repair.entryNumber,
+      });
+      pendingRepairs.delete(entryId);
+      repairedCount++;
+      madeProgress = true;
+    }
+  }
+
+  return { repairedCount, conflictCount: pendingRepairs.size };
+}
+
 export const repairCurrentReturningEntryNumbers = convex
   .mutation()
   .input({})
@@ -75,41 +130,5 @@ export const repairCurrentReturningEntryNumbers = convex
       conflictCount: v.number(),
     }),
   )
-  .handler(async (context) => {
-    const competition = await competitions.query(context).current();
-    const approvedEntries = await entries
-      .query(context)
-      .listApproved(competition._id);
-    const currentEntryByNumber = new Map(
-      approvedEntries.map((entry) => [entry.entryNumber, entry]),
-    );
-    let repairedCount = 0;
-    let conflictCount = 0;
-
-    for (const entry of approvedEntries) {
-      const previousEntry = await entries
-        .query(context)
-        .forUser(entry.submittedByUserId)
-        .findMostRecentPreviousApproved(competition._id);
-      if (!previousEntry || previousEntry.entryNumber === entry.entryNumber)
-        continue;
-
-      const conflictingEntry = currentEntryByNumber.get(
-        previousEntry.entryNumber,
-      );
-      if (conflictingEntry && conflictingEntry._id !== entry._id) {
-        conflictCount++;
-        continue;
-      }
-
-      currentEntryByNumber.delete(entry.entryNumber);
-      currentEntryByNumber.set(previousEntry.entryNumber, entry);
-      await entries.mutate(context).forEntry(entry._id).setEntryNumber({
-        entryNumber: previousEntry.entryNumber,
-      });
-      repairedCount++;
-    }
-
-    return { repairedCount, conflictCount };
-  })
+  .handler(repairCurrentReturningEntryNumbersForContext)
   .internal();

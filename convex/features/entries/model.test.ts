@@ -69,6 +69,63 @@ describe("getNextAvailableEntryNumber", () => {
     expect(result).toBe(17);
   });
 
+  it("should not reclaim an older number after the user skips a competition", async () => {
+    const result = await t.run(async (ctx) => {
+      const olderCompetition = await ctx.db.insert("competitions", {
+        year: 2024,
+        entriesOpen: false,
+        votingOpen: false,
+      });
+      const currentCompetition = await competitions
+        .query(ctx)
+        .forYear(2026)
+        .get();
+      const lastYearCompetition = await competitions
+        .query(ctx)
+        .forYear(2025)
+        .get();
+      const lastYearOwnerId = await ctx.db.insert("users", {
+        name: "Last year's owner",
+      });
+      await ctx.db.insert("entries", {
+        competitionId: olderCompetition,
+        submittedByUserId: user._id,
+        status: "approved",
+        submittedAt: Date.now() - 2,
+        approvedAt: Date.now() - 1,
+        entryNumber: 17,
+        name: "Older display",
+        houseAddress: {
+          address: "17 Older Parade",
+          lat: 0,
+          lng: 0,
+          placeId: "older-place",
+        },
+      });
+      await ctx.db.insert("entries", {
+        competitionId: lastYearCompetition._id,
+        submittedByUserId: lastYearOwnerId,
+        status: "approved",
+        submittedAt: Date.now() - 2,
+        approvedAt: Date.now() - 1,
+        entryNumber: 17,
+        name: "Last year's display",
+        houseAddress: {
+          address: "17 Previous Parade",
+          lat: 0,
+          lng: 0,
+          placeId: "last-year-place",
+        },
+      });
+
+      return await entries
+        .mutate(ctx)
+        .getNextAvailableEntryNumber(currentCompetition._id, user._id);
+    });
+
+    expect(result).not.toBe(17);
+  });
+
   it("should choose another number if the previous number is already used", async () => {
     const anotherUser = await createTestUser(rawTest, {});
     const result = await t.run(async (ctx) => {

@@ -98,30 +98,28 @@ export const entries = {
             );
           },
 
-          async findMostRecentPreviousApproved(
+          async findPreviousCompetitionApproved(
             competitionId: Id<"competitions">,
           ) {
             const competition = await competitions
               .query(context)
               .forCompetition(competitionId)
               .get();
-            const previousCompetitions = await competitions
+            const [previousCompetition] = await competitions
               .query(context)
-              .listBeforeYear(competition.year);
+              .listBeforeYear(competition.year, 1);
+            if (!previousCompetition) return null;
 
-            for (const previousCompetition of previousCompetitions) {
-              const previousEntry = await db
-                .query("entries")
-                .withIndex("by_competitionId_and_submittedByUserId", (q) =>
-                  q
-                    .eq("competitionId", previousCompetition._id)
-                    .eq("submittedByUserId", userId),
-                )
-                .unique();
-              if (previousEntry?.status === "approved") return previousEntry;
-            }
+            const previousEntry = await db
+              .query("entries")
+              .withIndex("by_competitionId_and_submittedByUserId", (q) =>
+                q
+                  .eq("competitionId", previousCompetition._id)
+                  .eq("submittedByUserId", userId),
+              )
+              .unique();
 
-            return null;
+            return previousEntry?.status === "approved" ? previousEntry : null;
           },
 
           async get() {
@@ -522,7 +520,7 @@ export const entries = {
           const previousEntry = await entries
             .query(context)
             .forUser(userId)
-            .findMostRecentPreviousApproved(resolvedCompetitionId);
+            .findPreviousCompetitionApproved(resolvedCompetitionId);
           if (previousEntry && !usedNumbers.has(previousEntry.entryNumber))
             return previousEntry.entryNumber;
 
