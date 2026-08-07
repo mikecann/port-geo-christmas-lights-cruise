@@ -75,6 +75,53 @@ export const entries = {
               .unique();
           },
 
+          async listAcrossCompetitions() {
+            const competitionDocs = await competitions
+              .query(context)
+              .listNewestFirst();
+            const rows = await Promise.all(
+              competitionDocs.map(async (competition) => ({
+                competition,
+                entry: await db
+                  .query("entries")
+                  .withIndex("by_competitionId_and_submittedByUserId", (q) =>
+                    q
+                      .eq("competitionId", competition._id)
+                      .eq("submittedByUserId", userId),
+                  )
+                  .unique(),
+              })),
+            );
+            return rows.filter(
+              (row): row is typeof row & { entry: Doc<"entries"> } =>
+                row.entry !== null,
+            );
+          },
+
+          async findPreviousCompetitionApproved(
+            competitionId: Id<"competitions">,
+          ) {
+            const competition = await competitions
+              .query(context)
+              .forCompetition(competitionId)
+              .get();
+            const [previousCompetition] = await competitions
+              .query(context)
+              .listBeforeYear(competition.year, 1);
+            if (!previousCompetition) return null;
+
+            const previousEntry = await db
+              .query("entries")
+              .withIndex("by_competitionId_and_submittedByUserId", (q) =>
+                q
+                  .eq("competitionId", previousCompetition._id)
+                  .eq("submittedByUserId", userId),
+              )
+              .unique();
+
+            return previousEntry?.status === "approved" ? previousEntry : null;
+          },
+
           async get() {
             const entry = await this.find();
             return ensure(entry, `User '${userId}' has no entry`);
@@ -457,25 +504,57 @@ export const entries = {
         return { deletedCount };
       },
 
-      async getNextAvailableEntryNumber(competitionId?: Id<"competitions">) {
-        const approvedEntries = await query.listApproved(competitionId);
-        if (approvedEntries.length === 0)
-          return randomIntRange(0, MAX_ENTRY_NUMBER);
-
+      async getNextAvailableEntryNumber(
+        competitionId?: Id<"competitions">,
+        userId?: Id<"users">,
+      ) {
+        const resolvedCompetitionId =
+          competitionId ?? (await competitions.query(context).current())._id;
+        const approvedEntries = await query.listApproved(resolvedCompetitionId);
         const usedNumbers = new Set(
           approvedEntries.map((entry) => entry.entryNumber),
         );
+        const unavailableNumbers = new Set(usedNumbers);
+
+        if (userId) {
+          const previousEntry = await entries
+            .query(context)
+            .forUser(userId)
+            .findPreviousCompetitionApproved(resolvedCompetitionId);
+          if (previousEntry && !usedNumbers.has(previousEntry.entryNumber))
+            return previousEntry.entryNumber;
+
+          // Keep last season's numbers available for their returning owners.
+          // New entrants can use unreserved numbers or continue above the old pool.
+          const currentCompetition = await competitions
+            .query(context)
+            .forCompetition(resolvedCompetitionId)
+            .get();
+          const [previousCompetition] = await competitions
+            .query(context)
+            .listBeforeYear(currentCompetition.year, 1);
+          if (previousCompetition) {
+            const previousEntries = await query.listApproved(
+              previousCompetition._id,
+            );
+            for (const previousEntry of previousEntries)
+              unavailableNumbers.add(previousEntry.entryNumber);
+          }
+        }
+
+        if (unavailableNumbers.size === 0)
+          return randomIntRange(0, MAX_ENTRY_NUMBER);
 
         const availableNumbers = [];
         for (let i = 0; i <= MAX_ENTRY_NUMBER; i++)
-          if (!usedNumbers.has(i)) availableNumbers.push(i);
+          if (!unavailableNumbers.has(i)) availableNumbers.push(i);
 
         if (availableNumbers.length > 0) {
           const randomIndex = randomIntRange(0, availableNumbers.length - 1);
           return availableNumbers[randomIndex];
         }
 
-        return Math.max(...usedNumbers) + 1;
+        return Math.max(...unavailableNumbers) + 1;
       },
     };
   },

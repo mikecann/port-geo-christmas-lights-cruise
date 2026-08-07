@@ -1,8 +1,13 @@
 import { Stack, Text, Anchor } from "@mantine/core";
 import { Authenticated, Unauthenticated } from "convex/react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { routes } from "../../routes";
+import EntrySignupUnavailableButton from "../../competition/EntrySignupUnavailableButton";
 
 export default function FooterNavigation() {
+  const competition = useQuery(api.public.competitions.current, {});
+
   return (
     <Stack gap="md">
       <Text fw={600} c="white" size="lg">
@@ -36,28 +41,34 @@ export default function FooterNavigation() {
         >
           Map View
         </Anchor>
-        <Authenticated>
-          <Anchor
-            component="a"
-            {...routes.myEntries().link}
-            c="gray.4"
-            td="none"
-            style={{ fontSize: 14 }}
-          >
-            Enter Competition
-          </Anchor>
-        </Authenticated>
-        <Unauthenticated>
-          <Anchor
-            component="a"
-            {...routes.signin({ returnTo: routes.myEntries().href }).link}
-            c="gray.4"
-            td="none"
-            style={{ fontSize: 14 }}
-          >
-            Enter Competition
-          </Anchor>
-        </Unauthenticated>
+        {competition?.entriesOpen === false ? (
+          <EntrySignupUnavailableButton link />
+        ) : (
+          <>
+            <Authenticated>
+              <Anchor
+                component="a"
+                {...routes.myEntries().link}
+                c="gray.4"
+                td="none"
+                style={{ fontSize: 14 }}
+              >
+                Enter Competition
+              </Anchor>
+            </Authenticated>
+            <Unauthenticated>
+              <Anchor
+                component="a"
+                {...routes.signin({ returnTo: routes.myEntries().href }).link}
+                c="gray.4"
+                td="none"
+                style={{ fontSize: 14 }}
+              >
+                Enter Competition
+              </Anchor>
+            </Unauthenticated>
+          </>
+        )}
       </Stack>
     </Stack>
   );

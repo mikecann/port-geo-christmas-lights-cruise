@@ -22,10 +22,12 @@ import RejectedEntryState from "./RejectedEntryState";
 import EntryNameGuidelinesModal from "./EntryNameGuidelinesModal";
 import { exhaustiveCheck, iife } from "../../../shared/misc";
 import { routes } from "../../routes";
+import PreviousEntriesSection from "./PreviousEntriesSection";
 
 export default function MyEntriesPage() {
   const me = useMe();
   const myEntry = useQuery(api.my.entries.find);
+  const previousEntries = useQuery(api.my.entries.listPrevious);
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
 
@@ -86,6 +88,8 @@ export default function MyEntriesPage() {
           exhaustiveCheck(myEntry);
         })}
       </Stack>
+
+      <PreviousEntriesSection entries={previousEntries} />
     </Container>
   );
 }

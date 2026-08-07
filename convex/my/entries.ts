@@ -17,6 +17,20 @@ export const find = myQuery
   })
   .public();
 
+export const listPrevious = myQuery
+  .input({})
+  .handler(async (context) => {
+    const currentCompetition = await competitions.query(context).current();
+    const rows = await entries
+      .query(context)
+      .forUser(context.userId)
+      .listAcrossCompetitions();
+    return rows.filter(
+      ({ competition }) => competition.year < currentCompetition.year,
+    );
+  })
+  .public();
+
 export const enter = myMutation
   .input({})
   .returns(v.null())
