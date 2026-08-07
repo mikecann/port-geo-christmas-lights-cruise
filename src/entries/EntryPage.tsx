@@ -32,6 +32,7 @@ export default function EntryPage({
   const entryWithPhotos = useQuery(api.public.entries.getWithPhotos, {
     entryId,
   });
+  const competition = useQuery(api.public.competitions.current, {});
 
   if (!entryWithPhotos) return <EntryPageSkeleton />;
 
@@ -132,7 +133,7 @@ export default function EntryPage({
       />
 
       {/* Vote Modal */}
-      {route.name == "entryVote" ? (
+      {competition?.votingOpen && route.name == "entryVote" ? (
         <VoteModal
           entryId={entryId}
           opened={true}

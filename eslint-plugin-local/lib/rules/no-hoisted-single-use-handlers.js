@@ -55,7 +55,7 @@ export default {
     function reportIfSingleUse(identifier, declarationNode) {
       // Get the scope where this variable is declared
       const scope = sourceCode.getScope(declarationNode);
-      
+
       // Find the variable in the scope or parent scopes
       let variable = null;
       let currentScope = scope;
@@ -70,7 +70,7 @@ export default {
       // Count *read* references (using as value), not definitions
       // Filter out the declaration itself
       const reads = variable.references.filter(
-        (ref) => ref.isRead() && ref.identifier !== identifier
+        (ref) => ref.isRead() && ref.identifier !== identifier,
       );
 
       // Only report if there's exactly one usage
@@ -129,4 +129,3 @@ export default {
     };
   },
 };
-

@@ -6,6 +6,8 @@ import { usersTable } from "./features/users/schema";
 import { photoTable } from "./features/photos/schema";
 import { doc, typedV, partial } from "convex-helpers/validators";
 import { createBuilder } from "fluent-convex";
+import type { DataModel } from "./_generated/dataModel";
+import { competitionTable } from "./features/competitions/schema";
 
 const schema = defineSchema({
   ...authTables,
@@ -13,10 +15,11 @@ const schema = defineSchema({
   entries: entryTable,
   votes: voteTable,
   photos: photoTable,
+  competitions: competitionTable,
 });
 
 export default schema;
 
 export const vv = typedV(schema);
 
-export const convex = createBuilder(schema);
+export const convex = createBuilder<DataModel>();

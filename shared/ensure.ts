@@ -16,8 +16,7 @@ export const ensureNotUndefined = <T>(
 export const ensureNotNull = <T>(
   obj: T | null,
   err:
-    | string
-    | (() => string) = `variable was null when it shouldnt have been.`,
+    string | (() => string) = `variable was null when it shouldnt have been.`,
 ): T => {
   if (obj === null) throw new Error(getErrMsg(err));
   return obj;

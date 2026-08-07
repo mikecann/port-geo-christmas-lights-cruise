@@ -8,7 +8,7 @@ import { v } from "convex/values";
 export const wipeAllData = userSystemAdminMutation
   .input({})
   .returns(v.null())
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     // Wipe all votes
     await votes.wipeAll(context._db);
     await aggregateVotes.clearAll(context);
@@ -29,4 +29,5 @@ export const wipeAllData = userSystemAdminMutation
     for (const file of storedFiles)
       await context.storage.delete(file._id as Id<"_storage">);
     return null;
-  });
+  })
+  .public();

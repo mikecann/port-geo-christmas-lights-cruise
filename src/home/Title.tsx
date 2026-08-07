@@ -21,7 +21,7 @@ export function Title() {
     >
       <img
         src="/title-no-year-1024.webp"
-        alt="2024 Port Geographe"
+        alt="Port Geographe Christmas Lights Cruise"
         style={{
           position: "absolute",
           top: 0,

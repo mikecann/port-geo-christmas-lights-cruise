@@ -4,12 +4,38 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { routes } from "../../routes";
+import { VOTING_CLOSED_MESSAGE } from "../../../shared/eventStatus";
 
 type Props = {
   entryId: Id<"entries">;
 };
 
 export default function EntryVoting({ entryId }: Props) {
+  const competition = useQuery(api.public.competitions.current, {});
+
+  if (competition === undefined) return null;
+
+  if (!competition.votingOpen)
+    return (
+      <Card data-testid="voting-closed" withBorder radius="md" p="lg">
+        <Stack gap="sm" align="center">
+          <Group gap="xs">
+            <IconAward size={20} color="var(--mantine-color-yellow-6)" />
+            <Text fw={600} size="lg">
+              Voting Closed
+            </Text>
+          </Group>
+          <Text c="dimmed" size="sm" ta="center">
+            {VOTING_CLOSED_MESSAGE}
+          </Text>
+        </Stack>
+      </Card>
+    );
+
+  return <VotingControls entryId={entryId} />;
+}
+
+function VotingControls({ entryId }: Props) {
   const { isAuthenticated } = useConvexAuth();
 
   const votingStatus = useQuery(
@@ -46,6 +72,7 @@ export default function EntryVoting({ entryId }: Props) {
         <Center>
           {isAuthenticated ? (
             <Button
+              data-testid="vote-entry"
               size="md"
               color="yellow"
               variant="filled"

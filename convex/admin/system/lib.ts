@@ -5,7 +5,7 @@ import { convex } from "../../schema";
 
 export const userSystemAdminQueryMiddleware = convex
   .query()
-  .middleware(async ({ context, next }) => {
+  .createMiddleware(async (context, next) => {
     const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
 
@@ -17,10 +17,8 @@ export const userSystemAdminQueryMiddleware = convex
     if (!user.isSystemAdmin) throw new Error("User is not a system admin");
 
     return next({
-      context: {
-        ...context,
-        getUser: async () => user,
-      },
+      ...context,
+      getUser: async () => user,
     });
   });
 
@@ -30,7 +28,7 @@ export const userSystemAdminQuery = convex
 
 export const userSystemAdminMutationMiddleware = convex
   .mutation()
-  .middleware(async ({ context, next }) => {
+  .createMiddleware(async (context, next) => {
     const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
 
@@ -42,12 +40,10 @@ export const userSystemAdminMutationMiddleware = convex
     if (!user.isSystemAdmin) throw new Error("User is not a system admin");
 
     return next({
-      context: {
-        ...triggers.wrapDB(context),
-        _db: context.db,
-        storage: context.storage,
-        getUser: async () => user,
-      },
+      ...triggers.wrapDB(context),
+      _db: context.db,
+      storage: context.storage,
+      getUser: async () => user,
     });
   });
 

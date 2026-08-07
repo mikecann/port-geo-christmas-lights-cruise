@@ -21,9 +21,7 @@ function AdminControls({
       <Switch
         label="System Admin"
         checked={user.isSystemAdmin === true}
-        onChange={(e) =>
-          onToggleSystemAdmin(user._id, e.currentTarget.checked)
-        }
+        onChange={(e) => onToggleSystemAdmin(user._id, e.currentTarget.checked)}
         size="xs"
         color="red"
       />
@@ -73,4 +71,3 @@ export default function UserRow({
     </Table.Tr>
   );
 }
-

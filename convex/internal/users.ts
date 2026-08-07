@@ -3,7 +3,6 @@ import { convex } from "../schema";
 
 export const listAll = convex
   .query()
-  .internal()
   .input({})
   .returns(
     v.array(
@@ -23,6 +22,7 @@ export const listAll = convex
       }),
     ),
   )
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     return await context.db.query("users").collect();
-  });
+  })
+  .internal();

@@ -5,7 +5,7 @@ export default function FooterBottom() {
     <Group justify="space-between" align="flex-start">
       <Stack gap="xs">
         <Text c="gray.5" size="sm">
-          © 2025 Port Geographe Christmas Lights Cruise
+          © {new Date().getFullYear()} Port Geographe Christmas Lights Cruise
         </Text>
         <Text c="gray.6" size="xs">
           All rights reserved.{" "}

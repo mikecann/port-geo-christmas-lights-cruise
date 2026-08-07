@@ -1,11 +1,8 @@
-import type { ReactNode} from "react";
+import type { ReactNode } from "react";
 import React, { useState, useRef } from "react";
 import ConfirmationModal from "./ConfirmationModal";
-import type {
-  ConfirmationOptions} from "./ConfirmationContext";
-import {
-  ConfirmationContext
-} from "./ConfirmationContext";
+import type { ConfirmationOptions } from "./ConfirmationContext";
+import { ConfirmationContext } from "./ConfirmationContext";
 
 interface ConfirmationState extends ConfirmationOptions {
   opened: boolean;

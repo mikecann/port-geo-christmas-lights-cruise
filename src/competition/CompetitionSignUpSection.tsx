@@ -25,6 +25,7 @@ export default function CompetitionSignUpSection() {
             Please sign in first to create your entry
           </Text>
           <Button
+            data-testid="competition-sign-in"
             component="a"
             {...routes.signin({
               returnTo: window.location.pathname + window.location.search,
@@ -42,9 +43,10 @@ export default function CompetitionSignUpSection() {
 
 function AuthenticatedContent() {
   const myEntry = useQuery(api.my.entries.find);
+  const competition = useQuery(api.public.competitions.current, {});
 
   // Show loading state while checking for entry
-  if (myEntry === undefined)
+  if (myEntry === undefined || competition === undefined)
     return (
       <Stack gap="md" align="center">
         <Text size="lg" fw={600} ta="center">
@@ -54,6 +56,18 @@ function AuthenticatedContent() {
     );
 
   const hasEntry = myEntry !== null;
+
+  if (!hasEntry && !competition.entriesOpen)
+    return (
+      <Stack gap="md" align="center">
+        <Text size="lg" fw={600} ta="center">
+          Competition entries are currently closed
+        </Text>
+        <Text c="dimmed" ta="center">
+          Signup details for the next competition will be announced here.
+        </Text>
+      </Stack>
+    );
 
   return (
     <Stack gap="md" align="center">
