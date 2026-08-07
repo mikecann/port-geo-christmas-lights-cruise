@@ -34,8 +34,8 @@ export default function GalleryHeader() {
           </Title>
         </Group>
         <Text size="xl" c="gray.3" ta="center" maw={700} fw={400}>
-          Discover the displays joining the 2026 Port Geographe Christmas Lights
-          competition.
+          Discover the displays joining the current Port Geographe Christmas
+          Lights competition.
         </Text>
         <Button
           component="a"
