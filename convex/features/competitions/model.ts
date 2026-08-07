@@ -40,11 +40,35 @@ export const competitions = {
       current() {
         return this.forYear(CURRENT_COMPETITION_YEAR).get();
       },
+
+      listNewestFirst(limit = 100) {
+        return ctx.db
+          .query("competitions")
+          .withIndex("by_year")
+          .order("desc")
+          .take(limit);
+      },
+
+      listBeforeYear(year: number, limit = 100) {
+        return ctx.db
+          .query("competitions")
+          .withIndex("by_year", (q) => q.lt("year", year))
+          .order("desc")
+          .take(limit);
+      },
     };
   },
 
   mutate(ctx: MutationCtx) {
     return {
+      async setEntriesOpen(
+        competitionId: Id<"competitions">,
+        entriesOpen: boolean,
+      ) {
+        await competitions.query(ctx).forCompetition(competitionId).get();
+        await ctx.db.patch(competitionId, { entriesOpen });
+      },
+
       async ensureYear(args: {
         year: number;
         entriesOpen: boolean;
