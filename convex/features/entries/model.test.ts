@@ -13,6 +13,7 @@ import {
 import { entries } from "./model";
 import type { Doc } from "../../_generated/dataModel";
 import { MAX_ENTRY_NUMBER } from "../../../shared/constants";
+import { competitions } from "../competitions/model";
 
 describe("getNextAvailableEntryNumber", () => {
   let rawTest: ConvexTest;
@@ -311,7 +312,9 @@ describe("revertToDraft", () => {
   it("should handle entries without address data when reverting", async () => {
     // Arrange - create an entry in submitting status without houseAddress
     const entryId = await t.run(async (ctx) => {
+      const competition = await competitions.query(ctx).current();
       const id = await ctx.db.insert("entries", {
+        competitionId: competition._id,
         status: "submitting",
         submittedByUserId: user._id,
         name: "Entry Without Address",
@@ -621,6 +624,7 @@ describe("finalizeSubmission", () => {
     await t.run(async (ctx) => {
       await ctx.db.replace(rejectedEntry._id, {
         status: "rejected" as const,
+        competitionId: rejectedEntry.competitionId,
         submittedByUserId: user4._id,
         name: "Rejected Entry",
         submittedAt: Date.now() - 1000,

@@ -14,7 +14,6 @@ import EntryMarkerCarousel from "./EntryMarkerCarousel";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { VOTING_ENABLED } from "../../shared/eventStatus";
 
 interface EntryMarkerPopupProps {
   entryId: Id<"entries">;
@@ -22,6 +21,7 @@ interface EntryMarkerPopupProps {
 
 export default function EntryMarkerPopup({ entryId }: EntryMarkerPopupProps) {
   const entry = useQuery(api.public.entries.get, { entryId });
+  const competition = useQuery(api.public.competitions.current, {});
 
   if (!entry) return <Loader />;
 
@@ -57,7 +57,7 @@ export default function EntryMarkerPopup({ entryId }: EntryMarkerPopupProps) {
           >
             View Details
           </Button>
-          {VOTING_ENABLED ? (
+          {competition?.votingOpen ? (
             <Button
               data-testid="map-vote-entry"
               size="sm"

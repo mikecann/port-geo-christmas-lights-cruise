@@ -4,17 +4,16 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { routes } from "../../routes";
-import {
-  VOTING_CLOSED_MESSAGE,
-  VOTING_ENABLED,
-} from "../../../shared/eventStatus";
+import { VOTING_CLOSED_MESSAGE } from "../../../shared/eventStatus";
 
 type Props = {
   entryId: Id<"entries">;
 };
 
 export default function EntryVoting({ entryId }: Props) {
-  if (!VOTING_ENABLED)
+  const competition = useQuery(api.public.competitions.current, {});
+
+  if (!competition?.votingOpen)
     return (
       <Card data-testid="voting-closed" withBorder radius="md" p="lg">
         <Stack gap="sm" align="center">

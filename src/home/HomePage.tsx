@@ -10,7 +10,7 @@ import { api } from "../../convex/_generated/api";
 import { HomeEntryMarker } from "./HomeEntryMarker";
 
 export default function HomePage() {
-  const randomEntries = useQuery(api.public.entries.getRandomThree);
+  const randomEntries = useQuery(api.public.entries.getRandomThree, {});
 
   return (
     <Box

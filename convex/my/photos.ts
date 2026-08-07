@@ -3,11 +3,16 @@ import { entries } from "../features/entries/model";
 import { photos } from "../features/photos/model";
 import { v } from "convex/values";
 import { convex } from "../schema";
+import { competitions } from "../features/competitions/model";
 
 export const list = myQuery
   .input({})
   .handler(async (context) => {
-    const entry = await entries.query(context).forUser(context.userId).get();
+    const competition = await competitions.query(context).current();
+    const entry = await entries
+      .query(context)
+      .forUser(competition._id, context.userId)
+      .get();
     return await photos.forEntry(entry._id).list(context.db);
   })
   .public();
@@ -23,9 +28,10 @@ export const listForEntry = convex
 export const beginUpload = myMutation
   .input({})
   .handler(async (context) => {
+    const competition = await competitions.query(context).current();
     const entry = await entries
       .query(context)
-      .forUser(context.userId)
+      .forUser(competition._id, context.userId)
       .getForModification();
     const uploadStartedAt = Date.now();
     return await photos.forEntry(entry._id).add(context, { uploadStartedAt });
@@ -39,7 +45,11 @@ export const save = myMutation
   })
   .returns(v.null())
   .handler(async (context, input) => {
-    await entries.query(context).forUser(context.userId).ensureIsModifiable();
+    const competition = await competitions.query(context).current();
+    await entries
+      .query(context)
+      .forUser(competition._id, context.userId)
+      .ensureIsModifiable();
 
     await photos.forPhoto(input.photoId).save(context, {
       storageId: input.storageId,
@@ -55,7 +65,11 @@ export const remove = myMutation
   })
   .returns(v.null())
   .handler(async (context, input) => {
-    await entries.query(context).forUser(context.userId).ensureIsModifiable();
+    const competition = await competitions.query(context).current();
+    await entries
+      .query(context)
+      .forUser(competition._id, context.userId)
+      .ensureIsModifiable();
     await photos.forPhoto(input.photoId).delete(context);
     return null;
   })

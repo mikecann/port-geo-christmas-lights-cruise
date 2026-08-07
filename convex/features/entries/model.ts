@@ -13,6 +13,7 @@ import {
   MAX_ENTRY_NUMBER,
   usersWhiteList,
 } from "../../../shared/constants";
+import { competitions } from "../competitions/model";
 
 export const entries = {
   testing,
@@ -52,13 +53,24 @@ export const entries = {
         };
       },
 
-      forUser(userId: Id<"users">) {
+      forUser(
+        competitionIdOrUserId: Id<"competitions"> | Id<"users">,
+        maybeUserId?: Id<"users">,
+      ) {
+        const userId = maybeUserId ?? (competitionIdOrUserId as Id<"users">);
+        const resolveCompetitionId = async () =>
+          maybeUserId
+            ? (competitionIdOrUserId as Id<"competitions">)
+            : (await competitions.query(context).current())._id;
         return {
-          find() {
+          async find() {
+            const competitionId = await resolveCompetitionId();
             return db
               .query("entries")
-              .withIndex("by_submittedByUserId", (q) =>
-                q.eq("submittedByUserId", userId),
+              .withIndex("by_competitionId_and_submittedByUserId", (q) =>
+                q
+                  .eq("competitionId", competitionId)
+                  .eq("submittedByUserId", userId),
               )
               .unique();
           },
@@ -81,41 +93,51 @@ export const entries = {
         };
       },
 
-      async listApproved() {
+      async listApproved(competitionId?: Id<"competitions">) {
+        const resolvedCompetitionId =
+          competitionId ?? (await competitions.query(context).current())._id;
         const approved = await db
           .query("entries")
-          .withIndex("by_status", (q) => q.eq("status", "approved"))
+          .withIndex("by_competitionId_and_status", (q) =>
+            q
+              .eq("competitionId", resolvedCompetitionId)
+              .eq("status", "approved"),
+          )
           .collect()
           .then((a) => a.filter((e) => e.status == "approved"));
 
         return approved;
       },
 
-      async countApproved() {
-        const entries = await db
-          .query("entries")
-          .withIndex("by_status", (q) => q.eq("status", "approved"))
-          .collect();
-
-        return entries.length;
+      async countApproved(competitionId: Id<"competitions">) {
+        return (await this.listApproved(competitionId)).length;
       },
 
-      async listPendingReview() {
+      async listPendingReview(competitionId: Id<"competitions">) {
         return await db
           .query("entries")
-          .withIndex("by_status", (q) => q.eq("status", "submitted"))
+          .withIndex("by_competitionId_and_status", (q) =>
+            q.eq("competitionId", competitionId).eq("status", "submitted"),
+          )
           .collect();
       },
 
-      async listRejected() {
+      async listRejected(competitionId: Id<"competitions">) {
         return await db
           .query("entries")
-          .withIndex("by_status", (q) => q.eq("status", "rejected"))
+          .withIndex("by_competitionId_and_status", (q) =>
+            q.eq("competitionId", competitionId).eq("status", "rejected"),
+          )
           .collect();
       },
 
-      async getStats() {
-        const allEntries = await db.query("entries").collect();
+      async getStats(competitionId: Id<"competitions">) {
+        const allEntries = await db
+          .query("entries")
+          .withIndex("by_competitionId_and_status", (q) =>
+            q.eq("competitionId", competitionId),
+          )
+          .collect();
         return {
           totalEntries: allEntries.length,
           totalSubmittedEntries: allEntries.filter(isStatus("submitted"))
@@ -125,20 +147,29 @@ export const entries = {
         };
       },
 
-      async findEntriesByPlaceId(placeId: string) {
+      async findEntriesByPlaceId(
+        competitionId: Id<"competitions">,
+        placeId: string,
+      ) {
         return await db
           .query("entries")
-          .withIndex("by_homeAddress_placeId", (q) =>
-            q.eq("houseAddress.placeId", placeId),
+          .withIndex("by_competitionId_and_homeAddress_placeId", (q) =>
+            q
+              .eq("competitionId", competitionId)
+              .eq("houseAddress.placeId", placeId),
           )
           .take(100);
       },
 
       async hasEntryWithPlaceIdAlreadyBeenSubmitted(
+        competitionId: Id<"competitions">,
         placeId: string,
         excludeEntryId?: Id<"entries">,
       ) {
-        const matchedEntries = await this.findEntriesByPlaceId(placeId);
+        const matchedEntries = await this.findEntriesByPlaceId(
+          competitionId,
+          placeId,
+        );
 
         const submitted = matchedEntries.filter((e) => {
           // Exclude the current entry if specified
@@ -211,10 +242,21 @@ export const entries = {
         };
       },
 
-      forUser(userId: Id<"users">) {
-        const query = entries.query(context).forUser(userId);
+      forUser(
+        competitionIdOrUserId: Id<"competitions"> | Id<"users">,
+        maybeUserId?: Id<"users">,
+      ) {
+        const userId = maybeUserId ?? (competitionIdOrUserId as Id<"users">);
+        const resolveCompetitionId = async () =>
+          maybeUserId
+            ? (competitionIdOrUserId as Id<"competitions">)
+            : (await competitions.query(context).current())._id;
+        const query = entries
+          .query(context)
+          .forUser(competitionIdOrUserId, maybeUserId);
         return {
           async create() {
+            const competitionId = await resolveCompetitionId();
             const existing = await query.find();
             if (existing)
               throw new Error(
@@ -222,6 +264,7 @@ export const entries = {
               );
 
             return await db.insert("entries", {
+              competitionId,
               submittedByUserId: userId,
               status: "draft",
             });
@@ -279,6 +322,7 @@ export const entries = {
           },
 
           async startSubmitting(ctx: MutationCtx) {
+            const competitionId = await resolveCompetitionId();
             const entry = await query.get();
 
             if (entry.status != "draft")
@@ -305,7 +349,7 @@ export const entries = {
             if (
               await entries
                 .query(context)
-                .hasEntryWithPlaceIdAlreadyBeenSubmitted(placeId)
+                .hasEntryWithPlaceIdAlreadyBeenSubmitted(competitionId, placeId)
             )
               throw new ConvexError(
                 `Address ${entry.houseAddress.address} is already used!`,
@@ -328,6 +372,7 @@ export const entries = {
             lng: number;
             placeId: string;
           }) {
+            const competitionId = await resolveCompetitionId();
             const entry = await query.get();
 
             if (entry.status != "submitting")
@@ -339,6 +384,7 @@ export const entries = {
               await entries
                 .query(context)
                 .hasEntryWithPlaceIdAlreadyBeenSubmitted(
+                  competitionId,
                   args.placeId,
                   entry._id,
                 )
@@ -393,8 +439,15 @@ export const entries = {
         };
       },
 
-      async wipeAll() {
-        const allEntries = await context.db.query("entries").collect();
+      async wipeAll(competitionId?: Id<"competitions">) {
+        const allEntries = competitionId
+          ? await context.db
+              .query("entries")
+              .withIndex("by_competitionId_and_status", (q) =>
+                q.eq("competitionId", competitionId),
+              )
+              .collect()
+          : await context.db.query("entries").collect();
         let deletedCount = 0;
         for (const entry of allEntries) {
           // Use the proper delete method to clean up photos
@@ -404,8 +457,8 @@ export const entries = {
         return { deletedCount };
       },
 
-      async getNextAvailableEntryNumber() {
-        const approvedEntries = await query.listApproved();
+      async getNextAvailableEntryNumber(competitionId?: Id<"competitions">) {
+        const approvedEntries = await query.listApproved(competitionId);
         if (approvedEntries.length === 0)
           return randomIntRange(0, MAX_ENTRY_NUMBER);
 

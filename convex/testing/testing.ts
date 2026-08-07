@@ -3,6 +3,7 @@ import { testingMutation, testingQuery } from "./lib";
 import { v } from "convex/values";
 import { entries } from "../features/entries/model";
 import { ensure } from "../../shared/ensure";
+import { competitions } from "../features/competitions/model";
 
 export const clearAll = testingMutation
   .input({})
@@ -19,6 +20,8 @@ export const clearAll = testingMutation
     await Promise.all(scheduled.map((s) => context.scheduler.cancel(s._id)));
     const storedFiles = await context.db.system.query("_storage").collect();
     await Promise.all(storedFiles.map((s) => context.storage.delete(s._id)));
+    await competitions.mutate(context).ensureLegacy();
+    await competitions.mutate(context).ensureCurrent();
     console.log("Cleared all tables");
     return null;
   })
@@ -29,8 +32,10 @@ export const createMockEntries = testingMutation
     count: v.number(),
   })
   .handler(async (context, input) => {
+    const competition = await competitions.query(context).current();
     return await entries.testing.createMockEntries(context, {
       count: input.count,
+      competitionId: competition._id,
     });
   })
   .public();
@@ -91,7 +96,11 @@ export const findEntryForUser = testingMutation
     userId: v.id("users"),
   })
   .handler(async (context, input) => {
-    return await entries.query(context).forUser(input.userId).find();
+    const competition = await competitions.query(context).current();
+    return await entries
+      .query(context)
+      .forUser(competition._id, input.userId)
+      .find();
   })
   .public();
 

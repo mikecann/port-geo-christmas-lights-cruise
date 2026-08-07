@@ -4,6 +4,7 @@ import type { Doc, Id } from "../../../_generated/dataModel";
 import { ensure } from "../../../../shared/ensure";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { entries } from "../../entries/model";
+import { competitions } from "../../competitions/model";
 
 export const createConvexTest = () => {
   const t = convexTest(schema);
@@ -22,6 +23,8 @@ export const createTestUser = async (
   } = {},
 ): Promise<Doc<"users">> => {
   return t.run(async (ctx) => {
+    await competitions.mutate(ctx).ensureLegacy();
+    await competitions.mutate(ctx).ensureCurrent();
     const userId = await ctx.db.insert("users", {
       ...options.user,
     });
@@ -123,6 +126,7 @@ export const moveEntryToStatus = async (
 
     if (status === "draft")
       newEntry = {
+        competitionId: currentEntry.competitionId,
         status: "draft" as const,
         submittedByUserId: currentEntry.submittedByUserId,
         houseAddress: {
@@ -143,6 +147,7 @@ export const moveEntryToStatus = async (
         ...(overrideHouseAddress || {}),
       };
       newEntry = {
+        competitionId: currentEntry.competitionId,
         status: "submitted" as const,
         submittedAt: Date.now(),
         submittedByUserId: currentEntry.submittedByUserId,
@@ -169,6 +174,7 @@ export const moveEntryToStatus = async (
         ...(overrideHouseAddress || {}),
       };
       newEntry = {
+        competitionId: currentEntry.competitionId,
         status: "approved" as const,
         submittedAt,
         approvedAt: Date.now(),
@@ -191,8 +197,10 @@ export const createTestEntry = async (
 ) => {
   const user = await getTestUser(t);
   return t.run(async (ctx) => {
+    const competition = await competitions.mutate(ctx).ensureCurrent();
     // Create a basic draft entry first
     const entryId = await ctx.db.insert("entries", {
+      competitionId: competition._id,
       status: "draft",
       submittedByUserId: user._id,
     });

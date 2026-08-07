@@ -4,11 +4,16 @@ import { v } from "convex/values";
 import type { LatLng } from "../features/map/lib";
 import { geocodeAddress } from "../features/map/lib";
 import { internal } from "../../shared/api";
+import { competitions } from "../features/competitions/model";
 
 export const find = myQuery
   .input({})
   .handler(async (context) => {
-    return await entries.query(context).forUser(context.userId).find();
+    const competition = await competitions.query(context).current();
+    return await entries
+      .query(context)
+      .forUser(competition._id, context.userId)
+      .find();
   })
   .public();
 
@@ -16,7 +21,13 @@ export const enter = myMutation
   .input({})
   .returns(v.null())
   .handler(async (context) => {
-    await entries.mutate(context).forUser(context.userId).create();
+    const competition = await competitions.query(context).current();
+    if (!competition.entriesOpen)
+      throw new Error("Competition entries are currently closed");
+    await entries
+      .mutate(context)
+      .forUser(competition._id, context.userId)
+      .create();
     return null;
   })
   .public();
@@ -30,9 +41,10 @@ export const updateDraft = myMutation
   })
   .returns(v.null())
   .handler(async (context, input) => {
+    const competition = await competitions.query(context).current();
     await entries
       .mutate(context)
-      .forUser(context.userId)
+      .forUser(competition._id, context.userId)
       .updateBeforeSubmission(input);
     return null;
   })
@@ -42,7 +54,11 @@ export const remove = myMutation
   .input({})
   .returns(v.null())
   .handler(async (context) => {
-    await entries.mutate(context).forUser(context.userId).remove(context);
+    const competition = await competitions.query(context).current();
+    await entries
+      .mutate(context)
+      .forUser(competition._id, context.userId)
+      .remove(context);
     return null;
   })
   .public();
@@ -53,7 +69,11 @@ export const updateApproved = myMutation
   })
   .returns(v.null())
   .handler(async (context, input) => {
-    await entries.mutate(context).forUser(context.userId).updateApproved(input);
+    const competition = await competitions.query(context).current();
+    await entries
+      .mutate(context)
+      .forUser(competition._id, context.userId)
+      .updateApproved(input);
     return null;
   })
   .public();

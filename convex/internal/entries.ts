@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { entries } from "../features/entries/model";
 import { email } from "../features/email/model";
 import { convex } from "../schema";
+import { competitions } from "../features/competitions/model";
 
 export const startSubmitting = convex
   .mutation()
@@ -9,9 +10,12 @@ export const startSubmitting = convex
     userId: v.id("users"),
   })
   .handler(async (context, input) => {
+    const competition = await competitions.query(context).current();
+    if (!competition.entriesOpen)
+      throw new Error("Competition entries are currently closed");
     return await entries
       .mutate(context)
-      .forUser(input.userId)
+      .forUser(competition._id, input.userId)
       .startSubmitting(context);
   })
   .internal();
@@ -31,7 +35,7 @@ export const finalizeSubmission = convex
 
     await entries
       .mutate(context)
-      .forUser(entry.submittedByUserId)
+      .forUser(entry.competitionId, entry.submittedByUserId)
       .finalizeSubmission({
         lat: input.lat,
         lng: input.lng,
@@ -53,7 +57,11 @@ export const revertToDraft = convex
   })
   .returns(v.null())
   .handler(async (context, input) => {
-    await entries.mutate(context).forUser(input.userId).revertToDraft();
+    const competition = await competitions.query(context).current();
+    await entries
+      .mutate(context)
+      .forUser(competition._id, input.userId)
+      .revertToDraft();
     return null;
   })
   .internal();

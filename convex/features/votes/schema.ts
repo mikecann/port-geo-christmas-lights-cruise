@@ -11,7 +11,14 @@ export type VoteCategory = (typeof VOTE_CATEGORIES)[number];
 
 // Votes link a user to an entry they've voted for
 export const voteTable = defineTable({
+  competitionId: v.id("competitions"),
   entryId: v.id("entries"),
   votingUserId: v.id("users"),
   category: voteCategoryValidator,
-}).index("by_votingUserId_and_category", ["votingUserId", "category"]);
+})
+  .index("by_competitionId", ["competitionId"])
+  .index("by_votingUserId_and_competitionId_and_category", [
+    "votingUserId",
+    "competitionId",
+    "category",
+  ]);

@@ -1,7 +1,7 @@
 import { userSystemAdminMutation } from "./lib";
 import { votes } from "../../features/votes/model";
-import { aggregateVotes } from "../../features/votes/lib";
 import { v } from "convex/values";
+import { competitions } from "../../features/competitions/model";
 
 // Mutations
 
@@ -14,8 +14,8 @@ export const wipeAll = userSystemAdminMutation
     }),
   )
   .handler(async (context) => {
-    const result = await votes.wipeAll(context._db);
-    await aggregateVotes.clearAll(context);
+    const competition = await competitions.query(context).current();
+    const result = await votes.wipeAll(context.db, competition._id);
     return {
       message: `Successfully deleted ${result.deleted} votes`,
       deleted: result.deleted,
@@ -35,9 +35,12 @@ export const generateMock = userSystemAdminMutation
     }),
   )
   .handler(async (context, input) => {
+    const competition = await competitions.query(context).current();
     const approvedEntries = await context.db
       .query("entries")
-      .withIndex("by_status", (q) => q.eq("status", "approved"))
+      .withIndex("by_competitionId_and_status", (q) =>
+        q.eq("competitionId", competition._id).eq("status", "approved"),
+      )
       .collect();
 
     if (approvedEntries.length === 0)
@@ -105,6 +108,7 @@ export const generateMock = userSystemAdminMutation
           approvedEntries[Math.floor(Math.random() * approvedEntries.length)];
 
         await context.db.insert("votes", {
+          competitionId: competition._id,
           entryId: randomEntry._id,
           votingUserId: userId,
           category,

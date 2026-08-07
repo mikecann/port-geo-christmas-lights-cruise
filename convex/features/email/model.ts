@@ -66,7 +66,9 @@ export const email = {
   ) {
     const baseUrl = process.env.SITE_URL;
     const myEntriesUrl = baseUrl ? `${baseUrl}/my/entries` : "/my/entries";
-    const entryCount = await entries.query(ctx).countApproved();
+    const entryCount = await entries
+      .query(ctx)
+      .countApproved(args.entry.competitionId);
     const showSignCollection = entryCount <= 40;
 
     const signCollectionStep = showSignCollection
@@ -91,7 +93,7 @@ export const email = {
         <h3>Next Steps:</h3>
         <ol>
           ${signCollectionStep}
-          <li><strong>Decorate Your Home:</strong> Make sure your Christmas lights display is ready for the cruise dates in December 2025.</li>
+          <li><strong>Decorate Your Home:</strong> Make sure your Christmas lights display is ready for the cruise dates in December 2026.</li>
           <li><strong>Be Visible:</strong> Ensure your lights are switched on during cruise hours (we'll send you the schedule closer to the date).</li>
           <li><strong>Share the Joy:</strong> Tell your friends and neighbours about the event!</li>
           <li><strong>Stay Updated:</strong> Keep an eye on your email for important updates about the cruise schedule.</li>

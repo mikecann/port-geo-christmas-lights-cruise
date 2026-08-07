@@ -3,6 +3,7 @@ import type { Doc } from "../../_generated/dataModel";
 import { defineTable } from "convex/server";
 
 export const commonEntryFields = {
+  competitionId: v.id("competitions"),
   submittedByUserId: v.id("users"),
 };
 
@@ -69,7 +70,13 @@ export type EntryWithKind<T extends EntryStatusKinds> = EntryDoc & {
 export type ApprovedEntryDoc = EntryWithKind<"approved">;
 
 export const entryTable = defineTable(entrySchema)
-  .index("by_status", ["status"])
-  .index("by_submittedByUserId", ["submittedByUserId"])
-  .index("by_entryNumber", ["entryNumber"])
-  .index("by_homeAddress_placeId", ["houseAddress.placeId"]);
+  .index("by_competitionId_and_status", ["competitionId", "status"])
+  .index("by_competitionId_and_submittedByUserId", [
+    "competitionId",
+    "submittedByUserId",
+  ])
+  .index("by_competitionId_and_entryNumber", ["competitionId", "entryNumber"])
+  .index("by_competitionId_and_homeAddress_placeId", [
+    "competitionId",
+    "houseAddress.placeId",
+  ]);

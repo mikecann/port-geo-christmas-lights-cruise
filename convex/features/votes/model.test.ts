@@ -7,6 +7,7 @@ import {
   getTestUser,
 } from "../common/tests/testingHelpers";
 import { VOTING_CLOSED_MESSAGE } from "../../../shared/eventStatus";
+import { competitions } from "../competitions/model";
 
 describe("voting pause", () => {
   let t: AuthenticatedConvexTest;
@@ -35,13 +36,15 @@ describe("voting pause", () => {
     const entry = await createTestEntry(t);
     if (!entry) throw new Error("Failed to create entry");
     const user = await getTestUser(t);
-    const voteId = await t.run((ctx) =>
-      ctx.db.insert("votes", {
+    const voteId = await t.run(async (ctx) => {
+      const competition = await competitions.query(ctx).current();
+      return await ctx.db.insert("votes", {
+        competitionId: competition._id,
         entryId: entry._id,
         votingUserId: user._id,
         category: "most_jolly",
-      }),
-    );
+      });
+    });
 
     await expect(t.mutation(api.my.votes.cancel, { voteId })).rejects.toThrow(
       VOTING_CLOSED_MESSAGE,
