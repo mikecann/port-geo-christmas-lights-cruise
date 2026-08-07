@@ -139,8 +139,3 @@ dist
 .playwright-mcp
 
 .wrangler
-
-# E2E test backend directories
-.convex-e2e-test
-
-e2e-videos/

@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "convex", "shared", "worker/worker.ts", "e2e"]
+  "include": ["src", "convex", "shared", "worker/worker.ts"]
 }
