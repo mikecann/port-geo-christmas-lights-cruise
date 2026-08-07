@@ -19,6 +19,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 
 export default function EntriesGalleryPage() {
+  const [competitionYear, setCompetitionYear] = useState(2026);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -26,9 +27,23 @@ export default function EntriesGalleryPage() {
     Array<EntryWithFirstPhoto>
   >([]);
   const [cachedSearchQuery, setCachedSearchQuery] = useState("");
-  const totalCount = useQuery(api.public.entries.count);
+  const competitions = useQuery(api.public.competitions.list, {});
+  const competitionArgs = { competitionYear };
+  const totalCount = useQuery(api.public.entries.count, competitionArgs);
 
-  const results = useQuery(api.public.entries.listWithFirstPhoto);
+  const results = useQuery(
+    api.public.entries.listWithFirstPhoto,
+    competitionArgs,
+  );
+  const availableYears = competitions?.map(({ year }) => year) ?? [2026, 2025];
+
+  const handleCompetitionYearChange = (year: number) => {
+    setCompetitionYear(year);
+    setSearchQuery("");
+    setCachedResults([]);
+    setCachedSearchQuery("");
+    setIsInitialLoad(true);
+  };
 
   // Cache results when they're available
   const baseResults = useMemo(() => {
@@ -46,7 +61,7 @@ export default function EntriesGalleryPage() {
       });
   }, [results, debouncedSearchQuery]);
 
-  const dailySeed = new Date().toISOString().slice(0, 10);
+  const dailySeed = `${competitionYear}-${new Date().toISOString().slice(0, 10)}`;
 
   // Client-side filter and shuffle
   const displayResults = useMemo(() => {
@@ -81,7 +96,11 @@ export default function EntriesGalleryPage() {
       <Container size="xl" py="xl">
         <Stack gap="xl">
           <Box mb="xl">
-            <GalleryHeader />
+            <GalleryHeader
+              competitionYear={competitionYear}
+              availableYears={availableYears}
+              onCompetitionYearChange={handleCompetitionYearChange}
+            />
           </Box>
           <SearchSection
             searchQuery={searchQuery}
@@ -101,7 +120,11 @@ export default function EntriesGalleryPage() {
       <Stack gap="xl">
         {/* Header */}
         <Box mb="xl">
-          <GalleryHeader />
+          <GalleryHeader
+            competitionYear={competitionYear}
+            availableYears={availableYears}
+            onCompetitionYearChange={handleCompetitionYearChange}
+          />
         </Box>
 
         {/* Search Bar */}

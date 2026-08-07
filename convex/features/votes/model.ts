@@ -8,27 +8,41 @@ export const votes = {
       async list(db: DatabaseReader) {
         return await db
           .query("votes")
-          .withIndex("by_votingUserId_and_category", (q) =>
+          .withIndex("by_votingUserId_and_competitionId_and_category", (q) =>
             q.eq("votingUserId", userId),
           )
           .collect();
       },
 
-      async hasVotedForCategory(db: DatabaseReader, category: VoteCategory) {
+      async hasVotedForCategory(
+        db: DatabaseReader,
+        competitionId: Id<"competitions">,
+        category: VoteCategory,
+      ) {
         const existing = await db
           .query("votes")
-          .withIndex("by_votingUserId_and_category", (q) =>
-            q.eq("votingUserId", userId).eq("category", category),
+          .withIndex("by_votingUserId_and_competitionId_and_category", (q) =>
+            q
+              .eq("votingUserId", userId)
+              .eq("competitionId", competitionId)
+              .eq("category", category),
           )
           .first();
         return existing !== null;
       },
 
-      async findVoteForCategory(db: DatabaseReader, category: VoteCategory) {
+      async findVoteForCategory(
+        db: DatabaseReader,
+        competitionId: Id<"competitions">,
+        category: VoteCategory,
+      ) {
         return await db
           .query("votes")
-          .withIndex("by_votingUserId_and_category", (q) =>
-            q.eq("votingUserId", userId).eq("category", category),
+          .withIndex("by_votingUserId_and_competitionId_and_category", (q) =>
+            q
+              .eq("votingUserId", userId)
+              .eq("competitionId", competitionId)
+              .eq("category", category),
           )
           .first();
       },
@@ -36,11 +50,16 @@ export const votes = {
       async voteForEntry(
         db: DatabaseWriter,
         args: {
+          competitionId: Id<"competitions">;
           entryId: Id<"entries">;
           category: VoteCategory;
         },
       ) {
-        const existing = await this.findVoteForCategory(db, args.category);
+        const existing = await this.findVoteForCategory(
+          db,
+          args.competitionId,
+          args.category,
+        );
 
         if (existing)
           throw new Error(
@@ -48,6 +67,7 @@ export const votes = {
           );
 
         return await db.insert("votes", {
+          competitionId: args.competitionId,
           entryId: args.entryId,
           votingUserId: userId,
           category: args.category,
@@ -68,8 +88,15 @@ export const votes = {
     };
   },
 
-  async wipeAll(db: DatabaseWriter) {
-    const allVotes = await db.query("votes").collect();
+  async wipeAll(db: DatabaseWriter, competitionId?: Id<"competitions">) {
+    const allVotes = competitionId
+      ? await db
+          .query("votes")
+          .withIndex("by_competitionId", (q) =>
+            q.eq("competitionId", competitionId),
+          )
+          .collect()
+      : await db.query("votes").collect();
     let deleted = 0;
     for (const v of allVotes) {
       await db.delete(v._id);

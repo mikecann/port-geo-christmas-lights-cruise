@@ -18,7 +18,7 @@ export default function MapPage({
 }: {
   selectedEntryId?: Id<"entries">;
 }) {
-  const entries = useQuery(api.public.entries.listWithFirstPhoto);
+  const entries = useQuery(api.public.entries.listWithFirstPhoto, {});
 
   // Find the specific entry if we have a route entry ID
   const targetEntry = entries?.find(

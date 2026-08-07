@@ -6,11 +6,12 @@ import {
 } from "./lib";
 import { voteCategoryValidator } from "../../features/votes/schema";
 import { v } from "convex/values";
-import { aggregateVotes } from "../../features/votes/lib";
+import { aggregateVotes, voteNamespace } from "../../features/votes/lib";
 import { isNotNullOrUndefined } from "../../../shared/filter";
 import { convex } from "../../schema";
 import { internal } from "../../../convex/_generated/api";
 import { paginationOptsValidator } from "convex/server";
+import { competitions } from "../../features/competitions/model";
 
 // Queries
 
@@ -31,13 +32,15 @@ export const listPageForCategory = userCompetitionAdminQuery
     ),
   )
   .handler(async (context, input) => {
+    const competition = await competitions.query(context).current();
+    const namespace = voteNamespace(competition._id, input.category);
     const total = await aggregateVotes.count(context, {
-      namespace: input.category,
+      namespace,
     });
     if (total === 0 || input.offset >= total) return [];
 
     const firstInPage = await aggregateVotes.at(context, input.offset, {
-      namespace: input.category,
+      namespace,
     });
 
     const page = await aggregateVotes.paginate(context, {
@@ -48,7 +51,7 @@ export const listPageForCategory = userCompetitionAdminQuery
           inclusive: true,
         },
       },
-      namespace: input.category,
+      namespace,
       pageSize: input.numItems,
     });
 
@@ -80,8 +83,9 @@ export const countForCategory = userCompetitionAdminQuery
   })
   .returns(v.number())
   .handler(async (context, input) => {
+    const competition = await competitions.query(context).current();
     const count = await aggregateVotes.count(context, {
-      namespace: input.category,
+      namespace: voteNamespace(competition._id, input.category),
     });
     return count;
   })
@@ -90,6 +94,7 @@ export const countForCategory = userCompetitionAdminQuery
 export const getAllVotesForExportPage = convex
   .query()
   .input({
+    competitionId: v.id("competitions"),
     paginationOpts: paginationOptsValidator,
   })
   .returns(
@@ -110,6 +115,9 @@ export const getAllVotesForExportPage = convex
   .handler(async (context, input) => {
     const result = await context.db
       .query("votes")
+      .withIndex("by_competitionId", (q) =>
+        q.eq("competitionId", input.competitionId),
+      )
       .order("asc")
       .paginate(input.paginationOpts);
 
@@ -152,6 +160,10 @@ export const getAllVotesForExport = userCompetitionAdminAction
     ),
   )
   .handler(async (context) => {
+    const competition = await context.runQuery(
+      internal.internal.competitions.current,
+      {},
+    );
     const allVotes: Array<{
       voteCategory: "best_display" | "most_jolly";
       dateTime: number;
@@ -181,6 +193,7 @@ export const getAllVotesForExport = userCompetitionAdminAction
             numItems: 100,
             cursor,
           },
+          competitionId: competition._id,
         },
       );
 

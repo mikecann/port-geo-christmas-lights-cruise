@@ -4,6 +4,7 @@ import type {
   MutationCtx,
 } from "../../_generated/server";
 import { entries } from "./model";
+import type { Id } from "../../_generated/dataModel";
 
 // Mock data generators
 const mockNames = [
@@ -275,7 +276,7 @@ function generateMockEntry(usedAddresses: Set<string>) {
 
 export const createMockEntries = async (
   ctx: MutationCtx,
-  args: { count: number },
+  args: { count: number; competitionId: Id<"competitions"> },
 ) => {
   const entryCount = args.count || 10;
 
@@ -287,7 +288,9 @@ export const createMockEntries = async (
     const testUserId = await createTestUser(ctx.db, usedUserNames);
 
     const mockData = generateMockEntry(usedAddresses);
-    const entryNumber = await entries.mutate(ctx).getNextAvailableEntryNumber();
+    const entryNumber = await entries
+      .mutate(ctx)
+      .getNextAvailableEntryNumber(args.competitionId);
 
     // Generate mock photos
     const mockPhotos: Array<{ kind: "mock"; mockPath: string }> = [];
@@ -313,6 +316,7 @@ export const createMockEntries = async (
       });
 
     const entryId = await ctx.db.insert("entries", {
+      competitionId: args.competitionId,
       name: mockData.name,
       houseAddress: mockData.houseAddress,
       status: "approved",

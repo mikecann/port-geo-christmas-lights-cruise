@@ -17,7 +17,6 @@ import VoteModal from "../map/voteModal/VoteModal";
 import ShareModal from "./ShareModal";
 import { PhotoSlide } from "./PhotoSlide";
 import { Route } from "type-route";
-import { VOTING_ENABLED } from "../../shared/eventStatus";
 
 export default function EntryPage({
   route,
@@ -33,6 +32,7 @@ export default function EntryPage({
   const entryWithPhotos = useQuery(api.public.entries.getWithPhotos, {
     entryId,
   });
+  const competition = useQuery(api.public.competitions.current, {});
 
   if (!entryWithPhotos) return <EntryPageSkeleton />;
 
@@ -133,7 +133,7 @@ export default function EntryPage({
       />
 
       {/* Vote Modal */}
-      {VOTING_ENABLED && route.name == "entryVote" ? (
+      {competition?.votingOpen && route.name == "entryVote" ? (
         <VoteModal
           entryId={entryId}
           opened={true}
