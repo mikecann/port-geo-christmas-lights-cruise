@@ -1,7 +1,6 @@
 import { Box, Stack } from "@mantine/core";
 import { Stars } from "./Stars";
 import { Title } from "./Title";
-import { Sponsors } from "./Sponsors";
 import { Houses } from "./Houses";
 import { Trees } from "./Trees";
 import CompetitionSection from "./CompetitionSection";
@@ -46,9 +45,6 @@ export default function HomePage() {
       <Trees />
       <Stack bg="#02051A" gap={0}>
         <CompetitionSection />
-        <Stack pt={"lg"} pb={"lg"} bg="rgba(0,0,0,0.25)">
-          <Sponsors />
-        </Stack>
       </Stack>
     </Box>
   );

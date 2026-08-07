@@ -18,8 +18,6 @@ export const NotFoundPage = lazy(() =>
   })),
 );
 
-export const HomePage = lazy(() => import("../../home/HomePage"));
-
 export const TicketsPage = lazy(() => import("../../tickets/TicketsPage"));
 
 export const CompetitionDetailsPage = lazy(
