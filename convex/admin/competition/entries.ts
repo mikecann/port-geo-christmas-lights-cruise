@@ -215,7 +215,10 @@ export const approve = userCompetitionAdminMutation
     const entry = await entries.query(context).forEntry(input.entryId).get();
     const entryNumber = await entries
       .mutate(context)
-      .getNextAvailableEntryNumber(entry.competitionId);
+      .getNextAvailableEntryNumber(
+        entry.competitionId,
+        entry.submittedByUserId,
+      );
     await entries
       .mutate(context)
       .forEntry(input.entryId)

@@ -2,6 +2,7 @@ import { Card, Stack, Text, Button } from "@mantine/core";
 import { api } from "../../../convex/_generated/api";
 import { useErrorCatchingMutation } from "../../common/errors";
 import { useQuery } from "convex/react";
+import EntrySignupUnavailableButton from "../../competition/EntrySignupUnavailableButton";
 
 export default function NoEntryState() {
   const [enterCompetition, isEntering] = useErrorCatchingMutation(
@@ -21,15 +22,18 @@ export default function NoEntryState() {
             ? "Enter your house in the Christmas lights competition to showcase your festive decorations and compete for prizes!"
             : "Signup details for the next competition will be announced here."}
         </Text>
-        <Button
-          mt="md"
-          loading={isEntering}
-          disabled={!entriesOpen}
-          onClick={() => enterCompetition({})}
-          size="md"
-        >
-          Enter Competition
-        </Button>
+        {entriesOpen ? (
+          <Button
+            mt="md"
+            loading={isEntering}
+            onClick={() => enterCompetition({})}
+            size="md"
+          >
+            Enter Competition
+          </Button>
+        ) : (
+          <EntrySignupUnavailableButton />
+        )}
       </Stack>
     </Card>
   );
