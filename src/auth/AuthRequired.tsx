@@ -19,5 +19,9 @@ export const AuthRequired: React.FC<Props> = ({ children }) => {
     }
   }, [isLoading, isAuthenticated]);
 
+  // Do not mount protected pages until Convex has restored authentication.
+  // Those pages start authenticated queries as soon as they render.
+  if (isLoading || !isAuthenticated) return null;
+
   return <>{children}</>;
 };
