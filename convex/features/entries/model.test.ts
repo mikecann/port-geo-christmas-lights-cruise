@@ -35,6 +35,124 @@ describe("getNextAvailableEntryNumber", () => {
     expect(result).toBeLessThanOrEqual(MAX_ENTRY_NUMBER);
   });
 
+  it("should reuse the user's most recent approved entry number", async () => {
+    const result = await t.run(async (ctx) => {
+      const previousCompetition = await competitions
+        .query(ctx)
+        .forYear(2025)
+        .get();
+      const currentCompetition = await competitions
+        .query(ctx)
+        .forYear(2026)
+        .get();
+      await ctx.db.insert("entries", {
+        competitionId: previousCompetition._id,
+        submittedByUserId: user._id,
+        status: "approved",
+        submittedAt: Date.now() - 2,
+        approvedAt: Date.now() - 1,
+        entryNumber: 17,
+        name: "Last year's display",
+        houseAddress: {
+          address: "17 Previous Parade",
+          lat: 0,
+          lng: 0,
+          placeId: "previous-place",
+        },
+      });
+
+      return await entries
+        .mutate(ctx)
+        .getNextAvailableEntryNumber(currentCompetition._id, user._id);
+    });
+
+    expect(result).toBe(17);
+  });
+
+  it("should choose another number if the previous number is already used", async () => {
+    const anotherUser = await createTestUser(rawTest, {});
+    const result = await t.run(async (ctx) => {
+      const previousCompetition = await competitions
+        .query(ctx)
+        .forYear(2025)
+        .get();
+      const currentCompetition = await competitions
+        .query(ctx)
+        .forYear(2026)
+        .get();
+      const approvedEntry = {
+        status: "approved" as const,
+        submittedAt: Date.now() - 2,
+        approvedAt: Date.now() - 1,
+        entryNumber: 17,
+        name: "Display",
+        houseAddress: {
+          address: "17 Previous Parade",
+          lat: 0,
+          lng: 0,
+          placeId: "previous-place",
+        },
+      };
+      await ctx.db.insert("entries", {
+        ...approvedEntry,
+        competitionId: previousCompetition._id,
+        submittedByUserId: user._id,
+      });
+      await ctx.db.insert("entries", {
+        ...approvedEntry,
+        competitionId: currentCompetition._id,
+        submittedByUserId: anotherUser._id,
+        houseAddress: {
+          ...approvedEntry.houseAddress,
+          placeId: "current-place",
+        },
+      });
+
+      return await entries
+        .mutate(ctx)
+        .getNextAvailableEntryNumber(currentCompetition._id, user._id);
+    });
+
+    expect(result).not.toBe(17);
+  });
+
+  it("should reserve last season's numbers for returning entrants", async () => {
+    const newUser = await createTestUser(rawTest, {});
+    const result = await t.run(async (ctx) => {
+      const previousCompetition = await competitions
+        .query(ctx)
+        .forYear(2025)
+        .get();
+      const currentCompetition = await competitions
+        .query(ctx)
+        .forYear(2026)
+        .get();
+
+      for (let entryNumber = 0; entryNumber <= MAX_ENTRY_NUMBER; entryNumber++)
+        await ctx.db.insert("entries", {
+          competitionId: previousCompetition._id,
+          submittedByUserId: user._id,
+          status: "approved",
+          submittedAt: Date.now() - 2,
+          approvedAt: Date.now() - 1,
+          entryNumber,
+          name: `Previous display ${entryNumber}`,
+          houseAddress: {
+            address: `${entryNumber} Previous Parade`,
+            lat: 0,
+            lng: 0,
+            placeId: `previous-place-${entryNumber}`,
+          },
+        });
+
+      return await entries
+        .mutate(ctx)
+        .getNextAvailableEntryNumber(currentCompetition._id, newUser._id);
+    });
+
+    expect(result).toBe(MAX_ENTRY_NUMBER + 1);
+  });
+
   it("should return a number not already in use", async () => {
     // Arrange - create and approve one entry
     const entry = await createTestEntry(t, {

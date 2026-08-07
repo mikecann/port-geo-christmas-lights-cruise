@@ -6,6 +6,19 @@ import { votes } from "../votes/model";
 import { competitions } from "./model";
 
 describe("competition seasons", () => {
+  it("can close current-season entry creation without changing other settings", async () => {
+    const t = convexTest(schema);
+
+    await t.run(async (ctx) => {
+      const current = await competitions.mutate(ctx).ensureCurrent();
+      await competitions.mutate(ctx).setEntriesOpen(current._id, false);
+
+      expect(
+        await competitions.query(ctx).forCompetition(current._id).get(),
+      ).toMatchObject({ entriesOpen: false, votingOpen: false, year: 2026 });
+    });
+  });
+
   it("keeps a user's entries separate by season", async () => {
     const t = convexTest(schema);
 
