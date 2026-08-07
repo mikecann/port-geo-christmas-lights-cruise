@@ -5,10 +5,11 @@ import { convex } from "../schema";
 export const find = convex
   .query()
   .input({})
-  .handler(async ({ context }): Promise<Me | null> => {
+  .handler(async (context): Promise<Me | null> => {
     const userId = await getAuthUserId(context);
     if (userId === null) return null;
     return await context.db.get(userId);
-  });
+  })
+  .public();
 
 export type Me = Doc<"users">;

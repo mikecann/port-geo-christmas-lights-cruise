@@ -1,98 +1,56 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { api } from "../../_generated/api";
-import type {
-  AuthenticatedConvexTest} from "../common/tests/testingHelpers";
+import type { AuthenticatedConvexTest } from "../common/tests/testingHelpers";
 import {
   createConvexTestWithUser,
   createTestEntry,
+  getTestUser,
 } from "../common/tests/testingHelpers";
+import { VOTING_CLOSED_MESSAGE } from "../../../shared/eventStatus";
+import { competitions } from "../competitions/model";
 
-describe("voteForEntry", () => {
+describe("voting pause", () => {
   let t: AuthenticatedConvexTest;
 
   beforeEach(async () => {
-    const obj = await createConvexTestWithUser();
-    t = obj.t;
+    const testContext = await createConvexTestWithUser();
+    t = testContext.t;
   });
 
-  const getAllVotes = () =>
-    t.run(async (ctx) => await ctx.db.query("votes").collect());
-
-  it("allows a user to vote for an entry in a category once", async () => {
-    // Arrange
+  it("rejects new votes and leaves the 2025 records unchanged", async () => {
     const entry = await createTestEntry(t);
     if (!entry) throw new Error("Failed to create entry");
 
-    // Act
-    await t.mutation(api.my.votes.vote, {
-      entryId: entry._id,
-      category: "best_display",
-    });
-
-    // Assert
-    const votes = await getAllVotes();
-    expect(votes).toHaveLength(1);
-    expect(votes[0].entryId).toEqual(entry._id);
-    expect(votes[0].category).toBe("best_display");
-  });
-
-  it("prevents a user from voting twice in the same category", async () => {
-    // Arrange
-    const entry = await createTestEntry(t);
-    if (!entry) throw new Error("Failed to create entry");
-
-    await t.mutation(api.my.votes.vote, {
-      entryId: entry._id,
-      category: "best_display",
-    });
-
-    // Act & Assert
     await expect(
       t.mutation(api.my.votes.vote, {
         entryId: entry._id,
         category: "best_display",
       }),
-    ).rejects.toThrow(
-      /has already voted in category 'best_display' and cannot vote again/,
+    ).rejects.toThrow(VOTING_CLOSED_MESSAGE);
+
+    const storedVotes = await t.run((ctx) => ctx.db.query("votes").collect());
+    expect(storedVotes).toHaveLength(0);
+  });
+
+  it("rejects vote cancellation and preserves the existing vote", async () => {
+    const entry = await createTestEntry(t);
+    if (!entry) throw new Error("Failed to create entry");
+    const user = await getTestUser(t);
+    const voteId = await t.run(async (ctx) => {
+      const competition = await competitions.query(ctx).current();
+      return await ctx.db.insert("votes", {
+        competitionId: competition._id,
+        entryId: entry._id,
+        votingUserId: user._id,
+        category: "most_jolly",
+      });
+    });
+
+    await expect(t.mutation(api.my.votes.cancel, { voteId })).rejects.toThrow(
+      VOTING_CLOSED_MESSAGE,
     );
-  });
 
-  it("allows a user to vote once per category across different categories", async () => {
-    // Arrange
-    const entry = await createTestEntry(t);
-    if (!entry) throw new Error("Failed to create entry");
-
-    // Act
-    await t.mutation(api.my.votes.vote, {
-      entryId: entry._id,
-      category: "best_display",
-    });
-    await t.mutation(api.my.votes.vote, {
-      entryId: entry._id,
-      category: "most_jolly",
-    });
-
-    // Assert
-    const votes = await getAllVotes();
-    expect(votes).toHaveLength(2);
-    const categories = votes.map((v) => v.category).sort();
-    expect(categories).toEqual(["best_display", "most_jolly"]);
-  });
-
-  it("errors when entry does not exist", async () => {
-    // Arrange: create a real entry id then delete it
-    const entry = await createTestEntry(t);
-    if (!entry) throw new Error("Failed to create entry");
-    await t.run(async (ctx) => {
-      await ctx.db.delete(entry._id);
-    });
-
-    // Act & Assert
-    await expect(
-      t.mutation(api.my.votes.vote, {
-        entryId: entry._id,
-        category: "best_display",
-      }),
-    ).rejects.toThrow(/not found/);
+    const storedVote = await t.run((ctx) => ctx.db.get(voteId));
+    expect(storedVote).not.toBeNull();
   });
 });

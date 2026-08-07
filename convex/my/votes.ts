@@ -9,31 +9,41 @@ import {
 import type { VoteCategory } from "../features/votes/schema";
 import { entries } from "../features/entries/model";
 import type { Doc } from "../_generated/dataModel";
+import { VOTING_CLOSED_MESSAGE } from "../../shared/eventStatus";
+import { competitions } from "../features/competitions/model";
+
+function requireVotingToBeOpen(votingOpen: boolean) {
+  if (!votingOpen) throw new Error(VOTING_CLOSED_MESSAGE);
+}
 
 export const list = myQuery
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     return await votes.forUser(context.userId).list(context.db);
-  });
+  })
+  .public();
 
 export const hasVoted = myQuery
   .input({
     category: voteCategoryValidator,
   })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
+    const competition = await competitions.query(context).current();
     return await votes
       .forUser(context.userId)
-      .hasVotedForCategory(context.db, input.category);
-  });
+      .hasVotedForCategory(context.db, competition._id, input.category);
+  })
+  .public();
 
 export const getForCategory = myQuery
   .input({
     category: voteCategoryValidator,
   })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
+    const competition = await competitions.query(context).current();
     const vote = await votes
       .forUser(context.userId)
-      .findVoteForCategory(context.db, input.category);
+      .findVoteForCategory(context.db, competition._id, input.category);
 
     if (!vote) return null;
 
@@ -52,11 +62,13 @@ export const getForCategory = myQuery
         photos: entryPhotos,
       },
     };
-  });
+  })
+  .public();
 
 export const getStatus = myQuery
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
+    const competition = await competitions.query(context).current();
     const votingStatus: Record<VoteCategory, Doc<"votes"> | null> = {
       best_display: null,
       most_jolly: null,
@@ -65,13 +77,14 @@ export const getStatus = myQuery
     for (const category of VOTE_CATEGORIES) {
       const vote = await votes
         .forUser(context.userId)
-        .findVoteForCategory(context.db, category);
+        .findVoteForCategory(context.db, competition._id, category);
 
       votingStatus[category] = vote;
     }
 
     return votingStatus;
-  });
+  })
+  .public();
 
 export const vote = myMutation
   .input({
@@ -79,26 +92,42 @@ export const vote = myMutation
     category: voteCategoryValidator,
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
+    const competition = await competitions.query(context).current();
+    requireVotingToBeOpen(competition.votingOpen);
+
     // Validate entry exists
-    await entries.query(context).forEntry(input.entryId).get();
+    const entry = await entries.query(context).forEntry(input.entryId).get();
+    if (entry.competitionId !== competition._id)
+      throw new Error("Entry does not belong to the current competition");
 
     await votes.forUser(context.userId).voteForEntry(context.db, {
+      competitionId: competition._id,
       entryId: input.entryId,
       category: input.category,
     });
 
     return null;
-  });
+  })
+  .public();
 
 export const cancel = myMutation
   .input({
     voteId: v.id("votes"),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
+    const vote = await context.db.get(input.voteId);
+    if (!vote) throw new Error(`Vote '${input.voteId}' not found`);
+    const competition = await competitions
+      .query(context)
+      .forCompetition(vote.competitionId)
+      .get();
+    requireVotingToBeOpen(competition.votingOpen);
+
     await votes
       .forVote(input.voteId)
       .cancel(context.db, { userId: context.userId });
     return null;
-  });
+  })
+  .public();

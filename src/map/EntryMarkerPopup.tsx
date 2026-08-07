@@ -21,6 +21,7 @@ interface EntryMarkerPopupProps {
 
 export default function EntryMarkerPopup({ entryId }: EntryMarkerPopupProps) {
   const entry = useQuery(api.public.entries.get, { entryId });
+  const competition = useQuery(api.public.competitions.current, {});
 
   if (!entry) return <Loader />;
 
@@ -56,14 +57,17 @@ export default function EntryMarkerPopup({ entryId }: EntryMarkerPopupProps) {
           >
             View Details
           </Button>
-          <Button
-            size="sm"
-            color="yellow"
-            onClick={() => routes.entryVote({ entryId: entry._id }).push()}
-            fullWidth
-          >
-            Vote
-          </Button>
+          {competition?.votingOpen ? (
+            <Button
+              data-testid="map-vote-entry"
+              size="sm"
+              color="yellow"
+              onClick={() => routes.entryVote({ entryId: entry._id }).push()}
+              fullWidth
+            >
+              Vote
+            </Button>
+          ) : null}
         </Stack>
       </Stack>
     </Card>

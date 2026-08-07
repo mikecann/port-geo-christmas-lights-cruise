@@ -6,21 +6,23 @@ export const listPage = userSystemAdminQuery
     offset: v.number(),
     numItems: v.number(),
   })
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     const allUsers = await context.db.query("users").collect();
     const sortedUsers = allUsers.sort(
       (a, b) => b._creationTime - a._creationTime,
     );
     return sortedUsers.slice(input.offset, input.offset + input.numItems);
-  });
+  })
+  .public();
 
 export const count = userSystemAdminQuery
   .input({})
   .returns(v.number())
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const allUsers = await context.db.query("users").collect();
     return allUsers.length;
-  });
+  })
+  .public();
 
 export const toggleSystemAdmin = userSystemAdminMutation
   .input({
@@ -28,12 +30,13 @@ export const toggleSystemAdmin = userSystemAdminMutation
     enabled: v.boolean(),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     await context.db.patch(input.userId, {
       isSystemAdmin: input.enabled ? true : undefined,
     });
     return null;
-  });
+  })
+  .public();
 
 export const toggleCompetitionAdmin = userSystemAdminMutation
   .input({
@@ -41,9 +44,10 @@ export const toggleCompetitionAdmin = userSystemAdminMutation
     enabled: v.boolean(),
   })
   .returns(v.null())
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
     await context.db.patch(input.userId, {
       isCompetitionAdmin: input.enabled ? true : undefined,
     });
     return null;
-  });
+  })
+  .public();

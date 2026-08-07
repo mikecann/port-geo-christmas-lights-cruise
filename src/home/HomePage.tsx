@@ -4,15 +4,13 @@ import { Title } from "./Title";
 import { Sponsors } from "./Sponsors";
 import { Houses } from "./Houses";
 import { Trees } from "./Trees";
-import BelowTheFoldCopy from "./BelowTheFold";
-import BookNowSection from "./BookNowSection";
 import CompetitionSection from "./CompetitionSection";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { HomeEntryMarker } from "./HomeEntryMarker";
 
 export default function HomePage() {
-  const randomEntries = useQuery(api.public.entries.getRandomThree);
+  const randomEntries = useQuery(api.public.entries.getRandomThree, {});
 
   return (
     <Box
@@ -47,8 +45,6 @@ export default function HomePage() {
       </Box>
       <Trees />
       <Stack bg="#02051A" gap={0}>
-        <BookNowSection />
-        <BelowTheFoldCopy />
         <CompetitionSection />
         <Stack pt={"lg"} pb={"lg"} bg="rgba(0,0,0,0.25)">
           <Sponsors />

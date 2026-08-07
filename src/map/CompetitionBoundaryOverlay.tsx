@@ -52,4 +52,3 @@ export function CompetitionBoundaryOverlay() {
 
   return null;
 }
-

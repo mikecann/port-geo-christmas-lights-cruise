@@ -4,10 +4,11 @@ import { v } from "convex/values";
 
 export const sendTestEmail = userSystemAdminMutation
   .input({})
-  .handler(async ({ context }) => {
+  .handler(async (context) => {
     const user = await context.getUser();
     if (!user.email) throw new Error("User has no email");
 
     await email.sendTestEmail(context, { to: user.email });
     return null;
-  });
+  })
+  .public();

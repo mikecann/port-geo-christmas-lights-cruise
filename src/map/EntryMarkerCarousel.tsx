@@ -1,7 +1,7 @@
 import { AspectRatio, Center, Loader, Stack, Text } from "@mantine/core";
 import { Carousel } from "@mantine/carousel";
 import { IconPhoto } from "@tabler/icons-react";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Autoplay from "embla-carousel-autoplay";
 import type { ApprovedEntryDoc } from "../../convex/features/entries/schema";
 import { usePhotoUrl } from "../common/hooks/usePhotoUrl";
@@ -40,7 +40,7 @@ export default function EntryMarkerCarousel({
   const photos = useQuery(api.public.photos.listForEntry, {
     entryId: entry._id,
   });
-  const autoplay = useRef(Autoplay({ delay: 3000 }));
+  const [autoplay] = useState(() => Autoplay({ delay: 3000 }));
 
   if (!photos) return <Loader />;
 
@@ -68,9 +68,9 @@ export default function EntryMarkerCarousel({
         dragFree: false,
         align: "center",
       }}
-      plugins={[autoplay.current]}
-      onMouseEnter={() => autoplay.current?.stop?.()}
-      onMouseLeave={() => autoplay.current?.play?.()}
+      plugins={[autoplay]}
+      onMouseEnter={() => autoplay.stop()}
+      onMouseLeave={() => autoplay.play()}
       controlSize={28}
       style={{
         "--carousel-control-bg": "rgba(0, 0, 0, 0.6)",

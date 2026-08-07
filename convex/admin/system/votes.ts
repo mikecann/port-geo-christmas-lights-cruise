@@ -1,11 +1,11 @@
 import { userSystemAdminMutation } from "./lib";
 import { votes } from "../../features/votes/model";
-import { aggregateVotes } from "../../features/votes/lib";
 import { v } from "convex/values";
+import { competitions } from "../../features/competitions/model";
 
 // Mutations
 
-export const wipeAll = userSystemAdminMutation
+export const wipeCurrentCompetition = userSystemAdminMutation
   .input({})
   .returns(
     v.object({
@@ -13,14 +13,15 @@ export const wipeAll = userSystemAdminMutation
       deleted: v.number(),
     }),
   )
-  .handler(async ({ context }) => {
-    const result = await votes.wipeAll(context._db);
-    await aggregateVotes.clearAll(context);
+  .handler(async (context) => {
+    const competition = await competitions.query(context).current();
+    const result = await votes.wipeAll(context.db, competition._id);
     return {
-      message: `Successfully deleted ${result.deleted} votes`,
+      message: `Successfully deleted ${result.deleted} current competition votes`,
       deleted: result.deleted,
     };
-  });
+  })
+  .public();
 
 export const generateMock = userSystemAdminMutation
   .input({
@@ -33,10 +34,13 @@ export const generateMock = userSystemAdminMutation
       usersCreated: v.number(),
     }),
   )
-  .handler(async ({ context, input }) => {
+  .handler(async (context, input) => {
+    const competition = await competitions.query(context).current();
     const approvedEntries = await context.db
       .query("entries")
-      .withIndex("by_status", (q) => q.eq("status", "approved"))
+      .withIndex("by_competitionId_and_status", (q) =>
+        q.eq("competitionId", competition._id).eq("status", "approved"),
+      )
       .collect();
 
     if (approvedEntries.length === 0)
@@ -104,6 +108,7 @@ export const generateMock = userSystemAdminMutation
           approvedEntries[Math.floor(Math.random() * approvedEntries.length)];
 
         await context.db.insert("votes", {
+          competitionId: competition._id,
           entryId: randomEntry._id,
           votingUserId: userId,
           category,
@@ -120,4 +125,5 @@ export const generateMock = userSystemAdminMutation
       votesCreated: totalVotesCreated,
       usersCreated: mockUsers.length,
     };
-  });
+  })
+  .public();

@@ -13,9 +13,8 @@ export default function CompetitionSection() {
             Prize pool: $20,000
           </Text>
           <Text c="gray.0" size="md" ta="center" mb="md">
-            Compete for prizes across multiple categories including New
-            Entrants, Most Jolly Award, People's Choice, and Onboard Favourites.
-            There's a category for everyone!
+            The 2026 prize categories and allocations are being finalised. Full
+            details will be announced soon.
           </Text>
           <Button
             component="a"

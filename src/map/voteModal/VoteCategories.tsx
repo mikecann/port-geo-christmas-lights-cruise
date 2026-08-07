@@ -108,6 +108,7 @@ export default function VoteCategories({
             const vote = votingStatus[category.key];
             return (
               <Tabs.Tab
+                data-testid={`vote-category-${category.key}`}
                 key={category.key}
                 value={category.key}
                 leftSection={<category.IconComponent size={16} />}
@@ -183,6 +184,7 @@ export default function VoteCategories({
                 ) : (
                   <Card withBorder padding="md" style={{ display: "flex" }}>
                     <Button
+                      data-testid={`cast-vote-${categoryConfig.key}`}
                       color={categoryConfig.color}
                       size="lg"
                       fullWidth

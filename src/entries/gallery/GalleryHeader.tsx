@@ -1,8 +1,26 @@
-import { Stack, Group, Title, Text, Button, Box } from "@mantine/core";
+import {
+  Stack,
+  Group,
+  Title,
+  Text,
+  Button,
+  Box,
+  SegmentedControl,
+} from "@mantine/core";
 import { IconTrophy } from "@tabler/icons-react";
 import { routes } from "../../routes";
 
-export default function GalleryHeader() {
+type Props = {
+  competitionYear: number;
+  availableYears: number[];
+  onCompetitionYearChange: (year: number) => void;
+};
+
+export default function GalleryHeader({
+  competitionYear,
+  availableYears,
+  onCompetitionYearChange,
+}: Props) {
   return (
     <Box
       style={{
@@ -34,29 +52,42 @@ export default function GalleryHeader() {
           </Title>
         </Group>
         <Text size="xl" c="gray.3" ta="center" maw={700} fw={400}>
-          Discover the amazing Christmas light displays participating in the
-          Port Geographe Christmas Cruise 2025 competition.
+          {competitionYear === 2026
+            ? "Discover the displays joining the 2026 Port Geographe Christmas Lights competition."
+            : `Browse the preserved ${competitionYear} competition entries and results.`}
         </Text>
-        <Button
-          component="a"
-          {...routes.competitionDetails().link}
-          leftSection={<IconTrophy size={18} />}
-          variant="filled"
-          size="lg"
+        <SegmentedControl
+          aria-label="Competition year"
+          value={`${competitionYear}`}
+          onChange={(value) => onCompetitionYearChange(Number(value))}
+          data={availableYears.map((year) => ({
+            value: `${year}`,
+            label: year === 2026 ? `${year} Current` : `${year} Archive`,
+          }))}
           color="#FBAF5D"
-          styles={{
-            root: {
-              backgroundColor: "#FBAF5D",
-              color: "#0b1c3b",
-              fontWeight: 600,
-              "&:hover": {
-                backgroundColor: "#e09d4a",
+        />
+        {competitionYear === 2026 ? (
+          <Button
+            component="a"
+            {...routes.competitionDetails().link}
+            leftSection={<IconTrophy size={18} />}
+            variant="filled"
+            size="lg"
+            color="#FBAF5D"
+            styles={{
+              root: {
+                backgroundColor: "#FBAF5D",
+                color: "#0b1c3b",
+                fontWeight: 600,
+                "&:hover": {
+                  backgroundColor: "#e09d4a",
+                },
               },
-            },
-          }}
-        >
-          View Competition Details & Prizes
-        </Button>
+            }}
+          >
+            View Competition Details & Prizes
+          </Button>
+        ) : null}
       </Stack>
     </Box>
   );

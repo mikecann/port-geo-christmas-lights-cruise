@@ -5,4 +5,3 @@ export default {
     "no-hoisted-single-use-handlers": noHoistedSingleUseHandlers,
   },
 };
-
