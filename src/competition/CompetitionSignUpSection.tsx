@@ -43,9 +43,10 @@ export default function CompetitionSignUpSection() {
 
 function AuthenticatedContent() {
   const myEntry = useQuery(api.my.entries.find);
+  const competition = useQuery(api.public.competitions.current, {});
 
   // Show loading state while checking for entry
-  if (myEntry === undefined)
+  if (myEntry === undefined || competition === undefined)
     return (
       <Stack gap="md" align="center">
         <Text size="lg" fw={600} ta="center">
@@ -56,13 +57,24 @@ function AuthenticatedContent() {
 
   const hasEntry = myEntry !== null;
 
+  if (!hasEntry && !competition.entriesOpen)
+    return (
+      <Stack gap="md" align="center">
+        <Text size="lg" fw={600} ta="center">
+          Competition entries are currently closed
+        </Text>
+        <Text c="dimmed" ta="center">
+          Signup details for the next competition will be announced here.
+        </Text>
+      </Stack>
+    );
+
   return (
     <Stack gap="md" align="center">
       <Text size="lg" fw={600} ta="center">
         {hasEntry ? "View your competition entry" : "Ready to participate?"}
       </Text>
       <Button
-        data-testid="competition-entry-link"
         component="a"
         {...routes.myEntries().link}
         size="lg"

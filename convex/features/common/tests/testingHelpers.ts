@@ -165,7 +165,7 @@ export const moveEntryToStatus = async (
       // Get the next available entry number
       const entryNumber = await entries
         .mutate(ctx)
-        .getNextAvailableEntryNumber();
+        .getNextAvailableEntryNumber(currentEntry.competitionId);
 
       const { houseAddress: overrideHouseAddress, ...restOverrides } =
         overrides;

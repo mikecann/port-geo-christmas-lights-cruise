@@ -39,7 +39,9 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
   ] = useDisclosure(false);
   const [selectedImageUrl, setSelectedImageUrl] = React.useState<string>("");
   const photos =
-    useQuery(api.my.photos.listForEntry, { entryId: entry._id }) ?? [];
+    useQuery(api.admin.competition.photos.listForEntry, {
+      entryId: entry._id,
+    }) ?? [];
   const user = useQuery(api.admin.competition.entries.getUserDetails, {
     userId: entry.submittedByUserId,
   });

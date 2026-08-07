@@ -35,7 +35,9 @@ export default function EntriesGalleryPage() {
     api.public.entries.listWithFirstPhoto,
     competitionArgs,
   );
-  const availableYears = competitions?.map(({ year }) => year) ?? [2026, 2025];
+  const availableYears = competitions?.map(({ year }) => year) ?? [
+    competitionYear,
+  ];
 
   const handleCompetitionYearChange = (year: number) => {
     setCompetitionYear(year);

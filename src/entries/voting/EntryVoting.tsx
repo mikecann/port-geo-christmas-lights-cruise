@@ -13,7 +13,9 @@ type Props = {
 export default function EntryVoting({ entryId }: Props) {
   const competition = useQuery(api.public.competitions.current, {});
 
-  if (!competition?.votingOpen)
+  if (competition === undefined) return null;
+
+  if (!competition.votingOpen)
     return (
       <Card data-testid="voting-closed" withBorder radius="md" p="lg">
         <Stack gap="sm" align="center">

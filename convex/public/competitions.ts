@@ -29,7 +29,8 @@ export const list = convex
   .input({})
   .returns(v.array(publicCompetitionValidator))
   .handler(async (ctx) => {
-    const rows = await ctx.db.query("competitions").order("desc").take(20);
+    // One row is added per year, so returning the full list stays naturally small.
+    const rows = await ctx.db.query("competitions").collect();
     return rows
       .map((competition) => ({
         _id: competition._id,

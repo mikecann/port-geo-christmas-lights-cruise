@@ -138,13 +138,11 @@ export const setupE2E = () => {
         await page.locator('[data-testid="test-auth-submit"]').click();
 
         // Wait for authentication to complete
-        await waitFor(
-          async () =>
-            (await page
-              .locator('[data-testid="test-auth-status"]')
-              .textContent()) === "Authenticated!",
-          10_000,
-        );
+        await waitFor(async () => {
+          const status = page.locator('[data-testid="test-auth-status"]');
+          if ((await status.count()) === 0) return false;
+          return (await status.textContent()) === "Authenticated!";
+        }, 10_000);
 
         const user = await backend.client.query(
           api.testing.testing.getUserByEmail,
