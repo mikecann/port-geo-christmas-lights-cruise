@@ -71,7 +71,7 @@ export default function VoteCategories({
   const [isVoting, setIsVoting] = useState(false);
   const onApiError = useApiErrorHandler();
 
-  if (!votingStatus)
+  if (!votingStatus || !competitionId)
     return (
       <Center py="xl">
         <Text c="dimmed">Loading voting status...</Text>

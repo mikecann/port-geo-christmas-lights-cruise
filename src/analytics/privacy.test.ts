@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { attribution, sanitize, shareLink } from "./privacy";
-const id = "j1234567890123456789012345678901";
+const id = "j970pq0asyav77fekdj08grwan6npmh1";
 describe("analytics privacy", () => {
   it("drops implicit SDK metadata and arbitrary personal properties", () => {
     expect(

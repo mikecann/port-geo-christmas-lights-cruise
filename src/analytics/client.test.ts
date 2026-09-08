@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const sdk = vi.hoisted(() => ({ init: vi.fn(), capture: vi.fn() }));
 vi.mock("posthog-js/dist/module.no-external", () => ({ default: sdk }));
-const id = "j1234567890123456789012345678901";
+const id = "j970pq0asyav77fekdj08grwan6npmh1";
 let storage: Map<string, string>;
 beforeEach(() => {
   vi.resetModules();
@@ -123,17 +123,23 @@ describe("analytics lifecycle", () => {
     ).toBeNull();
     const event = config.before_send({
       event: "vote_succeeded",
+      $set: { email: "private" },
+      $set_once: { $initial_current_url: "private" },
       properties: {
         entry_id: id,
         $current_url: "private",
         $set: { email: "private" },
+        token: "untrusted-project",
       },
     });
     expect(event.properties).toEqual({
       entry_id: id,
       $geoip_disable: true,
       $process_person_profile: false,
+      token: "phc_test",
     });
+    expect(event).not.toHaveProperty("$set");
+    expect(event).not.toHaveProperty("$set_once");
   });
   it("does not let SDK capture failure change a successful vote result", async () => {
     const client = await enabled();
@@ -154,7 +160,11 @@ describe("analytics lifecycle", () => {
         event: "visit_started",
         properties: { $ip: "203.0.113.1", latitude: 12 },
       }).properties,
-    ).toEqual({ $geoip_disable: false, $process_person_profile: false });
+    ).toEqual({
+      $geoip_disable: false,
+      $process_person_profile: false,
+      token: "phc_test",
+    });
   });
   it("records an auth return once, without claiming account creation", async () => {
     const client = await enabled();

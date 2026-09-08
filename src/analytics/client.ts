@@ -73,7 +73,16 @@ export async function initAnalytics() {
           event.properties,
           env.VITE_ANALYTICS_GEOIP_ENABLED === "true",
         );
-        return properties ? { ...event, properties } : null;
+        // Ingestion authenticates with this public project token inside each
+        // event. Restore it from configuration, never from caller properties.
+        return properties
+          ? {
+              event: event.event,
+              uuid: event.uuid,
+              timestamp: event.timestamp,
+              properties: { ...properties, token: env.VITE_POSTHOG_KEY },
+            }
+          : null;
       },
     });
     posthog = sdk;
