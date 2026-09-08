@@ -1,3 +1,4 @@
+import { AnalyticsObserver } from "./analytics/AnalyticsObserver";
 import { Layout } from "./common/layout/Layout";
 import type { Route } from "type-route";
 import { exhaustiveCheck } from "../shared/misc";
@@ -11,6 +12,7 @@ import HomePage from "./home/HomePage";
 export default function App() {
   return (
     <Layout>
+      <AnalyticsObserver />
       <LazyLoadWrapper>
         <AppRoutes />
       </LazyLoadWrapper>

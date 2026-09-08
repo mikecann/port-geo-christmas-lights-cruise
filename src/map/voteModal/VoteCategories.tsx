@@ -1,3 +1,4 @@
+import { measured, track } from "../../analytics/client";
 import {
   Tabs,
   Badge,
@@ -13,12 +14,12 @@ import {
 import { IconAward, IconMoodSmile, IconInfoCircle } from "@tabler/icons-react";
 import { useState } from "react";
 import React from "react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { VoteCategory } from "../../../convex/features/votes/schema";
 import { VOTE_CATEGORIES } from "../../../convex/features/votes/schema";
-import { useErrorCatchingMutation } from "../../common/errors";
+import { useApiErrorHandler } from "../../common/errors";
 import { routes } from "../../routes";
 import ExistingVoteCard from "./ExistingVoteCard";
 
@@ -56,17 +57,19 @@ const CATEGORIES_CONFIG: CategoryConfig[] = [
 export default function VoteCategories({
   entryId,
   onClose,
+  competitionId,
 }: {
   entryId: Id<"entries">;
+  competitionId?: Id<"competitions">;
   onClose: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<string | null>("best_display");
 
   const votingStatus = useQuery(api.my.votes.getStatus);
-  const [voteForEntry, isVoting] = useErrorCatchingMutation(api.my.votes.vote);
-  const [cancelVote, isCancelling] = useErrorCatchingMutation(
-    api.my.votes.cancel,
-  );
+  const voteForEntry = useMutation(api.my.votes.vote);
+  const cancelVote = useMutation(api.my.votes.cancel);
+  const [isVoting, setIsVoting] = useState(false);
+  const onApiError = useApiErrorHandler();
 
   if (!votingStatus)
     return (
@@ -173,7 +176,15 @@ export default function VoteCategories({
                   <ExistingVoteCard
                     vote={vote}
                     onCancel={() => {
-                      cancelVote({ voteId: vote._id });
+                      void cancelVote({ voteId: vote._id })
+                        .then(() => {
+                          track("vote_cancelled", {
+                            entry_id: vote.entryId,
+                            competition_id: vote.competitionId,
+                            category: categoryConfig.key,
+                          });
+                        })
+                        .catch(onApiError);
                     }}
                     onViewEntry={(entryId) => {
                       routes.entry({ entryId }).push();
@@ -189,12 +200,24 @@ export default function VoteCategories({
                       size="lg"
                       fullWidth
                       leftSection={<categoryConfig.IconComponent size={20} />}
-                      onClick={() =>
-                        voteForEntry({
-                          entryId,
-                          category: categoryConfig.key,
-                        })
-                      }
+                      onClick={() => {
+                        setIsVoting(true);
+                        void measured(
+                          () =>
+                            voteForEntry({
+                              entryId,
+                              category: categoryConfig.key,
+                            }),
+                          "vote",
+                          {
+                            entry_id: entryId,
+                            competition_id: competitionId,
+                            category: categoryConfig.key,
+                          },
+                        )
+                          .catch(onApiError)
+                          .finally(() => setIsVoting(false));
+                      }}
                       disabled={vote != null || isVoting}
                       loading={isVoting}
                       style={{ height: "100%", minHeight: "60px" }}

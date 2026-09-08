@@ -1,3 +1,4 @@
+import { measured } from "../../analytics/client";
 import {
   Card,
   Stack,
@@ -151,7 +152,10 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
             loading={isSubmitting}
             onClick={() => {
               setIsSubmitting(true);
-              submitMyEntry()
+              measured(() => submitMyEntry(), "entry_submit", {
+                entry_id: entry._id,
+                competition_id: entry.competitionId,
+              })
                 .then(() =>
                   notifications.show({
                     title: "Submitted!",

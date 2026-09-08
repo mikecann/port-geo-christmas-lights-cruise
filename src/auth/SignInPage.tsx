@@ -1,3 +1,4 @@
+import { authStarted, track } from "../analytics/client";
 import { useEffect, useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
@@ -89,9 +90,13 @@ export function SignInPage({ isAdmin }: { isAdmin: boolean }) {
               size="lg"
               mt="xl"
               onClick={() => {
+                authStarted();
                 setIsLoading(true);
                 signIn("google", { redirectTo: returnTo })
-                  .catch(onApiError)
+                  .catch((error) => {
+                    track("auth_failed");
+                    onApiError(error);
+                  })
                   .finally(() => setIsLoading(false));
               }}
               loading={isLoading}
