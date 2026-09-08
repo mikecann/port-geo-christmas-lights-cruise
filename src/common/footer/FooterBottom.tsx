@@ -20,6 +20,9 @@ export default function FooterBottom() {
             Made with ❤️ for the community.
           </Anchor>
         </Text>
+        <Anchor href="/analytics.html" c="gray.5" size="xs">
+          Site analytics
+        </Anchor>
       </Stack>
       <Text c="gray.6" size="xs" ta="right">
         Celebrating the festive spirit of Busselton

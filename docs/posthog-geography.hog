@@ -1,0 +1,19 @@
+// PostHog transformation, after GeoIP (priority 2 in project 598745).
+// Keep this allowlist narrow even if GeoIP adds new fields later.
+let allowed := ['$geoip_country_name', '$geoip_country_code', '$geoip_subdivision_1_name', '$geoip_subdivision_1_code', '$geoip_subdivision_2_name', '$geoip_subdivision_2_code', '$geoip_city_name']
+let result := {}
+let safe := {}
+for (let key in keys(event.properties)) {
+  if (substring(key, 1, 7) != '$geoip_' or has(allowed, key)) {
+    if (key != '$set' and key != '$set_once') {
+      safe[key] := event.properties[key]
+    }
+  }
+}
+for (let key in keys(event)) {
+  if (key != 'properties' and key != '$set' and key != '$set_once') {
+    result[key] := event[key]
+  }
+}
+result.properties := safe
+return result
