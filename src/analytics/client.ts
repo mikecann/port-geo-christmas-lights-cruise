@@ -80,7 +80,17 @@ export async function initAnalytics() {
               event: event.event,
               uuid: event.uuid,
               timestamp: event.timestamp,
-              properties: { ...properties, token: env.VITE_POSTHOG_KEY },
+              properties: {
+                ...properties,
+                token: env.VITE_POSTHOG_KEY,
+                // Preview and local smoke tests must not inflate public reports.
+                environment: [
+                  "portgeochristmascruise.com.au",
+                  "www.portgeochristmascruise.com.au",
+                ].includes(location.hostname)
+                  ? "production"
+                  : "test",
+              },
             }
           : null;
       },

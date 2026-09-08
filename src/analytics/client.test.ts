@@ -7,6 +7,10 @@ beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
   vi.unstubAllEnvs();
+  // A developer's enabled local preview must not change test defaults.
+  vi.stubEnv("VITE_ANALYTICS_ENABLED", "false");
+  vi.stubEnv("VITE_ANALYTICS_GEOIP_ENABLED", "false");
+  vi.stubEnv("VITE_IS_TEST_MODE", "false");
   storage = new Map();
   vi.stubGlobal("sessionStorage", {
     getItem: (key: string) => storage.get(key) ?? null,
@@ -137,6 +141,7 @@ describe("analytics lifecycle", () => {
       $geoip_disable: true,
       $process_person_profile: false,
       token: "phc_test",
+      environment: "test",
     });
     expect(event).not.toHaveProperty("$set");
     expect(event).not.toHaveProperty("$set_once");
@@ -164,6 +169,7 @@ describe("analytics lifecycle", () => {
       $geoip_disable: false,
       $process_person_profile: false,
       token: "phc_test",
+      environment: "test",
     });
   });
   it("records an auth return once, without claiming account creation", async () => {
@@ -174,5 +180,20 @@ describe("analytics lifecycle", () => {
     expect(
       sdk.capture.mock.calls.filter(([event]) => event === "auth_succeeded"),
     ).toHaveLength(1);
+  });
+  it("labels only the public site as production and ignores caller labels", async () => {
+    await enabled();
+    const send = sdk.init.mock.calls[0][1].before_send;
+    const event = {
+      event: "visit_started",
+      properties: { environment: "production" },
+    };
+    expect(send(event).properties.environment).toBe("test");
+    vi.stubGlobal("location", { hostname: "portgeochristmascruise.com.au" });
+    expect(send(event).properties.environment).toBe("production");
+    vi.stubGlobal("location", {
+      hostname: "portgeochristmascruise.com.au.example.com",
+    });
+    expect(send(event).properties.environment).toBe("test");
   });
 });

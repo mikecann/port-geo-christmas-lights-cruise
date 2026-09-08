@@ -1,16 +1,16 @@
 # Competition analytics plan
 
-Status: implementation ready to ship with collection disabled. The PostHog project is Personal / Port Geographe Christmas Lights (598745, US Cloud), with IP discard enabled and replay declined. Keep `VITE_ANALYTICS_ENABLED=false` until the live setup and payload verification below are complete and production collection is approved. Merging main triggers Cloudflare Workers Builds, so merging this disabled implementation and enabling collection are separate release steps. No Convex schema changes are needed.
+Status: browser-to-PostHog verification passed; production collection remains disabled pending rollout approval. The PostHog project is Personal / Port Geographe Christmas Lights (598745, US Cloud), with IP discard enabled and replay declined. Merging main triggers Cloudflare Workers Builds. The public project configuration is in `.env.production`; enabling its master flag and rebuilding starts collection. No Convex schema changes are needed.
 
 ## Setup
 
 1. Use [Port Geographe Christmas Lights](https://us.posthog.com/project/598745/settings/project-details) in Personal, US Cloud. Use the public project token in `VITE_POSTHOG_KEY` and its ingestion host in `VITE_POSTHOG_HOST`. Never put a personal API key into Vite variables.
 2. In PostHog, enable Discard IP data and disable session replay. GeoIP remains disabled unless `VITE_ANALYTICS_GEOIP_ENABLED=true`; see the approximate-geography setup below. Network requests necessarily expose the connection IP to the service; IP discard is a project setting, not a claim of anonymous transport.
 3. Review the site's privacy notice for this narrow analytics collection, then obtain Michael's approval before setting `VITE_ANALYTICS_ENABLED=true` in production build configuration. Vite embeds these variables at build time. Missing configuration, DNT, test mode, or inaccessible session storage disables collection.
-4. Verify in an isolated preview with a test project and synthetic data: inspect outgoing requests for the allowlist below, complete the OAuth return, test successful and rejected votes, and check dashboards. Do not run test votes against production.
-5. Create the dashboards below in that project. Dashboard creation is still pending. Rollback: set enabled to false and rebuild/redeploy through the approved release process.
+4. Preview events are labeled `environment=test`; the two exact public hostnames are labeled `production`. The label is assigned by the client boundary, not accepted from event callers. All production reports filter on this field. Test with synthetic operations, never real production votes.
+5. Use the [competition dashboard](https://us.posthog.com/project/598745/dashboard/2074681). Rollback: set enabled to false and rebuild/redeploy through the approved release process.
 
-Live setup checkpoint (September 8): GeoIP enrichment is active and IP discard is on. The subsequent geography filter has not been saved or verified, and no production collection is enabled. The existing `mikecann.blog` project (73165) was preserved and moved into Personal. Deletion of the obsolete playground organization did not complete in the UI and remains outstanding.
+Live setup checkpoint (September 8): GeoIP is active at priority 1. [Keep approximate geography only](https://us.posthog.com/project/598745/functions/01a07f36-7473-0000-7a44-04d1ea97ca74) is active at priority 2 and passed a synthetic redaction test. Real browser events retain country and discard IP and detailed location fields; the test connection had no city/region result. The existing `mikecann.blog` project (73165) was preserved and moved into Personal. Deletion of the obsolete playground organization did not complete in the UI and remains outstanding.
 
 ## What is collected
 
@@ -22,7 +22,7 @@ A random per-tab identity and first landing attribution survive same-tab OAuth r
 
 Michael requested country, region and approximate city reporting on September 8. Keep IP discard on. Set `VITE_ANALYTICS_GEOIP_ENABLED=true` only after configuring and verifying GeoIP enrichment in PostHog with a subsequent transformation that retains only the desired country, subdivision/region and city names/codes from GeoIP. Drop all other GeoIP fields, including latitude, longitude, postal code and accuracy radius, and check nested person-property updates too. Replay and person profiles remain disabled.
 
-This filtering must happen on the server after enrichment: the browser's `before_send` cannot redact fields added later. Until that is verified, the example configuration leaves GeoIP off. The master collection flag still stays off until production approval.
+This filtering happens on the server after enrichment: the browser's `before_send` cannot redact fields added later. The master collection flag stays off until production approval. The public disclosure is linked from the footer at `/analytics.html`.
 
 Add a Visitor geography dashboard: unique `visit_started` by `$geoip_country_name`, then `$geoip_subdivision_1_name`, then `$geoip_city_name`; retain an Unknown bucket and compare conversion rates only with adequate sample sizes. This describes the visitor's approximate network location at the time, not their home or physical attendance. Mobile networks, VPNs and privacy relays can return a distant city. Do not use it for voting eligibility. Describe approximate location in the privacy notice and avoid publishing small geographic groups.
 
@@ -57,9 +57,9 @@ Only recognized source/medium pairs are retained. Arbitrary UTM campaign/content
 
 Attribution is first landing within this tab's window. It survives internal navigation and OAuth. A later tagged link within the same window does not overwrite it. `source` on a share event describes that outgoing intent; `channel` and `referral_entry_id` still describe the visitor's original arrival. Tags can be copied or forged, so this measures association, not verified causation. There is no individual share-recipient matching or incentive attribution.
 
-## Dashboards to create
+## Reporting definitions
 
-Use the competition date range, exclude staff/test activity, and retain `competition_id` filters for entry events where available. Funnel conversion windows below are 30 minutes and count unique anonymous visitors, not event totals. Use the same definition consistently when comparing channels.
+Use the competition date range, filter `environment=production`, and retain `competition_id` filters for entry events where available. Funnel conversion windows are 30 minutes. The voting funnel groups by `concat(distinct_id, ':', properties.entry_id)` to keep the entry constant, so it counts unique visitor-entry pairs. Other funnels count unique anonymous visitors. Use the same definition consistently when comparing channels.
 
 | Dashboard / insight | Configuration                                                                                                                                                                    | Decision                                                                                    |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -80,8 +80,8 @@ Implementation checked against the current official [JavaScript configuration](h
 
 ## Verification completed in this worktree
 
-- TypeScript and unit suite: 64 passed, 4 existing skipped tests. Includes 15 analytics tests covering payload redaction, unwanted automatic events, QR/social attribution, OAuth reload continuity, disabled mode, DNT/test mode, blocked storage, true mutation outcomes, SDK capture failure, and auth-return deduplication.
+- TypeScript and unit suite: 65 passed, 4 existing skipped tests. Includes 16 analytics tests covering payload redaction, unwanted automatic events, QR/social attribution, OAuth reload continuity, disabled mode, DNT/test mode, blocked storage, true mutation outcomes, SDK capture failure, auth-return deduplication, and production/test labeling.
 - ESLint and `git diff --check`: passed.
 - Production build: passed. PostHog is a separate deferred chunk and is not loaded when disabled.
-- Browser-to-PostHog delivery and real OAuth/voting flows have not been exercised. They require a selected test project and a configured preview backend; no production votes were cast.
+- Real SDK delivery from the local site was verified in PostHog: QR attribution, test label, propertyless person mode, country retained, no IP/URL/coordinates. A temporary browser smoke page exercised 15 auth/share/vote/entrant events using synthetic promises, including rejection; the outgoing payloads shared one anonymous ID and omitted private error text. The page was removed afterward. This was not a real Google OAuth or backend voting test; no production votes or entries were created.
 - The Bun lockfile also reconciles existing root dependency declarations from `latest` to the ranges already in package.json; existing resolved dependency versions were retained.
