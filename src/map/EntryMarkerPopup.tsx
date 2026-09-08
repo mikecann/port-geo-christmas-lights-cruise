@@ -1,3 +1,4 @@
+import { useEntryView } from "../analytics/useEntryView";
 import {
   Button,
   Text,
@@ -22,6 +23,12 @@ interface EntryMarkerPopupProps {
 export default function EntryMarkerPopup({ entryId }: EntryMarkerPopupProps) {
   const entry = useQuery(api.public.entries.get, { entryId });
   const competition = useQuery(api.public.competitions.current, {});
+
+  useEntryView(
+    entry?.status === "approved" ? entryId : undefined,
+    entry?.competitionId,
+    "map",
+  );
 
   if (!entry) return <Loader />;
 

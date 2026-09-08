@@ -1,3 +1,6 @@
+import { track } from "../analytics/client";
+import { shareLink, type ShareSource } from "../analytics/privacy";
+import { useMe } from "../auth/useMeHooks";
 import {
   Modal,
   Stack,
@@ -27,6 +30,8 @@ type ShareModalProps = {
   onClose: () => void;
   entry: {
     name: string;
+    submittedByUserId?: string;
+    competitionId?: string;
     houseAddress:
       | string
       | { address: string; lat: number; lng: number }
@@ -43,16 +48,24 @@ export default function ShareModal({
   entry,
   entryId,
 }: ShareModalProps) {
-  // Generate the current URL for this entry
-  const entryUrl = `${window.location.origin}/entries/${entryId}`;
+  const me = useMe();
+  const properties = {
+    entry_id: entryId,
+    competition_id: entry.competitionId,
+    is_entrant: me != null && me._id === entry.submittedByUserId,
+  };
+  const entryUrl = shareLink(window.location.origin, entryId, "copy");
   const shareTitle = `Check out ${entry.name} - Entry #${entry.entryNumber}`;
   const shareText = `${shareTitle} in the Port Geographe Christmas Lights competition!`;
 
   // Check if Web Share API is supported
   const canWebShare = navigator.share !== undefined;
 
-  const handleSocialShare = (platform: string) => {
-    const encodedUrl = encodeURIComponent(entryUrl);
+  const handleSocialShare = (platform: ShareSource) => {
+    track("share_intent", { ...properties, source: platform });
+    const encodedUrl = encodeURIComponent(
+      shareLink(window.location.origin, entryId, platform),
+    );
     const encodedText = encodeURIComponent(shareText);
 
     let shareUrl = "";
@@ -90,10 +103,15 @@ export default function ShareModal({
             onClick={async () => {
               if (canWebShare)
                 try {
+                  track("share_intent", { ...properties, source: "native" });
                   await navigator.share({
                     title: shareTitle,
                     text: shareText,
-                    url: entryUrl,
+                    url: shareLink(window.location.origin, entryId, "native"),
+                  });
+                  track("native_share_resolved", {
+                    ...properties,
+                    source: "native",
                   });
                 } catch (error) {
                   // User cancelled or error occurred
@@ -186,7 +204,16 @@ export default function ShareModal({
               <CopyButton value={entryUrl}>
                 {({ copied, copy }) => (
                   <Tooltip label={copied ? "Copied!" : "Copy"}>
-                    <ActionIcon color={copied ? "teal" : "gray"} onClick={copy}>
+                    <ActionIcon
+                      color={copied ? "teal" : "gray"}
+                      onClick={() => {
+                        track("share_intent", {
+                          ...properties,
+                          source: "copy",
+                        });
+                        copy();
+                      }}
+                    >
                       {copied ? (
                         <IconCheck size={16} />
                       ) : (

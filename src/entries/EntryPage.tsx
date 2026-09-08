@@ -1,3 +1,4 @@
+import { useEntryView } from "../analytics/useEntryView";
 import { Container, Text, Stack, Card, Center, Grid } from "@mantine/core";
 import { Carousel } from "@mantine/carousel";
 import { IconPhoto } from "@tabler/icons-react";
@@ -33,6 +34,12 @@ export default function EntryPage({
     entryId,
   });
   const competition = useQuery(api.public.competitions.current, {});
+
+  useEntryView(
+    entryWithPhotos?.entry.status === "approved" ? entryId : undefined,
+    entryWithPhotos?.entry.competitionId,
+    "entry",
+  );
 
   if (!entryWithPhotos) return <EntryPageSkeleton />;
 
