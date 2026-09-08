@@ -1,6 +1,6 @@
 # Competition analytics plan
 
-Status: browser-to-PostHog verification passed; production collection remains disabled pending rollout approval. The PostHog project is Personal / Port Geographe Christmas Lights (598745, US Cloud), with IP discard enabled and replay declined. Merging main triggers Cloudflare Workers Builds. The public project configuration is in `.env.production`; enabling its master flag and rebuilding starts collection. No Convex schema changes are needed.
+Status: browser-to-PostHog verification passed; Michael approved production collection on September 8, 2026, and `.env.production` now enables it. The PostHog project is Personal / Port Geographe Christmas Lights (598745, US Cloud), with IP discard enabled and replay declined. Merging main triggers Cloudflare Workers Builds; the new build starts collection. No Convex schema changes are needed.
 
 ## Setup
 
@@ -22,7 +22,7 @@ A random per-tab identity and first landing attribution survive same-tab OAuth r
 
 Michael requested country, region and approximate city reporting on September 8. Keep IP discard on. GeoIP is configured with a subsequent transformation that retains only the desired country, subdivision/region and city names/codes from GeoIP. Drop all other GeoIP fields, including latitude, longitude, postal code and accuracy radius, and check nested person-property updates too. Replay and person profiles remain disabled.
 
-This filtering happens on the server after enrichment: the browser's `before_send` cannot redact fields added later. The master collection flag stays off until production approval. The public disclosure is linked from the footer at `/analytics.html`.
+This filtering happens on the server after enrichment: the browser's `before_send` cannot redact fields added later. Production collection was approved on September 8, 2026. The public disclosure is linked from the footer at `/analytics.html`.
 
 The dashboard includes Visitor geography tables: unique `visit_started` by `$geoip_country_name`, then `$geoip_subdivision_1_name`, then `$geoip_city_name`; retain an Unknown bucket and compare conversion rates only with adequate sample sizes. This describes the visitor's approximate network location at the time, not their home or physical attendance. Mobile networks, VPNs and privacy relays can return a distant city. Do not use it for voting eligibility. Describe approximate location in the privacy notice and avoid publishing small geographic groups.
 
