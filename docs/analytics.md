@@ -20,11 +20,11 @@ A random per-tab identity and first landing attribution survive same-tab OAuth r
 
 ## Approximate visitor geography
 
-Michael requested country, region and approximate city reporting on September 8. Keep IP discard on. Set `VITE_ANALYTICS_GEOIP_ENABLED=true` only after configuring and verifying GeoIP enrichment in PostHog with a subsequent transformation that retains only the desired country, subdivision/region and city names/codes from GeoIP. Drop all other GeoIP fields, including latitude, longitude, postal code and accuracy radius, and check nested person-property updates too. Replay and person profiles remain disabled.
+Michael requested country, region and approximate city reporting on September 8. Keep IP discard on. GeoIP is configured with a subsequent transformation that retains only the desired country, subdivision/region and city names/codes from GeoIP. Drop all other GeoIP fields, including latitude, longitude, postal code and accuracy radius, and check nested person-property updates too. Replay and person profiles remain disabled.
 
 This filtering happens on the server after enrichment: the browser's `before_send` cannot redact fields added later. The master collection flag stays off until production approval. The public disclosure is linked from the footer at `/analytics.html`.
 
-Add a Visitor geography dashboard: unique `visit_started` by `$geoip_country_name`, then `$geoip_subdivision_1_name`, then `$geoip_city_name`; retain an Unknown bucket and compare conversion rates only with adequate sample sizes. This describes the visitor's approximate network location at the time, not their home or physical attendance. Mobile networks, VPNs and privacy relays can return a distant city. Do not use it for voting eligibility. Describe approximate location in the privacy notice and avoid publishing small geographic groups.
+The dashboard includes Visitor geography tables: unique `visit_started` by `$geoip_country_name`, then `$geoip_subdivision_1_name`, then `$geoip_city_name`; retain an Unknown bucket and compare conversion rates only with adequate sample sizes. This describes the visitor's approximate network location at the time, not their home or physical attendance. Mobile networks, VPNs and privacy relays can return a distant city. Do not use it for voting eligibility. Describe approximate location in the privacy notice and avoid publishing small geographic groups.
 
 References: [PostHog GeoIP](https://posthog.com/docs/cdp/transformations/template-geoip), [MaxMind accuracy limitations](https://support.maxmind.com/knowledge-base/articles/maxmind-geolocation-accuracy).
 
@@ -59,7 +59,7 @@ Attribution is first landing within this tab's window. It survives internal navi
 
 ## Reporting definitions
 
-Use the competition date range, filter `environment=production`, and retain `competition_id` filters for entry events where available. Funnel conversion windows are 30 minutes. The voting funnel groups by `concat(distinct_id, ':', properties.entry_id)` to keep the entry constant, so it counts unique visitor-entry pairs. Other funnels count unique anonymous visitors. Use the same definition consistently when comparing channels.
+Use the competition date range, filter `environment=production`, and retain `competition_id` filters for entry events where available. Funnel conversion windows are 30 minutes. The voting funnel groups by `concat(distinct_id, ':', properties.entry_id)` to keep the entry constant, so it counts unique pairs of anonymous tab identity and entry. Other funnels count unique anonymous tab identities, not distinct people. Use the same definition consistently when comparing channels.
 
 | Dashboard / insight | Configuration                                                                                                                                                                    | Decision                                                                                    |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
