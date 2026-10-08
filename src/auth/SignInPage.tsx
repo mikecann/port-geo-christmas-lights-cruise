@@ -17,6 +17,7 @@ import { useApiErrorHandler } from "../common/errors";
 import { TestAuthPage } from "./TestAuthPage";
 import { isTestMode } from "../common/testMode";
 import { isSignupDisabled } from "../common/auth";
+import { safeReturnTo } from "./returnTo";
 
 export function SignInPage({ isAdmin }: { isAdmin: boolean }) {
   const { signIn } = useAuthActions();
@@ -25,8 +26,10 @@ export function SignInPage({ isAdmin }: { isAdmin: boolean }) {
   const { isAuthenticated } = useConvexAuth();
   const route = useRoute();
 
+  // returnTo comes from the URL, so only ever follow it to a path on this site.
   const returnTo =
-    route.name === "signin" ? route.params.returnTo : routes.map().href;
+    safeReturnTo(route.name === "signin" ? route.params.returnTo : undefined) ??
+    routes.map().href;
 
   useEffect(() => {
     if (!isAuthenticated) return;
