@@ -62,7 +62,7 @@ To typecheck the project and run the unit tests:
 bun run test
 ```
 
-CI runs this, plus `bun run lint`, on every push and pull request to `main`.
+CI runs this, plus `bun run lint` and `bun run format:check`, on every push and pull request to `main`.
 
 ### OG Tag
 
