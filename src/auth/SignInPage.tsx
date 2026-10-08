@@ -14,8 +14,6 @@ import {
 import { routes, useRoute } from "../routes";
 import { useConvexAuth } from "convex/react";
 import { useApiErrorHandler } from "../common/errors";
-import { TestAuthPage } from "./TestAuthPage";
-import { isTestMode } from "../common/testMode";
 import { isSignupDisabled } from "../common/auth";
 
 export function SignInPage({ isAdmin }: { isAdmin: boolean }) {
@@ -32,8 +30,6 @@ export function SignInPage({ isAdmin }: { isAdmin: boolean }) {
     if (!isAuthenticated) return;
     window.location.href = returnTo;
   }, [isAuthenticated, returnTo]);
-
-  if (isTestMode()) return <TestAuthPage />;
 
   if (isSignupDisabled() && !isAdmin)
     return (

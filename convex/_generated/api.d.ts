@@ -44,9 +44,6 @@ import type * as public_competitions from "../public/competitions.js";
 import type * as public_entries from "../public/entries.js";
 import type * as public_photos from "../public/photos.js";
 import type * as public_user from "../public/user.js";
-import type * as testing_TestingCredentials from "../testing/TestingCredentials.js";
-import type * as testing_lib from "../testing/lib.js";
-import type * as testing_testing from "../testing/testing.js";
 
 import type {
   ApiFromModules,
@@ -91,9 +88,6 @@ declare const fullApi: ApiFromModules<{
   "public/entries": typeof public_entries;
   "public/photos": typeof public_photos;
   "public/user": typeof public_user;
-  "testing/TestingCredentials": typeof testing_TestingCredentials;
-  "testing/lib": typeof testing_lib;
-  "testing/testing": typeof testing_testing;
 }>;
 
 /**
