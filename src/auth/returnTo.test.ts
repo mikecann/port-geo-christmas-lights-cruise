@@ -8,6 +8,12 @@ describe("safeReturnTo", () => {
     "/entries/j970pq0asyav77fekdj08grwan6npmh1/vote",
     "/map/j970pq0asyav77fekdj08grwan6npmh1?ref=share#top",
     "/entries?q=a%2Fb",
+    "/entries?q=100%25",
+    "/map?utm_campaign=50%25off&utm_source=fb",
+    "/entries?q=a%0Ab",
+    "/entries/caf%C3%A9",
+    "/search/100%25",
+    "/map%E0%A4%A",
   ])("keeps the same-origin path %s", (returnTo) => {
     expect(safeReturnTo(returnTo)).toBe(returnTo);
   });
@@ -52,10 +58,13 @@ describe("safeReturnTo", () => {
     "/%5Cevil.example",
     "/%09/evil.example",
     "/%252F/evil.example",
+    "/./%2Fevil.example",
+    "/%2e%2e/%2fevil.example",
+    "/map/%2E%2E%2F%2Fevil.example",
+    "/%25252525252F/evil.example",
     "%6Aavascript:alert(1)",
     "javascript%3Aalert(1)",
     "https%3A%2F%2Fevil.example",
-    "/map%E0%A4%A",
   ])("rejects encoded variant %s", (returnTo) => {
     expect(safeReturnTo(returnTo)).toBeUndefined();
   });
