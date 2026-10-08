@@ -56,15 +56,13 @@ Then because this project is using GoogleAuth only you will need to follow the s
 
 ### Testing
 
-If you want to run both the e2e and unit tests:
+To typecheck the project and run the unit tests:
 
 ```bash
 bun run test
 ```
 
-E2E tests use [Stagehand](https://www.stagehand.dev/) which is an AI based testing library. Because its AI based it needs AI keys to operate correctly.
-
-Create a `.env` in the root of the project and set `OPENAI_API_KEY` or `GOOGLE_GENERATIVE_AI_API_KEY` if you want to change the model to use Gemini or something else instead.
+CI runs this, plus `bun run lint`, on every push and pull request to `main`.
 
 ### OG Tag
 
