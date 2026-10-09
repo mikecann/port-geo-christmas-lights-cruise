@@ -22,7 +22,14 @@ export const { RouteProvider, useRoute, routes } = createRouter({
   signin: defineRoute(
     {
       returnTo: param.query.string,
-      unlockPassword: param.query.optional.string,
+      // While sign-ups are closed, ?unlock=true shows the sign-in button so
+      // admins can get in. It isn't a secret: the server only lets existing
+      // accounts sign in then (IS_SIGNUP_DISABLED in convex/auth.ts).
+      unlock: param.query.optional.boolean,
+      // Added to the address people come back to after Google while sign-ups
+      // are closed. Back with it but no session means the sign-in was turned
+      // away.
+      attempted: param.query.optional.boolean,
     },
     () => "/signin",
   ),

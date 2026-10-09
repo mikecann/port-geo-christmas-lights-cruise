@@ -10,6 +10,7 @@ import {
   Text,
   Anchor,
   Box,
+  Alert,
 } from "@mantine/core";
 import { routes, useRoute } from "../routes";
 import { useConvexAuth } from "convex/react";
@@ -17,11 +18,11 @@ import { useApiErrorHandler } from "../common/errors";
 import { isSignupDisabled } from "../common/auth";
 import { safeReturnTo } from "./returnTo";
 
-export function SignInPage({ isAdmin }: { isAdmin: boolean }) {
+export function SignInPage() {
   const { signIn } = useAuthActions();
   const [isLoading, setIsLoading] = useState(false);
   const onApiError = useApiErrorHandler();
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const route = useRoute();
 
   // returnTo comes from the URL, so only ever follow it to a path on this site.
@@ -34,7 +35,15 @@ export function SignInPage({ isAdmin }: { isAdmin: boolean }) {
     window.location.href = returnTo;
   }, [isAuthenticated, returnTo]);
 
-  if (isSignupDisabled() && !isAdmin)
+  const signupDisabled = isSignupDisabled();
+  const params = route.name === "signin" ? route.params : undefined;
+  const signInTurnedAway =
+    signupDisabled &&
+    params?.attempted === true &&
+    !isAuthLoading &&
+    !isAuthenticated;
+
+  if (signupDisabled && params?.unlock !== true)
     return (
       <Box
         style={{
@@ -84,6 +93,14 @@ export function SignInPage({ isAdmin }: { isAdmin: boolean }) {
               favorites, and join the festive community
             </Text>
 
+            {signInTurnedAway && (
+              <Alert color="red" title="Sign-in didn't complete" mt="md">
+                New accounts can't be created until sign-ups open, so only
+                existing accounts can sign in for now. If you have one, try
+                again with the Google account you used before.
+              </Alert>
+            )}
+
             <Button
               fullWidth
               size="lg"
@@ -91,7 +108,16 @@ export function SignInPage({ isAdmin }: { isAdmin: boolean }) {
               onClick={() => {
                 authStarted();
                 setIsLoading(true);
-                signIn("google", { redirectTo: returnTo })
+                signIn("google", {
+                  // While sign-ups are closed the server turns new accounts
+                  // away, and Convex Auth then sends the browser to
+                  // redirectTo without a session. Come back here rather than
+                  // returnTo so this page can say why.
+                  redirectTo: signupDisabled
+                    ? routes.signin({ returnTo, unlock: true, attempted: true })
+                        .href
+                    : returnTo,
+                })
                   .catch((error) => {
                     track("auth_failed");
                     onApiError(error);
