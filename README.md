@@ -54,6 +54,15 @@ Accept the defaults, this will add a few needed environment variables.
 
 Then because this project is using GoogleAuth only you will need to follow the steps here to setup a Google Project and add the required environment variables (AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET) to the convex deployment: https://labs.convex.dev/auth/config/oauth/google.
 
+#### Off-season sign-up lock
+
+Outside the season two flags close sign-ups:
+
+- `IS_SIGNUP_DISABLED=true` on the Convex deployment. This is the actual lock: Google sign-in still works for existing accounts (admins included) but can't create new ones.
+- `VITE_IS_SIGNUP_DISABLED=true` in the frontend build. This only swaps the sign-in page for an "under construction" message. Admins can still reach the sign-in button at `/signin?returnTo=/admin&unlock=true`.
+
+Turn both off when sign-ups open.
+
 ### Testing
 
 If you want to run both the e2e and unit tests:
