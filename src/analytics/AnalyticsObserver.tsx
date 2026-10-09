@@ -13,7 +13,7 @@ export function AnalyticsObserver() {
       page + ("entryId" in route.params ? String(route.params.entryId) : "");
     if (previous.current === key) return;
     previous.current = key;
-    if (!page || page.startsWith("admin") || page === "testAuth") return;
+    if (!page || page.startsWith("admin")) return;
     track("page_viewed", { page });
   }, [route]);
   useEffect(() => {
