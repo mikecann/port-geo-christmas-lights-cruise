@@ -26,7 +26,6 @@ export const { RouteProvider, useRoute, routes } = createRouter({
     },
     () => "/signin",
   ),
-  testAuth: defineRoute("/test-auth"),
   tickets: defineRoute("/tickets"),
   competitionDetails: defineRoute("/competition-details"),
   settings: defineRoute("/settings"),

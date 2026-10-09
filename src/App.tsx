@@ -46,7 +46,6 @@ export function AppRoutes() {
       />
     );
 
-  if (route.name === "testAuth") return <LazyPages.TestAuthPage />;
   if (route.name === "tickets") return <LazyPages.TicketsPage />;
   if (route.name === "competitionDetails")
     return <LazyPages.CompetitionDetailsPage />;
