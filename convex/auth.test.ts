@@ -88,14 +88,38 @@ describe("sign-up lock (IS_SIGNUP_DISABLED)", () => {
     expect(await countUsersAndAccounts(t)).toEqual({ users: 1, accounts: 1 });
   });
 
-  it("creates new accounts when the variable is not set", async () => {
-    delete process.env.IS_SIGNUP_DISABLED;
-    const t = convexTest(schema);
+  it.each(["TRUE", " True ", "1"])(
+    "treats %j as on, so a slightly off dashboard value still locks",
+    async (value) => {
+      process.env.IS_SIGNUP_DISABLED = value;
+      const t = convexTest(schema);
 
-    await expect(
-      signInWithGoogle(t, "new-google-id", "new@example.com"),
-    ).resolves.toEqual(expect.any(String));
+      await expect(
+        signInWithGoogle(t, "new-google-id", "new@example.com"),
+      ).rejects.toThrow("New sign-ups are closed");
 
-    expect(await countUsersAndAccounts(t)).toEqual({ users: 1, accounts: 1 });
-  });
+      expect(await countUsersAndAccounts(t)).toEqual({
+        users: 0,
+        accounts: 0,
+      });
+    },
+  );
+
+  it.each([undefined, "", "false", "0"])(
+    "creates new accounts when the variable is %j",
+    async (value) => {
+      if (value === undefined) delete process.env.IS_SIGNUP_DISABLED;
+      else process.env.IS_SIGNUP_DISABLED = value;
+      const t = convexTest(schema);
+
+      await expect(
+        signInWithGoogle(t, "new-google-id", "new@example.com"),
+      ).resolves.toEqual(expect.any(String));
+
+      expect(await countUsersAndAccounts(t)).toEqual({
+        users: 1,
+        accounts: 1,
+      });
+    },
+  );
 });

@@ -95,9 +95,9 @@ export function SignInPage() {
 
             {signInTurnedAway && (
               <Alert color="red" title="Sign-in didn't complete" mt="md">
-                New accounts can't be created until sign-ups open, so only
-                existing accounts can sign in for now. If you have one, try
-                again with the Google account you used before.
+                If you're new here, accounts can't be created until sign-ups
+                open. If you already have an account, try again with the Google
+                account you used before.
               </Alert>
             )}
 
