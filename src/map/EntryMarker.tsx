@@ -6,17 +6,19 @@ import {
 import EntryMarkerPopup from "./EntryMarkerPopup";
 import type { EntryWithFirstPhoto } from "../../convex/public/entries";
 import { usePhotoUrl } from "../common/hooks/usePhotoUrl";
+import { memo } from "react";
 
 interface EntryMarkerProps {
   entry: EntryWithFirstPhoto;
   isHovered: boolean;
   isSelected: boolean;
-  onHover: () => void;
+  onHover: (entryId: string) => void;
   onHoverEnd: () => void;
-  onClick: () => void;
+  onClick: (entryId: string) => void;
 }
 
-export function EntryMarker({
+// Memoised so hovering one marker doesn't re-render all of them
+export const EntryMarker = memo(function EntryMarker({
   entry,
   isHovered,
   isSelected,
@@ -28,6 +30,7 @@ export function EntryMarker({
   const photoUrl = usePhotoUrl(entry.photo, { size: "xs" });
 
   const { lat, lng } = entry.entry.houseAddress;
+  const entryId = entry.entry._id;
 
   const scale = isHovered || isSelected ? 1.2 : 1.0;
   const { entryNumber } = entry.entry;
@@ -37,8 +40,8 @@ export function EntryMarker({
       <AdvancedMarker
         ref={markerRef}
         position={{ lat, lng }}
-        onClick={onClick}
-        onMouseEnter={onHover}
+        onClick={() => onClick(entryId)}
+        onMouseEnter={() => onHover(entryId)}
         onMouseLeave={onHoverEnd}
         style={{
           transform: `scale(${scale})`,
@@ -129,12 +132,12 @@ export function EntryMarker({
         <InfoWindow
           anchor={marker}
           pixelOffset={[0, -2]}
-          onCloseClick={() => onClick()}
+          onCloseClick={() => onClick(entryId)}
           headerDisabled={true}
         >
-          <EntryMarkerPopup entryId={entry.entry._id} />
+          <EntryMarkerPopup entryId={entryId} />
         </InfoWindow>
       )}
     </>
   );
-}
+});

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { APIProvider, Map } from "@vis.gl/react-google-maps";
@@ -27,6 +27,7 @@ export default function MapPage({
 
   // State for managing marker interactions
   const [hoveredEntryId, setHoveredEntryId] = useState<string | null>(null);
+  const endHover = useCallback(() => setHoveredEntryId(null), []);
 
   // Prevent scrollbars when map is full-screen
   useEffect(() => {
@@ -75,11 +76,9 @@ export default function MapPage({
                 entry={entry}
                 isHovered={hoveredEntryId === entry.entry._id}
                 isSelected={selectedEntryId === entry.entry._id}
-                onHover={() => setHoveredEntryId(entry.entry._id)}
-                onHoverEnd={() => setHoveredEntryId(null)}
-                onClick={() =>
-                  routes.mapEntry({ entryId: entry.entry._id }).push()
-                }
+                onHover={setHoveredEntryId}
+                onHoverEnd={endHover}
+                onClick={selectEntry}
               />
             ))}
             <MyLocationMarker />
@@ -89,4 +88,8 @@ export default function MapPage({
       </APIProvider>
     </div>
   );
+}
+
+function selectEntry(entryId: string) {
+  routes.mapEntry({ entryId }).push();
 }
