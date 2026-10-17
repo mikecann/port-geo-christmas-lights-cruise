@@ -46,6 +46,7 @@ describe("geocodeAddress", () => {
         json: async () => ({
           places: [
             {
+              id: "google-place-1",
               location: { latitude: -33.6, longitude: 115.3 },
               displayName: { text: "123 Main St" },
               formattedAddress: "123 Main St, Busselton WA, Australia",
@@ -69,7 +70,7 @@ describe("geocodeAddress", () => {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": "test-api-key",
         "X-Goog-FieldMask":
-          "places.displayName,places.formattedAddress,places.location",
+          "places.id,places.displayName,places.formattedAddress,places.location",
       });
 
       // Verify the request body
@@ -130,6 +131,7 @@ describe("geocodeAddress", () => {
         json: async () => ({
           places: [
             {
+              id: "google-place-1",
               location: { latitude: -33.6485, longitude: 115.3474 },
               displayName: { text: "123 Main St" },
               formattedAddress: "123 Main St, Busselton WA, Australia",
@@ -143,6 +145,7 @@ describe("geocodeAddress", () => {
       expect(result).toEqual({
         lat: -33.6485,
         lng: 115.3474,
+        placeId: "google-place-1",
       });
     });
 
@@ -152,11 +155,13 @@ describe("geocodeAddress", () => {
         json: async () => ({
           places: [
             {
+              id: "google-place-1",
               location: { latitude: -33.6485, longitude: 115.3474 },
               displayName: { text: "123 Main St" },
               formattedAddress: "123 Main St, Busselton WA, Australia",
             },
             {
+              id: "google-place-2",
               location: { latitude: -33.7, longitude: 115.4 },
               displayName: { text: "456 Second St" },
               formattedAddress: "456 Second St, Perth WA, Australia",
@@ -170,6 +175,7 @@ describe("geocodeAddress", () => {
       expect(result).toEqual({
         lat: -33.6485,
         lng: 115.3474,
+        placeId: "google-place-1",
       });
     });
 
@@ -179,6 +185,7 @@ describe("geocodeAddress", () => {
         json: async () => ({
           places: [
             {
+              id: "google-place-3",
               location: { latitude: -33.6485, longitude: 115.3474 },
               displayName: { text: "Test Address" },
               formattedAddress: "Test Address, Busselton WA, Australia",
@@ -192,9 +199,23 @@ describe("geocodeAddress", () => {
       expect(result).toEqual({
         lat: -33.6485,
         lng: 115.3474,
+        placeId: "google-place-3",
       });
       expect(typeof result?.lat).toBe("number");
       expect(typeof result?.lng).toBe("number");
+    });
+
+    it("should throw when the place has no id", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          places: [{ location: { latitude: -33.6, longitude: 115.3 } }],
+        }),
+      });
+
+      await expect(geocodeAddress("123 Main St")).rejects.toThrow(
+        'No place id returned for address: "123 Main St"',
+      );
     });
   });
 

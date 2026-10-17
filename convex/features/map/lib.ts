@@ -1,6 +1,9 @@
 export type LatLng = { lat: number; lng: number };
 
-export async function geocodeAddress(address: string): Promise<LatLng> {
+// placeId is Google's id for the place it found, not the one the client sent
+export type GeocodedPlace = LatLng & { placeId: string };
+
+export async function geocodeAddress(address: string): Promise<GeocodedPlace> {
   if (!address.trim()) throw new Error("Address is empty");
 
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -40,7 +43,7 @@ export async function geocodeAddress(address: string): Promise<LatLng> {
       "X-Goog-Api-Key": apiKey,
       // Specify minimal fields needed for geocoding
       "X-Goog-FieldMask":
-        "places.displayName,places.formattedAddress,places.location",
+        "places.id,places.displayName,places.formattedAddress,places.location",
     },
     body: JSON.stringify(requestBody),
   });
@@ -52,6 +55,7 @@ export async function geocodeAddress(address: string): Promise<LatLng> {
 
   const data = (await res.json()) as {
     places?: Array<{
+      id?: string;
       location: { latitude: number; longitude: number };
     }>;
   };
@@ -60,7 +64,13 @@ export async function geocodeAddress(address: string): Promise<LatLng> {
 
   if (data.places && data.places.length > 0) {
     const place = data.places[0];
+    if (!place.id)
+      throw new Error(`No place id returned for address: "${address}"`);
     const location = place.location;
-    return { lat: location.latitude, lng: location.longitude };
+    return {
+      lat: location.latitude,
+      lng: location.longitude,
+      placeId: place.id,
+    };
   } else throw new Error(`No results found for address: "${address}"`);
 }

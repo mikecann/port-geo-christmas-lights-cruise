@@ -479,8 +479,8 @@ export const entries = {
                   entry._id,
                 )
             )
-              throw new Error(
-                `Cannot finalize submission: Place ID '${args.placeId}' already has an approved entry`,
+              throw new ConvexError(
+                `Address ${entry.houseAddress.address} is already used!`,
               );
 
             if (

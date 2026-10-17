@@ -1,7 +1,7 @@
 import { myAction, myMutation, myQuery } from "./lib";
 import { entries } from "../features/entries/model";
 import { v } from "convex/values";
-import type { LatLng } from "../features/map/lib";
+import type { GeocodedPlace } from "../features/map/lib";
 import { geocodeAddress } from "../features/map/lib";
 import { internal } from "../../shared/api";
 import { competitions } from "../features/competitions/model";
@@ -107,9 +107,9 @@ export const submit = myAction
       throw new Error("Entry is not in submitting status");
 
     try {
-      let latLng: LatLng = { lat: 0, lng: 0 };
+      let place: GeocodedPlace;
       try {
-        latLng = await geocodeAddress(entry.houseAddress.address);
+        place = await geocodeAddress(entry.houseAddress.address);
       } catch (error) {
         // Revert to draft if geocoding fails
         await context.runMutation(internal.entries.revertToDraft, {
@@ -125,9 +125,9 @@ export const submit = myAction
 
       await context.runMutation(internal.entries.finalizeSubmission, {
         entryId: entry._id,
-        lat: latLng.lat,
-        lng: latLng.lng,
-        placeId: entry.houseAddress.placeId,
+        lat: place.lat,
+        lng: place.lng,
+        placeId: place.placeId,
       });
 
       return null;
