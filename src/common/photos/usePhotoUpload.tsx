@@ -2,6 +2,9 @@ import { notifications } from "@mantine/notifications";
 import { IconAlertCircle } from "@tabler/icons-react";
 import { useState } from "react";
 import imageCompression from "browser-image-compression";
+// The compression worker loads this script. Without libURL it fetches it from
+// jsdelivr just as someone uploads, so serve our own copy instead.
+import imageCompressionScript from "browser-image-compression/dist/browser-image-compression.js?url";
 import type { FileRejection } from "@mantine/dropzone";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useErrorHandler } from "../errors";
@@ -16,6 +19,8 @@ const compressToJpeg = (file: File) =>
     maxWidthOrHeight: MAX_IMAGE_DIMENSION,
     maxSizeMB: MAX_PHOTO_UPLOAD_BYTES / 1024 / 1024,
     useWebWorker: true,
+    // The worker runs from a blob: URL, so it needs an absolute URL
+    libURL: new URL(imageCompressionScript, location.href).href,
     fileType: "image/jpeg",
     initialQuality: 0.8,
   });
