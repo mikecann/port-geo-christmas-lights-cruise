@@ -3,6 +3,7 @@ import { api } from "../../_generated/api";
 import type { AuthenticatedConvexTest } from "../common/tests/testingHelpers.vitest";
 import {
   ensureTestCompetitions,
+  insertTestVote,
   createConvexTestWithUser,
   createTestEntry,
   getTestUser,
@@ -143,5 +144,31 @@ describe("voting while open", () => {
         category: "best_display",
       }),
     ).rejects.toThrow("Entry does not belong to the current competition");
+  });
+});
+
+describe("my votes", () => {
+  it("only lists votes from the current competition", async () => {
+    const { t, user } = await createConvexTestWithUser();
+    const entry = await createTestEntry(t);
+    if (!entry) throw new Error("Failed to create entry");
+    const currentVoteId = await t.run(async (ctx) => {
+      const { past, current } = await ensureTestCompetitions(ctx);
+      await insertTestVote(ctx, {
+        competitionId: past._id,
+        entryId: entry._id,
+        votingUserId: user._id,
+        category: "best_display",
+      });
+      return await insertTestVote(ctx, {
+        competitionId: current._id,
+        entryId: entry._id,
+        votingUserId: user._id,
+        category: "best_display",
+      });
+    });
+
+    const listed = await t.query(api.my.votes.list, {});
+    expect(listed.map((vote) => vote._id)).toEqual([currentVoteId]);
   });
 });

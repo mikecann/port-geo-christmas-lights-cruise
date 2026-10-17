@@ -5,11 +5,11 @@ import type { VoteCategory } from "./schema";
 export const votes = {
   forUser(userId: Id<"users">) {
     return {
-      async list(db: DatabaseReader) {
+      async list(db: DatabaseReader, competitionId: Id<"competitions">) {
         return await db
           .query("votes")
           .withIndex("by_votingUserId_and_competitionId_and_category", (q) =>
-            q.eq("votingUserId", userId),
+            q.eq("votingUserId", userId).eq("competitionId", competitionId),
           )
           .collect();
       },

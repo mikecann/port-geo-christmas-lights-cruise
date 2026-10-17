@@ -23,6 +23,7 @@ import { AuthRequired } from "../../auth/AuthRequired";
 import { useErrorCatchingMutation } from "../../common/errors";
 import MyVoteEntryCard from "./MyVoteEntryCard";
 import { routes } from "../../routes";
+import { votingClosedMessage } from "../../../shared/eventStatus";
 
 interface CategoryConfig {
   key: VoteCategory;
@@ -50,6 +51,7 @@ const VOTE_CATEGORIES_CONFIG: CategoryConfig[] = [
 
 export default function MyVotesPage() {
   const votes = useQuery(api.my.votes.list, {});
+  const competition = useQuery(api.public.competitions.current, {});
 
   const votesByCategory = useMemo(() => {
     const result: Record<VoteCategory, Doc<"votes">[]> = {
@@ -65,7 +67,7 @@ export default function MyVotesPage() {
     return result;
   }, [votes]);
 
-  if (votes === undefined)
+  if (votes === undefined || competition === undefined)
     return (
       <AuthRequired>
         <Container size="md" py="xl">
@@ -94,9 +96,17 @@ export default function MyVotesPage() {
         </Group>
 
         <Stack gap="md">
-          <Alert color="yellow" variant="light" title="Voting is closed">
-            Your previous votes are preserved here as a read-only record.
-          </Alert>
+          {competition.votingOpen ? (
+            <Alert color="green" variant="light" title="Voting is open">
+              Your votes for the {competition.year} competition are shown below.
+            </Alert>
+          ) : (
+            <Alert color="yellow" variant="light" title="Voting is closed">
+              {votes.length > 0
+                ? "Your previous votes are preserved here as a read-only record."
+                : votingClosedMessage(competition.year)}
+            </Alert>
+          )}
           {VOTE_CATEGORIES.map((category) => {
             const categoryConfig = VOTE_CATEGORIES_CONFIG.find(
               (config) => config.key === category,

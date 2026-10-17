@@ -21,7 +21,10 @@ function requireVotingToBeOpen(competition: Doc<"competitions">) {
 export const list = myQuery
   .input({})
   .handler(async (context) => {
-    return await votes.forUser(context.userId).list(context.db);
+    const competition = await competitions.query(context).current();
+    return await votes
+      .forUser(context.userId)
+      .list(context.db, competition._id);
   })
   .public();
 
