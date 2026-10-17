@@ -1,5 +1,6 @@
 import { AspectRatio, Center, Loader, Stack, Text } from "@mantine/core";
 import { Carousel } from "@mantine/carousel";
+import "@mantine/carousel/styles.css";
 import { IconPhoto } from "@tabler/icons-react";
 import { useState } from "react";
 import Autoplay from "embla-carousel-autoplay";

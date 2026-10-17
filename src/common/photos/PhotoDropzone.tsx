@@ -1,5 +1,6 @@
 import { Text, Stack } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
+import "@mantine/dropzone/styles.css";
 import { ALLOWED_PHOTO_CONTENT_TYPES } from "../../../shared/constants";
 import DropzoneContent from "./DropzoneContent";
 import { MAX_ORIGINAL_PHOTO_BYTES } from "./preparePhoto";

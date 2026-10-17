@@ -1,6 +1,7 @@
 import { useEntryView } from "../analytics/useEntryView";
 import { Container, Text, Stack, Card, Center, Grid } from "@mantine/core";
 import { Carousel } from "@mantine/carousel";
+import "@mantine/carousel/styles.css";
 import { IconPhoto } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
