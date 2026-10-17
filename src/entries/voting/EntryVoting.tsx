@@ -5,15 +5,35 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { routes } from "../../routes";
 import { votingClosedMessage } from "../../../shared/eventStatus";
+import { VOTE_CATEGORIES } from "../../../convex/features/votes/schema";
 
 type Props = {
   entryId: Id<"entries">;
+  competitionId: Id<"competitions">;
 };
 
-export default function EntryVoting({ entryId }: Props) {
+export default function EntryVoting({ entryId, competitionId }: Props) {
   const competition = useQuery(api.public.competitions.current, {});
+  const isPastEntry =
+    competition !== undefined && competition._id !== competitionId;
+  const allCompetitions = useQuery(
+    api.public.competitions.list,
+    isPastEntry ? {} : "skip",
+  );
 
   if (competition === undefined) return null;
+
+  if (isPastEntry) {
+    const entryYear = allCompetitions?.find(
+      (c) => c._id === competitionId,
+    )?.year;
+    if (entryYear === undefined) return null;
+    return (
+      <Text data-testid="past-entry-note" c="dimmed" size="sm">
+        This was a {entryYear} entry
+      </Text>
+    );
+  }
 
   if (!competition.votingOpen)
     return (
@@ -35,7 +55,7 @@ export default function EntryVoting({ entryId }: Props) {
   return <VotingControls entryId={entryId} />;
 }
 
-function VotingControls({ entryId }: Props) {
+function VotingControls({ entryId }: { entryId: Id<"entries"> }) {
   const { isAuthenticated } = useConvexAuth();
 
   const votingStatus = useQuery(
@@ -58,7 +78,7 @@ function VotingControls({ entryId }: Props) {
           </Text>
           {isAuthenticated && votesCount > 0 && (
             <Badge color="green" variant="light" size="sm">
-              {votesCount}/2 votes cast
+              {votesCount}/{VOTE_CATEGORIES.length} votes cast
             </Badge>
           )}
         </Group>

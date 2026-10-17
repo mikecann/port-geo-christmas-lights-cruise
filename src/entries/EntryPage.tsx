@@ -111,7 +111,10 @@ export default function EntryPage({
             />
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 4 }}>
-            <EntryVoting entryId={entryId} />
+            <EntryVoting
+              entryId={entryId}
+              competitionId={entry.competitionId}
+            />
           </Grid.Col>
         </Grid>
 
@@ -129,7 +132,9 @@ export default function EntryPage({
       />
 
       {/* Vote Modal */}
-      {competition?.votingOpen && route.name == "entryVote" ? (
+      {competition?.votingOpen &&
+      competition._id === entry.competitionId &&
+      route.name == "entryVote" ? (
         <VoteModal
           entryId={entryId}
           opened={true}
