@@ -7,6 +7,7 @@ import { photos } from "../../features/photos/model";
 import { email } from "../../features/email/model";
 import { v } from "convex/values";
 import { competitions } from "../../features/competitions/model";
+import { isWithinBoundary } from "../../../shared/geo";
 
 // Queries
 
@@ -114,48 +115,35 @@ export const getEntryValidationStatus = competitionAdminQuery
   )
   .handler(async (context, input) => {
     const entry = await entries.query(context).forEntry(input.entryId).get();
-    if (
-      !entry.houseAddress ||
-      typeof entry.houseAddress !== "object" ||
-      !("placeId" in entry.houseAddress)
-    )
+    if (!entry.houseAddress)
       return {
         hasConflicts: false,
         isWithinBoundary: null,
         isReturningEntrant: false,
       };
 
-    const placeId = entry.houseAddress.placeId;
     const hasConflicts = await entries
       .query(context)
       .hasEntryWithPlaceIdAlreadyBeenSubmitted(
         entry.competitionId,
-        placeId,
+        entry.houseAddress.placeId,
         input.entryId,
-      );
-
-    // Check if location is within competition boundary
-    const houseAddress = entry.houseAddress;
-    let isWithinBoundary: boolean | null = null;
-    if (
-      "lat" in houseAddress &&
-      "lng" in houseAddress &&
-      typeof houseAddress.lat === "number" &&
-      typeof houseAddress.lng === "number" &&
-      houseAddress.lat !== 0 &&
-      houseAddress.lng !== 0
-    )
-      isWithinBoundary = entries.isLocationWithinCompetitionBoundary(
-        houseAddress.lat,
-        houseAddress.lng,
       );
 
     const isReturningEntrant = await entries
       .query(context)
-      .forUser(entry.submittedByUserId)
-      .hasApprovedEntryBefore(entry.competitionId);
+      .forUser(entry.competitionId, entry.submittedByUserId)
+      .hasApprovedEntryBefore();
 
-    return { hasConflicts, isWithinBoundary, isReturningEntrant };
+    return {
+      hasConflicts,
+      // Drafts haven't been geocoded yet, so there's nothing to check
+      isWithinBoundary:
+        "lat" in entry.houseAddress
+          ? isWithinBoundary(entry.houseAddress)
+          : null,
+      isReturningEntrant,
+    };
   })
   .public();
 
@@ -179,12 +167,7 @@ export const getAllEntriesForExport = competitionAdminQuery
           entryNumber:
             entry.status === "approved" ? entry.entryNumber : undefined,
           entryName: entry.name || "",
-          entryAddress:
-            entry.houseAddress && typeof entry.houseAddress === "object"
-              ? entry.houseAddress.address
-              : typeof entry.houseAddress === "string"
-                ? entry.houseAddress
-                : "",
+          entryAddress: entry.houseAddress?.address ?? "",
         };
       }),
     );

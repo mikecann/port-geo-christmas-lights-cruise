@@ -16,7 +16,7 @@ export const startSubmitting = mutation
     return await entries
       .mutate(context)
       .forUser(competition._id, input.userId)
-      .startSubmitting(context);
+      .startSubmitting();
   })
   .internal();
 
@@ -82,8 +82,8 @@ export async function repairCurrentReturningEntryNumbersForContext(
   for (const entry of approvedEntries) {
     const previousEntry = await entries
       .query(context)
-      .forUser(entry.submittedByUserId)
-      .findPreviousCompetitionApproved(competition._id);
+      .forUser(competition._id, entry.submittedByUserId)
+      .findPreviousApproved();
     if (!previousEntry || previousEntry.entryNumber === entry.entryNumber)
       continue;
 

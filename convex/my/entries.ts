@@ -21,14 +21,11 @@ export const find = userQuery
 export const listPrevious = userQuery
   .input({})
   .handler(async (context) => {
-    const currentCompetition = await competitions.query(context).current();
-    const rows = await entries
+    const competition = await competitions.query(context).current();
+    return await entries
       .query(context)
-      .forUser(context.userId)
-      .listAcrossCompetitions();
-    return rows.filter(
-      ({ competition }) => competition.year < currentCompetition.year,
-    );
+      .forUser(competition._id, context.userId)
+      .listPrevious();
   })
   .public();
 
@@ -74,7 +71,7 @@ export const remove = userMutation
     await entries
       .mutate(context)
       .forUser(competition._id, context.userId)
-      .remove(context);
+      .remove();
     return null;
   })
   .public();

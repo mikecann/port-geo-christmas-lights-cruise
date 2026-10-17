@@ -83,6 +83,58 @@ describe("competition seasons", () => {
     });
   });
 
+  it("looks back from the competition it's given, not from the current one", async () => {
+    const t = createConvexTest();
+
+    await t.run(async (ctx) => {
+      const { past, current } = await ensureTestCompetitions(ctx);
+      const older = await ctx.db.insert("competitions", {
+        year: 2024,
+        entriesOpen: false,
+        votingOpen: false,
+      });
+      const userId = await ctx.db.insert("users", {});
+      const approved = (competitionId: typeof older, entryNumber: number) =>
+        ctx.db.insert("entries", {
+          competitionId,
+          submittedByUserId: userId,
+          status: "approved",
+          submittedAt: Date.now(),
+          approvedAt: Date.now(),
+          entryNumber,
+          name: `Entry ${entryNumber}`,
+          houseAddress: {
+            address: "1 Keel Retreat",
+            lat: 0,
+            lng: 0,
+            placeId: "p",
+          },
+        });
+      const olderEntryId = await approved(older, 4);
+      const pastEntryId = await approved(past._id, 9);
+      await entries.mutate(ctx).forUser(current._id, userId).create();
+
+      const fromCurrent = entries.query(ctx).forUser(current._id, userId);
+      expect(
+        (await fromCurrent.listPrevious()).map((row) => row.entry._id),
+      ).toEqual([pastEntryId, olderEntryId]);
+      expect((await fromCurrent.findPreviousApproved())?._id).toBe(pastEntryId);
+
+      const fromPast = entries.query(ctx).forUser(past._id, userId);
+      expect(
+        (await fromPast.listPrevious()).map((row) => row.entry._id),
+      ).toEqual([olderEntryId]);
+      expect((await fromPast.findPreviousApproved())?._id).toBe(olderEntryId);
+      expect(
+        await entries
+          .query(ctx)
+          .forUser(older, userId)
+          .hasApprovedEntryBefore(),
+      ).toBe(false);
+      expect(await fromPast.hasApprovedEntryBefore()).toBe(true);
+    });
+  });
+
   it("allows one vote per category in each season", async () => {
     const t = createConvexTest();
 

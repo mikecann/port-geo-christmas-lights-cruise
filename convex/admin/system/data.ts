@@ -33,15 +33,16 @@ export const wipeAllData = systemAdminMutation
     // This also handles photos
     await entries.mutate(context).wipeCurrentCompetition();
 
-    // Delete non-admin users who have no entries or votes left
+    // Delete non-admin users who have no entries or votes left. This
+    // competition's entries are gone, so only earlier ones can remain.
     const allUsers = await context.db.query("users").collect();
     for (const user of allUsers) {
       if (user.isSystemAdmin === true || user.isCompetitionAdmin === true)
         continue;
       const pastEntries = await entries
         .query(context)
-        .forUser(user._id)
-        .listAcrossCompetitions();
+        .forUser(competition._id, user._id)
+        .listPrevious();
       const pastVote = await context.db
         .query("votes")
         .withIndex("by_votingUserId_and_competitionId_and_category", (q) =>

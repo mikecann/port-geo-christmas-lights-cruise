@@ -8,8 +8,8 @@ import { votes } from "../votes/model";
 import { isStatus } from "../../../shared/filter";
 import { randomIntRange } from "../../../shared/num";
 import { exhaustiveCheck } from "../../../shared/misc";
+import { isWithinBoundary } from "../../../shared/geo";
 import {
-  COMPETITION_GEOGRAPHIC_BOUNDARY,
   MAX_ENTRY_ADDRESS_LENGTH,
   MAX_ENTRY_NAME_LENGTH,
   MAX_ENTRY_NUMBER,
@@ -72,95 +72,28 @@ export const entries = {
         };
       },
 
-      forUser(
-        competitionIdOrUserId: Id<"competitions"> | Id<"users">,
-        maybeUserId?: Id<"users">,
-      ) {
-        const userId = maybeUserId ?? (competitionIdOrUserId as Id<"users">);
-        const resolveCompetitionId = async () =>
-          maybeUserId
-            ? (competitionIdOrUserId as Id<"competitions">)
-            : (await competitions.query(context).current())._id;
+      forUser(competitionId: Id<"competitions">, userId: Id<"users">) {
+        const findInCompetition = (id: Id<"competitions">) =>
+          db
+            .query("entries")
+            .withIndex("by_competitionId_and_submittedByUserId", (q) =>
+              q.eq("competitionId", id).eq("submittedByUserId", userId),
+            )
+            .unique();
+
+        const listEarlierCompetitions = async (limit?: number) => {
+          const competition = await competitions
+            .query(context)
+            .forCompetition(competitionId)
+            .get();
+          return await competitions
+            .query(context)
+            .listBeforeYear(competition.year, limit);
+        };
+
         return {
-          async find() {
-            const competitionId = await resolveCompetitionId();
-            return db
-              .query("entries")
-              .withIndex("by_competitionId_and_submittedByUserId", (q) =>
-                q
-                  .eq("competitionId", competitionId)
-                  .eq("submittedByUserId", userId),
-              )
-              .unique();
-          },
-
-          async listAcrossCompetitions() {
-            const competitionDocs = await competitions
-              .query(context)
-              .listNewestFirst();
-            const rows = await Promise.all(
-              competitionDocs.map(async (competition) => ({
-                competition,
-                entry: await db
-                  .query("entries")
-                  .withIndex("by_competitionId_and_submittedByUserId", (q) =>
-                    q
-                      .eq("competitionId", competition._id)
-                      .eq("submittedByUserId", userId),
-                  )
-                  .unique(),
-              })),
-            );
-            return rows.filter(
-              (row): row is typeof row & { entry: Doc<"entries"> } =>
-                row.entry !== null,
-            );
-          },
-
-          async findPreviousCompetitionApproved(
-            competitionId: Id<"competitions">,
-          ) {
-            const competition = await competitions
-              .query(context)
-              .forCompetition(competitionId)
-              .get();
-            const [previousCompetition] = await competitions
-              .query(context)
-              .listBeforeYear(competition.year, 1);
-            if (!previousCompetition) return null;
-
-            const previousEntry = await db
-              .query("entries")
-              .withIndex("by_competitionId_and_submittedByUserId", (q) =>
-                q
-                  .eq("competitionId", previousCompetition._id)
-                  .eq("submittedByUserId", userId),
-              )
-              .unique();
-
-            return previousEntry?.status === "approved" ? previousEntry : null;
-          },
-
-          async hasApprovedEntryBefore(competitionId: Id<"competitions">) {
-            const competition = await competitions
-              .query(context)
-              .forCompetition(competitionId)
-              .get();
-            const earlierCompetitions = await competitions
-              .query(context)
-              .listBeforeYear(competition.year);
-            for (const earlier of earlierCompetitions) {
-              const entry = await db
-                .query("entries")
-                .withIndex("by_competitionId_and_submittedByUserId", (q) =>
-                  q
-                    .eq("competitionId", earlier._id)
-                    .eq("submittedByUserId", userId),
-                )
-                .unique();
-              if (entry?.status === "approved") return true;
-            }
-            return false;
+          find() {
+            return findInCompetition(competitionId);
           },
 
           async get() {
@@ -174,9 +107,36 @@ export const entries = {
             return entry;
           },
 
-          async ensureIsModifiable() {
-            const entry = await this.get();
-            entries.doc(entry).ensureIsModifiable();
+          // Newest first, from competitions before this one
+          async listPrevious() {
+            const earlierCompetitions = await listEarlierCompetitions();
+            const rows = await Promise.all(
+              earlierCompetitions.map(async (competition) => ({
+                competition,
+                entry: await findInCompetition(competition._id),
+              })),
+            );
+            return rows.filter(
+              (row): row is typeof row & { entry: Doc<"entries"> } =>
+                row.entry !== null,
+            );
+          },
+
+          async findPreviousApproved() {
+            const [previousCompetition] = await listEarlierCompetitions(1);
+            if (!previousCompetition) return null;
+            const previousEntry = await findInCompetition(
+              previousCompetition._id,
+            );
+            return previousEntry?.status === "approved" ? previousEntry : null;
+          },
+
+          async hasApprovedEntryBefore() {
+            for (const earlier of await listEarlierCompetitions()) {
+              const entry = await findInCompetition(earlier._id);
+              if (entry?.status === "approved") return true;
+            }
+            return false;
           },
         };
       },
@@ -184,17 +144,15 @@ export const entries = {
       async listApproved(competitionId?: Id<"competitions">) {
         const resolvedCompetitionId =
           competitionId ?? (await competitions.query(context).current())._id;
-        const approved = await db
+        // The index only returns approved entries
+        return (await db
           .query("entries")
           .withIndex("by_competitionId_and_status", (q) =>
             q
               .eq("competitionId", resolvedCompetitionId)
               .eq("status", "approved"),
           )
-          .collect()
-          .then((a) => a.filter(isStatus("approved")));
-
-        return approved;
+          .collect()) as ApprovedEntryDoc[];
       },
 
       async countApproved(competitionId: Id<"competitions">) {
@@ -332,21 +290,10 @@ export const entries = {
         };
       },
 
-      forUser(
-        competitionIdOrUserId: Id<"competitions"> | Id<"users">,
-        maybeUserId?: Id<"users">,
-      ) {
-        const userId = maybeUserId ?? (competitionIdOrUserId as Id<"users">);
-        const resolveCompetitionId = async () =>
-          maybeUserId
-            ? (competitionIdOrUserId as Id<"competitions">)
-            : (await competitions.query(context).current())._id;
-        const query = entries
-          .query(context)
-          .forUser(competitionIdOrUserId, maybeUserId);
+      forUser(competitionId: Id<"competitions">, userId: Id<"users">) {
+        const query = entries.query(context).forUser(competitionId, userId);
         return {
           async create() {
-            const competitionId = await resolveCompetitionId();
             const existing = await query.find();
             if (existing)
               throw new Error(
@@ -414,7 +361,7 @@ export const entries = {
             await db.patch(entry._id, updateFields);
           },
 
-          async remove(ctx: MutationCtx) {
+          async remove() {
             const entry = await query.get();
 
             if (entry.status != "draft")
@@ -422,11 +369,10 @@ export const entries = {
                 `Entry of id '${entry._id}' with status '${entry.status}' is not in the draft status`,
               );
 
-            await entries.mutate(ctx).forEntry(entry._id).delete();
+            await entries.mutate(context).forEntry(entry._id).delete();
           },
 
-          async startSubmitting(ctx: MutationCtx) {
-            const competitionId = await resolveCompetitionId();
+          async startSubmitting() {
             const entry = await query.get();
 
             if (entry.status != "draft")
@@ -440,12 +386,7 @@ export const entries = {
               );
 
             const { address, placeId } = entry.houseAddress;
-            if (
-              typeof address !== "string" ||
-              address.trim().length === 0 ||
-              typeof placeId !== "string" ||
-              placeId.trim().length === 0
-            )
+            if (address.trim().length === 0 || placeId.trim().length === 0)
               throw new Error(
                 `Invalid house address: address '${address}' and placeId '${placeId}' must be provided`,
               );
@@ -476,7 +417,6 @@ export const entries = {
             lng: number;
             placeId: string;
           }) {
-            const competitionId = await resolveCompetitionId();
             const entry = await query.get();
 
             if (entry.status != "submitting")
@@ -497,9 +437,7 @@ export const entries = {
                 `Address ${entry.houseAddress.address} is already used!`,
               );
 
-            if (
-              !entries.isLocationWithinCompetitionBoundary(args.lat, args.lng)
-            )
+            if (!isWithinBoundary({ lat: args.lat, lng: args.lng }))
               throw new ConvexError(
                 `Address "${entry.houseAddress.address}" is outside the competition area. Entries must be within the Port Geographe/Busselton region.`,
               );
@@ -524,21 +462,7 @@ export const entries = {
                 `Entry '${entry._id}' is not in submitting status, cannot revert`,
               );
 
-            // Revert back to draft, preserving the address data as optional draft format
-            const draftAddress =
-              typeof entry.houseAddress === "object" &&
-              "address" in entry.houseAddress &&
-              "placeId" in entry.houseAddress
-                ? {
-                    address: entry.houseAddress.address,
-                    placeId: entry.houseAddress.placeId,
-                  }
-                : undefined;
-
-            await db.patch(entry._id, {
-              status: "draft" as const,
-              houseAddress: draftAddress,
-            });
+            await db.patch(entry._id, { status: "draft" as const });
           },
         };
       },
@@ -576,8 +500,8 @@ export const entries = {
         if (userId) {
           const previousEntry = await entries
             .query(context)
-            .forUser(userId)
-            .findPreviousCompetitionApproved(resolvedCompetitionId);
+            .forUser(resolvedCompetitionId, userId)
+            .findPreviousApproved();
           if (previousEntry && !usedNumbers.has(previousEntry.entryNumber))
             return previousEntry.entryNumber;
 
@@ -614,23 +538,5 @@ export const entries = {
         return Math.max(...unavailableNumbers) + 1;
       },
     };
-  },
-
-  /**
-   * Checks if the given latitude and longitude coordinates are within
-   * the allowed geographic boundary for competition entries.
-   * @param lat - Latitude coordinate
-   * @param lng - Longitude coordinate
-   * @returns true if coordinates are within the boundary, false otherwise
-   */
-  isLocationWithinCompetitionBoundary(lat: number, lng: number): boolean {
-    const { southWest, northEast } = COMPETITION_GEOGRAPHIC_BOUNDARY;
-
-    return (
-      lat >= southWest.lat &&
-      lat <= northEast.lat &&
-      lng >= southWest.lng &&
-      lng <= northEast.lng
-    );
   },
 };

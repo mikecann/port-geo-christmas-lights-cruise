@@ -163,10 +163,7 @@ export const moveEntryToStatus = async (
         status: "draft" as const,
         submittedByUserId: currentEntry.submittedByUserId,
         houseAddress: {
-          address:
-            typeof currentEntry.houseAddress === "string"
-              ? currentEntry.houseAddress
-              : currentEntry.houseAddress?.address || "123 Main St",
+          address: currentEntry.houseAddress?.address ?? "123 Main St",
           placeId: "pid-test",
         },
         name: currentEntry.name,
