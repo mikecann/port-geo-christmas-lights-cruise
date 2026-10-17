@@ -77,8 +77,8 @@ describe("public entry shapes", () => {
     const withPhotos = await t.query(api.public.entries.getWithPhotos, {
       entryId,
     });
-    expect(withPhotos.photos).toEqual([expectedPhoto]);
-    expect(withPhotos.entry).not.toHaveProperty("submittedByUserId");
+    expect(withPhotos?.photos).toEqual([expectedPhoto]);
+    expect(withPhotos?.entry).not.toHaveProperty("submittedByUserId");
 
     const [listed] = await t.query(api.public.entries.listWithFirstPhoto, {});
     expect(listed.photo).toEqual(expectedPhoto);
@@ -103,5 +103,55 @@ describe("public entry shapes", () => {
       description: "1 Keel Retreat",
       imageUrl: "https://files.example/photo.jpg",
     });
+  });
+});
+
+describe("public entry lookups by id", () => {
+  const seedUnavailableIds = async (t: ConvexTest) => {
+    const user = await createTestUser(t);
+    const { uploadedPhotoId } = await seedApprovedEntryWithPhotos(t);
+    const submittedEntryId = await t.run(async (ctx) => {
+      const competition = await competitions.query(ctx).current();
+      return await ctx.db.insert("entries", {
+        competitionId: competition._id,
+        submittedByUserId: user._id,
+        status: "submitted",
+        submittedAt: Date.now(),
+        name: "Not Yet Approved",
+        houseAddress: {
+          address: "2 Keel Retreat",
+          lat: -33.63,
+          lng: 115.39,
+          placeId: "pid-2",
+        },
+      });
+    });
+    return {
+      malformed: "k57aaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      otherTable: uploadedPhotoId,
+      notApproved: submittedEntryId,
+    };
+  };
+
+  it("returns null for ids that aren't an approved entry", async () => {
+    const t = createConvexTest();
+    const ids = await seedUnavailableIds(t);
+
+    for (const entryId of Object.values(ids)) {
+      expect(await t.query(api.public.entries.find, { entryId })).toBeNull();
+      expect(
+        await t.query(api.public.entries.getWithPhotos, { entryId }),
+      ).toBeNull();
+    }
+  });
+
+  it("answers OG lookups for those ids with a 404", async () => {
+    const t = createConvexTest();
+    const ids = await seedUnavailableIds(t);
+
+    for (const entryId of Object.values(ids)) {
+      const response = await t.fetch(`/api/og/entry?entryId=${entryId}`);
+      expect(response.status).toBe(404);
+    }
   });
 });

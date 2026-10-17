@@ -17,6 +17,7 @@ import EntryVoting from "./voting/EntryVoting";
 import VoteModal from "../voting/VoteModal";
 import ShareModal from "./ShareModal";
 import { PhotoSlide } from "./PhotoSlide";
+import { NotFoundPage } from "../common/NotFoundPage";
 import { ENTRY_PHOTO } from "../../shared/photoUrls";
 import { Route } from "type-route";
 
@@ -42,7 +43,14 @@ export default function EntryPage({
     "entry",
   );
 
-  if (!entryWithPhotos) return <EntryPageSkeleton />;
+  if (entryWithPhotos === undefined) return <EntryPageSkeleton />;
+  if (entryWithPhotos === null)
+    return (
+      <NotFoundPage
+        title="Entry Not Found"
+        message="Sorry, that entry isn't available. It may have been removed from the competition."
+      />
+    );
 
   const { entry, photos } = entryWithPhotos;
 

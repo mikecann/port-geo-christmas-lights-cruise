@@ -65,10 +65,14 @@ export const entries = {
             return ensure(entry, `Entry with id '${entryId}' not found`);
           },
 
-          async getApproved() {
+          async findApproved() {
             const entry = await this.find();
-            if (entry?.status !== "approved")
-              throw new ConvexError(ENTRY_UNAVAILABLE_MESSAGE);
+            return entry?.status === "approved" ? entry : null;
+          },
+
+          async getApproved() {
+            const entry = await this.findApproved();
+            if (!entry) throw new ConvexError(ENTRY_UNAVAILABLE_MESSAGE);
             return entry;
           },
         };

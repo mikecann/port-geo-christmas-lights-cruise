@@ -2,7 +2,6 @@ import { httpRouter } from "convex/server";
 import { auth } from "./auth";
 import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { httpApiOgEntryReturnValidator } from "../shared/validators";
 import { iife } from "../shared/misc";
 
@@ -24,9 +23,7 @@ http.route({
       );
 
     // Load entry
-    const entry = await ctx.runQuery(api.public.entries.find, {
-      entryId: entryId as Id<"entries">,
-    });
+    const entry = await ctx.runQuery(api.public.entries.find, { entryId });
 
     if (!entry)
       return new Response(JSON.stringify({ error: "Entry not found" }), {
@@ -35,7 +32,7 @@ http.route({
       });
 
     const firstPhoto = await ctx.runQuery(api.public.photos.findFirstForEntry, {
-      entryId: entryId as Id<"entries">,
+      entryId: entry._id,
     });
 
     // Determine first photo URL if available

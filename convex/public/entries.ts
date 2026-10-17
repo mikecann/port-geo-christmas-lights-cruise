@@ -1,5 +1,5 @@
-import { ENTRY_UNAVAILABLE_MESSAGE, entries } from "../features/entries/model";
-import { ConvexError, v } from "convex/values";
+import { entries } from "../features/entries/model";
+import { v } from "convex/values";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "../_generated/api";
 import { photos } from "../features/photos/model";
@@ -109,31 +109,33 @@ export const get = convex
   })
   .public();
 
+// Entry links get typed in and shared, so an id that isn't an entry, or an
+// entry that isn't approved, comes back as null rather than an error
+const findApproved = (ctx: QueryCtx, entryId: string) => {
+  const id = ctx.db.normalizeId("entries", entryId);
+  return id ? entries.query(ctx).forEntry(id).findApproved() : null;
+};
+
 export const find = convex
   .query()
-  .input({ entryId: v.id("entries") })
+  .input({ entryId: v.string() })
   .returns(v.union(publicEntryValidator, v.null()))
   .handler(async (context, input) => {
-    const entry = await entries.query(context).forEntry(input.entryId).find();
-    if (!entry) return null;
-    if (entry.status !== "approved")
-      throw new ConvexError(ENTRY_UNAVAILABLE_MESSAGE);
-    return entries.toPublic(entry);
+    const entry = await findApproved(context, input.entryId);
+    return entry ? entries.toPublic(entry) : null;
   })
   .public();
 
 export const getWithPhotos = convex
   .query()
-  .input({ entryId: v.id("entries") })
-  .returns(entryWithPhotosValidator)
+  .input({ entryId: v.string() })
+  .returns(v.union(entryWithPhotosValidator, v.null()))
   .handler(async (context, input) => {
-    const entry = await entries
-      .query(context)
-      .forEntry(input.entryId)
-      .getApproved();
+    const entry = await findApproved(context, input.entryId);
+    if (!entry) return null;
     return {
       entry: entries.toPublic(entry),
-      photos: await photos.forEntry(input.entryId).listPublic(context.db),
+      photos: await photos.forEntry(entry._id).listPublic(context.db),
     };
   })
   .public();
