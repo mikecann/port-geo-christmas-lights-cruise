@@ -146,21 +146,26 @@
   animation: boat-lg 30s infinite linear;
 }
 
-/* Animated Christmas lights */
+/* Animated Christmas lights. Stepped, so they blink like real lights, and
+   the big SVG only repaints when they change rather than every frame. */
 .houses :global(.light.yellow) {
-  animation: change-color-y 2s 0s infinite;
+  fill: #fbaf5d;
+  animation: change-color-y 2s 0s infinite steps(1, end);
 }
 
 .houses :global(.light.red) {
-  animation: change-color-r 2s 0s infinite;
+  fill: #ef4648;
+  animation: change-color-r 2s 0s infinite steps(1, end);
 }
 
 .houses :global(.light.blue) {
-  animation: change-color-b 2s 0s infinite;
+  fill: #0098d8;
+  animation: change-color-b 2s 0s infinite steps(1, end);
 }
 
 .houses :global(.light.green) {
-  animation: change-color-g 2s 0s infinite;
+  fill: #009172;
+  animation: change-color-g 2s 0s infinite steps(1, end);
 }
 
 /* Responsive adjustments using Mantine breakpoints */
@@ -214,5 +219,13 @@
     transform: translateX(-150vw) scale(0.7);
     transform-origin: center bottom;
     animation: boat-xs 20s infinite linear;
+  }
+}
+
+/* With animations off (see HomePage.module.css), show the boat where it's
+   drawn rather than at its off-screen starting point */
+@media (prefers-reduced-motion: reduce) {
+  .houses :global(g) {
+    transform: none;
   }
 }
