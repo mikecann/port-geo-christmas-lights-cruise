@@ -14,7 +14,6 @@ import {
   MAX_ENTRY_NAME_LENGTH,
   MAX_ENTRY_NUMBER,
   MAX_REJECTED_REASON_LENGTH,
-  usersWhiteList,
 } from "../../../shared/constants";
 import { competitions } from "../competitions/model";
 import type { ApprovedEntryDoc, PublicEntry } from "./schema";
@@ -142,6 +141,28 @@ export const entries = {
               .unique();
 
             return previousEntry?.status === "approved" ? previousEntry : null;
+          },
+
+          async hasApprovedEntryBefore(competitionId: Id<"competitions">) {
+            const competition = await competitions
+              .query(context)
+              .forCompetition(competitionId)
+              .get();
+            const earlierCompetitions = await competitions
+              .query(context)
+              .listBeforeYear(competition.year);
+            for (const earlier of earlierCompetitions) {
+              const entry = await db
+                .query("entries")
+                .withIndex("by_competitionId_and_submittedByUserId", (q) =>
+                  q
+                    .eq("competitionId", earlier._id)
+                    .eq("submittedByUserId", userId),
+                )
+                .unique();
+              if (entry?.status === "approved") return true;
+            }
+            return false;
           },
 
           async get() {
@@ -617,20 +638,6 @@ export const entries = {
       lat <= northEast.lat &&
       lng >= southWest.lng &&
       lng <= northEast.lng
-    );
-  },
-
-  /**
-   * Checks if a user's email is on the whitelist.
-   * Comparison is case-insensitive.
-   * @param email - User's email address
-   * @returns true if email is on the whitelist, false otherwise
-   */
-  isUserEmailOnWhitelist(email: string | undefined): boolean {
-    if (!email) return false;
-    const emailLower = email.toLowerCase().trim();
-    return usersWhiteList.some(
-      (user) => user.email.toLowerCase().trim() === emailLower,
     );
   },
 };

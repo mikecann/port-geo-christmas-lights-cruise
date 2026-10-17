@@ -169,29 +169,23 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
                   )}
                 </Group>
               )}
-              {validationStatus.isOnWhitelist !== undefined &&
-                validationStatus.isOnWhitelist !== null && (
-                  <Group gap="xs">
-                    {validationStatus.isOnWhitelist ? (
-                      <>
-                        <IconShieldCheck size={14} color="green" />
-                        <Text size="sm" c="dimmed">
-                          User is known from past competitions
-                        </Text>
-                      </>
-                    ) : (
-                      <>
-                        <IconAlertTriangle
-                          size={14}
-                          style={{ color: "#FFB800" }}
-                        />
-                        <Text size="sm" c="dimmed">
-                          User is not known from past competitions
-                        </Text>
-                      </>
-                    )}
-                  </Group>
+              <Group gap="xs">
+                {validationStatus.isReturningEntrant ? (
+                  <>
+                    <IconShieldCheck size={14} color="green" />
+                    <Text size="sm" c="dimmed">
+                      Returning entrant: approved in an earlier year
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <IconAlertTriangle size={14} style={{ color: "#FFB800" }} />
+                    <Text size="sm" c="dimmed">
+                      New entrant: no approved entry in earlier years
+                    </Text>
+                  </>
                 )}
+              </Group>
             </>
           )}
 

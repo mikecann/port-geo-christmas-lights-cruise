@@ -119,7 +119,7 @@ export const getEntryValidationStatus = userCompetitionAdminQuery
     v.object({
       hasConflicts: v.boolean(),
       isWithinBoundary: v.union(v.boolean(), v.null()),
-      isOnWhitelist: v.union(v.boolean(), v.null()),
+      isReturningEntrant: v.boolean(),
     }),
   )
   .handler(async (context, input) => {
@@ -132,7 +132,7 @@ export const getEntryValidationStatus = userCompetitionAdminQuery
       return {
         hasConflicts: false,
         isWithinBoundary: null,
-        isOnWhitelist: null,
+        isReturningEntrant: false,
       };
 
     const placeId = entry.houseAddress.placeId;
@@ -160,13 +160,12 @@ export const getEntryValidationStatus = userCompetitionAdminQuery
         houseAddress.lng,
       );
 
-    // Check if user email is on whitelist
-    const user = await context.db.get(entry.submittedByUserId);
-    const isOnWhitelist = user
-      ? entries.isUserEmailOnWhitelist(user.email)
-      : null;
+    const isReturningEntrant = await entries
+      .query(context)
+      .forUser(entry.submittedByUserId)
+      .hasApprovedEntryBefore(entry.competitionId);
 
-    return { hasConflicts, isWithinBoundary, isOnWhitelist };
+    return { hasConflicts, isWithinBoundary, isReturningEntrant };
   })
   .public();
 
