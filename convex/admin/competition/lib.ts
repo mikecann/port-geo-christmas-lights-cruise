@@ -1,15 +1,15 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ensure } from "../../../shared/ensure";
-import { mutation } from "../../features/common/lib";
+import { mutation, NOT_SIGNED_IN_MESSAGE } from "../../features/common/lib";
 import { convex } from "../../schema";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "../../../convex/_generated/api";
 
 export const userCompetitionAdminQueryMiddleware = convex
   .query()
   .createMiddleware(async (context, next) => {
     const userId = await getAuthUserId(context);
-    if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
+    if (userId === null) throw new ConvexError(NOT_SIGNED_IN_MESSAGE);
 
     const user = ensure(
       await context.db.get(userId),
@@ -42,7 +42,7 @@ export const userCompetitionAdminQuery = convex
 export const userCompetitionAdminMutationMiddleware = mutation.createMiddleware(
   async (context, next) => {
     const userId = await getAuthUserId(context);
-    if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
+    if (userId === null) throw new ConvexError(NOT_SIGNED_IN_MESSAGE);
 
     const user = ensure(
       await context.db.get(userId),
@@ -89,7 +89,7 @@ export const userCompetitionAdminActionMiddleware = convex
   .action()
   .createMiddleware(async (context, next) => {
     const userId = await getAuthUserId(context);
-    if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
+    if (userId === null) throw new ConvexError(NOT_SIGNED_IN_MESSAGE);
 
     // Check admin status using an internal query since actions can't access db directly
     const userCheck = await context.runQuery(

@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { entries } from "../features/entries/model";
 import { email } from "../features/email/model";
 import { mutation } from "../features/common/lib";
@@ -12,7 +12,7 @@ export const startSubmitting = mutation
   .handler(async (context, input) => {
     const competition = await competitions.query(context).current();
     if (!competition.entriesOpen)
-      throw new Error("Competition entries are currently closed");
+      throw new ConvexError("Competition entries are currently closed");
     return await entries
       .mutate(context)
       .forUser(competition._id, input.userId)

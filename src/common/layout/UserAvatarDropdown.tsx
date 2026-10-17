@@ -5,13 +5,13 @@ import {
   useIsCompetitionAdmin,
   useIsSystemAdmin,
 } from "../../auth/useMeHooks";
-import { useApiErrorHandler } from "../errors";
+import { useErrorHandler } from "../errors";
 import { routes } from "../../routes";
 
 export function UserAvatarDropdown() {
   const me = useMe();
   const { signOut } = useAuthActions();
-  const onApiError = useApiErrorHandler();
+  const onApiError = useErrorHandler();
   const isSystemAdmin = useIsSystemAdmin();
   const isCompetitionAdmin = useIsCompetitionAdmin();
   const isAdmin = isSystemAdmin || isCompetitionAdmin;

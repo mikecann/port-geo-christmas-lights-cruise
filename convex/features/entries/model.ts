@@ -44,8 +44,8 @@ export const entries = {
     return {
       ensureIsModifiable() {
         if (entry.status !== "draft" && entry.status !== "approved")
-          throw new Error(
-            `Entry of id '${entry._id}' with status '${entry.status}' is not in draft or approved status and cannot be modified. Current status: ${entry.status}`,
+          throw new ConvexError(
+            "Your entry can only be changed while it's a draft or once it's been approved.",
           );
         return entry;
       },

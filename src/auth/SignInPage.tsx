@@ -14,14 +14,14 @@ import {
 } from "@mantine/core";
 import { routes, useRoute } from "../routes";
 import { useConvexAuth } from "convex/react";
-import { useApiErrorHandler } from "../common/errors";
+import { useErrorHandler } from "../common/errors";
 import { isSignupDisabled } from "../common/auth";
 import { safeReturnTo } from "./returnTo";
 
 export function SignInPage() {
   const { signIn } = useAuthActions();
   const [isLoading, setIsLoading] = useState(false);
-  const onApiError = useApiErrorHandler();
+  const onApiError = useErrorHandler();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const route = useRoute();
 

@@ -5,89 +5,32 @@ import { useMutation } from "convex/react";
 import type { ReactMutation } from "convex/react";
 import type { FunctionReference, OptionalRestArgs } from "convex/server";
 
-/**
- * Extracts a user-friendly message from an error, stripping technical prefixes.
- * Removes patterns like "[CONVEX A(...)]", "Uncaught Error:", etc.
- */
-const extractFriendlyMessage = (message: string): string => {
-  // Remove Convex function call prefixes like "[CONVEX A(my/entries:submit)]"
-  let friendly = message.replace(/\[CONVEX [^\]]+\]/g, "").trim();
+const GENERIC_MESSAGE = "Something went wrong. Please try again.";
 
-  // Remove Request ID prefixes like "[Request ID: ...]"
-  friendly = friendly.replace(/\[Request ID: [^\]]+\]/g, "").trim();
-
-  // Remove "Server Error" prefix
-  friendly = friendly.replace(/^Server Error\s+/i, "").trim();
-
-  // Remove repeated "Uncaught Error:" prefixes
-  friendly = friendly.replace(/^(Uncaught Error:\s*)+/i, "").trim();
-
-  // Remove "Called by client" suffix
-  friendly = friendly.replace(/\s+Called by client$/i, "").trim();
-
-  return friendly || "An unexpected error occurred";
-};
-
+// Convex hides plain Error messages in production, so only a ConvexError's
+// message is meant for people to read. Strings are messages the app wrote.
 const getMessage = (error: unknown): string => {
-  let rawMessage: string;
-
-  if (typeof error === "string") rawMessage = error;
-  else if (error instanceof ConvexError)
-    if (typeof error.data === "string") rawMessage = error.data;
-    else if (
+  if (typeof error === "string") return error;
+  if (error instanceof ConvexError) {
+    if (typeof error.data === "string") return error.data;
+    if (
       typeof error.data === "object" &&
       error.data !== null &&
       "message" in error.data &&
       typeof error.data.message === "string"
     )
-      rawMessage = error.data.message;
-    else return "An unexpected error occurred";
-  else if (error && typeof error === "object")
-    if (
-      "message" in error &&
-      typeof (error as { message?: unknown }).message === "string"
-    )
-      rawMessage = (error as { message: string }).message;
-    else if ("error" in error) {
-      const nested = (error as { error?: unknown }).error;
-      if (
-        nested &&
-        typeof nested === "object" &&
-        nested !== null &&
-        "message" in nested &&
-        typeof (nested as { message?: unknown }).message === "string"
-      )
-        rawMessage = (nested as { message: string }).message;
-      else return "An unexpected error occurred";
-    } else return "An unexpected error occurred";
-  else return "An unexpected error occurred";
-
-  return extractFriendlyMessage(rawMessage);
-};
-
-export const useApiErrorHandler = () => {
-  return useCallback((error: unknown, title?: string) => {
-    const friendlyMessage = getMessage(error);
-    // Log the full error details for debugging
-    console.error(`APIError${title ? ` from ${title}` : ""}: `, error);
-    // Show only the friendly message to the user
-    notifications.show({
-      title: "Error",
-      message: friendlyMessage,
-      color: "red",
-    });
-  }, []);
+      return error.data.message;
+  }
+  return GENERIC_MESSAGE;
 };
 
 export const useErrorHandler = () => {
   return useCallback((error: unknown, title?: string) => {
-    const friendlyMessage = getMessage(error);
     // Log the full error details for debugging
     console.error(`Error${title ? ` from ${title}` : ""}: `, error);
-    // Show only the friendly message to the user
     notifications.show({
       title: "Error",
-      message: friendlyMessage,
+      message: getMessage(error),
       color: "red",
     });
   }, []);
@@ -106,7 +49,7 @@ export const useErrorCatchingMutation = <
   mutation: Mutation,
 ): [VoidReactMutation<Mutation>, boolean] => {
   const callback = useMutation(mutation);
-  const onApiError = useApiErrorHandler();
+  const onError = useErrorHandler();
   const [inFlightCount, setInFlightCount] = useState(0);
 
   const handler = useMemo(() => {
@@ -115,7 +58,7 @@ export const useErrorCatchingMutation = <
         setInFlightCount((prev) => prev + 1);
         void m(...args)
           .catch((err: unknown) => {
-            onApiError(err);
+            onError(err);
           })
           .finally(() => {
             setInFlightCount((prev) => prev - 1);
@@ -130,7 +73,7 @@ export const useErrorCatchingMutation = <
     };
 
     return wrap(callback);
-  }, [callback, onApiError]);
+  }, [callback, onError]);
 
   const isSaving = useMemo(() => inFlightCount > 0, [inFlightCount]);
   return useMemo(() => [handler, isSaving], [handler, isSaving]);

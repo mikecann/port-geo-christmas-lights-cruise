@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useMutation } from "convex/react";
 import imageCompression from "browser-image-compression";
 import { api } from "../../../../../convex/_generated/api";
-import { useApiErrorHandler } from "../../../../common/errors";
+import { useErrorHandler } from "../../../../common/errors";
 import {
   MAX_PHOTOS_PER_ENTRY,
   MAX_IMAGE_DIMENSION,
@@ -39,7 +39,7 @@ export default function AdminPhotoUpload({
   const savePhoto = useMutation(api.admin.competition.photos.save);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
-  const onApiError = useApiErrorHandler();
+  const onApiError = useErrorHandler();
 
   const isAtLimit = currentPhotoCount >= maxPhotos;
   const remainingPhotos = maxPhotos - currentPhotoCount;

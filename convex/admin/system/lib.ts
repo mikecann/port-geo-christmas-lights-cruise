@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ensure } from "../../../shared/ensure";
-import { mutation } from "../../features/common/lib";
+import { mutation, NOT_SIGNED_IN_MESSAGE } from "../../features/common/lib";
 import { convex } from "../../schema";
 import { ConvexError } from "convex/values";
 
@@ -20,7 +20,7 @@ export const userSystemAdminQueryMiddleware = convex
   .query()
   .createMiddleware(async (context, next) => {
     const userId = await getAuthUserId(context);
-    if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
+    if (userId === null) throw new ConvexError(NOT_SIGNED_IN_MESSAGE);
 
     const user = ensure(
       await context.db.get(userId),
@@ -42,7 +42,7 @@ export const userSystemAdminQuery = convex
 export const userSystemAdminMutationMiddleware = mutation.createMiddleware(
   async (context, next) => {
     const userId = await getAuthUserId(context);
-    if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
+    if (userId === null) throw new ConvexError(NOT_SIGNED_IN_MESSAGE);
 
     const user = ensure(
       await context.db.get(userId),

@@ -120,7 +120,7 @@ describe("competition seasons", () => {
           entryId: currentEntryId,
           category: "best_display",
         }),
-      ).rejects.toThrow("has already voted");
+      ).rejects.toThrow("already voted in this category");
 
       expect(
         await votes

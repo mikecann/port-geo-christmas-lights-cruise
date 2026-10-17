@@ -17,10 +17,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { getAddressString } from "../../../shared/misc";
 import { useConfirmation } from "../../common/components/confirmation/useConfirmation";
-import {
-  useApiErrorHandler,
-  useErrorCatchingMutation,
-} from "../../common/errors";
+import { useErrorHandler, useErrorCatchingMutation } from "../../common/errors";
 import PhotoSection from "./photos/PhotoSection";
 import AddressAutocomplete from "../../common/components/AddressAutocomplete";
 import {
@@ -46,7 +43,7 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPhotosUploading, setIsPhotosUploading] = useState(false);
   const { confirm } = useConfirmation();
-  const onApiError = useApiErrorHandler();
+  const onApiError = useErrorHandler();
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
 

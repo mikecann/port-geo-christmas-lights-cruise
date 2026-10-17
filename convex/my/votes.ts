@@ -1,7 +1,7 @@
 import { myMutation, myQuery } from "./lib";
 import { votes } from "../features/votes/model";
 import { photos } from "../features/photos/model";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   VOTE_CATEGORIES,
   voteCategoryValidator,
@@ -15,7 +15,7 @@ import { enforceUserRateLimit } from "../features/rateLimits/lib";
 
 function requireVotingToBeOpen(competition: Doc<"competitions">) {
   if (!competition.votingOpen)
-    throw new Error(votingClosedMessage(competition.year));
+    throw new ConvexError(votingClosedMessage(competition.year));
 }
 
 export const list = myQuery

@@ -17,6 +17,8 @@ export const mutation = convex.mutation().use(
     .createMiddleware(async (context, next) => next(triggers.wrapDB(context))),
 );
 
+export const NOT_SIGNED_IN_MESSAGE = "Please sign in and try again.";
+
 // Deterministic shuffle using a provided seed string.
 // Uses xmur3 to hash the seed into a number and mulberry32 as the PRNG.
 export function shuffleDeterministic<T>(

@@ -19,7 +19,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { VoteCategory } from "../../../convex/features/votes/schema";
 import { VOTE_CATEGORIES } from "../../../convex/features/votes/schema";
-import { useApiErrorHandler } from "../../common/errors";
+import { useErrorHandler } from "../../common/errors";
 import { routes } from "../../routes";
 import ExistingVoteCard from "./ExistingVoteCard";
 
@@ -69,7 +69,7 @@ export default function VoteCategories({
   const voteForEntry = useMutation(api.my.votes.vote);
   const cancelVote = useMutation(api.my.votes.cancel);
   const [isVoting, setIsVoting] = useState(false);
-  const onApiError = useApiErrorHandler();
+  const onApiError = useErrorHandler();
 
   if (!votingStatus || !competitionId)
     return (

@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import type { DatabaseReader, DatabaseWriter } from "../../_generated/server";
 import type { VoteCategory } from "./schema";
@@ -62,9 +63,7 @@ export const votes = {
         );
 
         if (existing)
-          throw new Error(
-            `User '${userId}' has already voted in category '${args.category}' and cannot vote again`,
-          );
+          throw new ConvexError("You've already voted in this category.");
 
         return await db.insert("votes", {
           competitionId: args.competitionId,
