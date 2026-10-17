@@ -75,14 +75,14 @@ describe("photo save", () => {
       {},
     );
 
-    await expect(
-      asAttacker.mutation(api.my.photos.save, {
+    expect(
+      await asAttacker.mutation(api.my.photos.save, {
         photoId,
         storageId: victimStorageId,
       }),
-    ).rejects.toThrow("couldn't save that photo");
+    ).toEqual({ error: expect.stringContaining("couldn't save that photo") });
 
-    await asAttacker.mutation(api.my.photos.remove, { photoId });
+    expect(await t.run((ctx) => ctx.db.get(photoId))).toBeNull();
     expect(await storageExists(t, victimStorageId)).toBe(true);
     expect(await t.run((ctx) => ctx.db.get(victimPhotoId))).not.toBeNull();
   });
@@ -102,9 +102,10 @@ describe("photo save", () => {
       }),
     );
 
-    await expect(
-      asUser.mutation(api.my.photos.save, { photoId, storageId }),
-    ).rejects.toThrow("couldn't save that photo");
+    expect(
+      await asUser.mutation(api.my.photos.save, { photoId, storageId }),
+    ).toEqual({ error: expect.stringContaining("couldn't save that photo") });
+    expect(await t.run((ctx) => ctx.db.get(photoId))).toBeNull();
     expect(await storageExists(t, storageId)).toBe(true);
   });
 
@@ -115,9 +116,10 @@ describe("photo save", () => {
     await t.run((ctx) => ctx.storage.delete(storageId));
     const { photoId } = await asUser.mutation(api.my.photos.beginUpload, {});
 
-    await expect(
-      asUser.mutation(api.my.photos.save, { photoId, storageId }),
-    ).rejects.toThrow("couldn't save that photo");
+    expect(
+      await asUser.mutation(api.my.photos.save, { photoId, storageId }),
+    ).toEqual({ error: expect.stringContaining("couldn't save that photo") });
+    expect(await t.run((ctx) => ctx.db.get(photoId))).toBeNull();
   });
 
   it("deletes a fresh upload that isn't an allowed image type", async () => {
@@ -170,12 +172,13 @@ describe("photo save", () => {
       { entryId },
     );
 
-    await expect(
-      asAdmin.mutation(api.admin.competition.photos.save, {
+    expect(
+      await asAdmin.mutation(api.admin.competition.photos.save, {
         photoId,
         storageId: victimStorageId,
       }),
-    ).rejects.toThrow("couldn't save that photo");
+    ).toEqual({ error: expect.stringContaining("couldn't save that photo") });
+    expect(await storageExists(t, victimStorageId)).toBe(true);
   });
 });
 

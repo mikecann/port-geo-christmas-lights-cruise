@@ -1,6 +1,5 @@
 import type { Id } from "../../_generated/dataModel";
 import type { DatabaseReader, MutationCtx } from "../../_generated/server";
-import { ConvexError } from "convex/values";
 import { ensure } from "../../../shared/ensure";
 import {
   ALLOWED_PHOTO_CONTENT_TYPES,
@@ -76,18 +75,19 @@ export const photos = {
             `Photo with id '${photoId}' is not in uploading state`,
           );
 
+        // Files that are missing, older than this upload or already in use
+        // belong to someone else, so leave them alone. Drop the uploading row
+        // so it doesn't keep taking up one of the entry's photo slots.
         const file = await ctx.db.system.get(args.storageId);
-        if (!file) throw new ConvexError(UPLOAD_NOT_SAVED_MESSAGE);
-
-        // Files that are older than this upload or already in use belong to
-        // someone else, so refuse them and leave them alone.
-        if (await photos.isStorageReferenced(ctx.db, args.storageId))
-          throw new ConvexError(UPLOAD_NOT_SAVED_MESSAGE);
         if (
+          !file ||
           file._creationTime <
-          photo.uploadState.uploadStartedAt - UPLOAD_CLOCK_SKEW_MS
-        )
-          throw new ConvexError(UPLOAD_NOT_SAVED_MESSAGE);
+            photo.uploadState.uploadStartedAt - UPLOAD_CLOCK_SKEW_MS ||
+          (await photos.isStorageReferenced(ctx.db, args.storageId))
+        ) {
+          await ctx.db.delete(photoId);
+          return { error: UPLOAD_NOT_SAVED_MESSAGE };
+        }
 
         const isAllowedType = ALLOWED_PHOTO_CONTENT_TYPES.includes(
           file.contentType ?? "",
