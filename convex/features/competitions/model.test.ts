@@ -1,16 +1,54 @@
 import { describe, expect, it } from "vitest";
-import { convexTest } from "convex-test";
-import schema from "../../schema";
+import {
+  createConvexTest,
+  ensureTestCompetitions,
+} from "../common/tests/testingHelpers.vitest";
 import { entries } from "../entries/model";
 import { votes } from "../votes/model";
 import { competitions } from "./model";
 
-describe("competition seasons", () => {
-  it("can close current-season entry creation without changing other settings", async () => {
-    const t = convexTest(schema);
+describe("current competition", () => {
+  it("is the one with the highest year", async () => {
+    const t = createConvexTest();
 
     await t.run(async (ctx) => {
-      const current = await competitions.mutate(ctx).ensureCurrent();
+      await ctx.db.insert("competitions", {
+        year: 2026,
+        entriesOpen: false,
+        votingOpen: false,
+      });
+      const newest = await ctx.db.insert("competitions", {
+        year: 2027,
+        entriesOpen: true,
+        votingOpen: false,
+      });
+      await ctx.db.insert("competitions", {
+        year: 2025,
+        entriesOpen: false,
+        votingOpen: false,
+      });
+
+      expect((await competitions.query(ctx).current())._id).toBe(newest);
+    });
+  });
+
+  it("says so when no competition has been set up", async () => {
+    const t = createConvexTest();
+
+    await t.run(async (ctx) => {
+      await expect(competitions.query(ctx).current()).rejects.toThrow(
+        "No competition has been configured",
+      );
+    });
+  });
+});
+
+describe("competition seasons", () => {
+  it("can close current-season entry creation without changing other settings", async () => {
+    const t = createConvexTest();
+
+    await t.run(async (ctx) => {
+      const { current } = await ensureTestCompetitions(ctx);
       await competitions.mutate(ctx).setEntriesOpen(current._id, false);
 
       expect(
@@ -20,11 +58,10 @@ describe("competition seasons", () => {
   });
 
   it("keeps a user's entries separate by season", async () => {
-    const t = convexTest(schema);
+    const t = createConvexTest();
 
     await t.run(async (ctx) => {
-      const legacy = await competitions.mutate(ctx).ensureLegacy();
-      const current = await competitions.mutate(ctx).ensureCurrent();
+      const { past: legacy, current } = await ensureTestCompetitions(ctx);
       const userId = await ctx.db.insert("users", { name: "Seasonal Entrant" });
 
       const legacyEntryId = await entries
@@ -47,11 +84,10 @@ describe("competition seasons", () => {
   });
 
   it("allows one vote per category in each season", async () => {
-    const t = convexTest(schema);
+    const t = createConvexTest();
 
     await t.run(async (ctx) => {
-      const legacy = await competitions.mutate(ctx).ensureLegacy();
-      const current = await competitions.mutate(ctx).ensureCurrent();
+      const { past: legacy, current } = await ensureTestCompetitions(ctx);
       const votingUserId = await ctx.db.insert("users", {
         name: "Seasonal Voter",
       });

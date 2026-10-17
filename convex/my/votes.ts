@@ -9,12 +9,13 @@ import {
 import type { VoteCategory } from "../features/votes/schema";
 import { entries } from "../features/entries/model";
 import type { Doc } from "../_generated/dataModel";
-import { VOTING_CLOSED_MESSAGE } from "../../shared/eventStatus";
+import { votingClosedMessage } from "../../shared/eventStatus";
 import { competitions } from "../features/competitions/model";
 import { enforceUserRateLimit } from "../features/rateLimits/lib";
 
-function requireVotingToBeOpen(votingOpen: boolean) {
-  if (!votingOpen) throw new Error(VOTING_CLOSED_MESSAGE);
+function requireVotingToBeOpen(competition: Doc<"competitions">) {
+  if (!competition.votingOpen)
+    throw new Error(votingClosedMessage(competition.year));
 }
 
 export const list = myQuery
@@ -98,7 +99,7 @@ export const vote = myMutation
   .handler(async (context, input) => {
     await enforceUserRateLimit(context, "changeVote", context.userId);
     const competition = await competitions.query(context).current();
-    requireVotingToBeOpen(competition.votingOpen);
+    requireVotingToBeOpen(competition);
 
     const entry = await entries
       .query(context)
@@ -130,7 +131,7 @@ export const cancel = myMutation
       .query(context)
       .forCompetition(vote.competitionId)
       .get();
-    requireVotingToBeOpen(competition.votingOpen);
+    requireVotingToBeOpen(competition);
 
     await votes
       .forVote(input.voteId)

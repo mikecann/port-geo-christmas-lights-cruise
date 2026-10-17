@@ -4,7 +4,7 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { routes } from "../../routes";
-import { VOTING_CLOSED_MESSAGE } from "../../../shared/eventStatus";
+import { votingClosedMessage } from "../../../shared/eventStatus";
 
 type Props = {
   entryId: Id<"entries">;
@@ -26,7 +26,7 @@ export default function EntryVoting({ entryId }: Props) {
             </Text>
           </Group>
           <Text c="dimmed" size="sm" ta="center">
-            {VOTING_CLOSED_MESSAGE}
+            {votingClosedMessage(competition.year)}
           </Text>
         </Stack>
       </Card>

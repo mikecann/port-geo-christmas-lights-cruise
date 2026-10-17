@@ -4,10 +4,7 @@ import type { FunctionReturnType } from "convex/server";
 import type { api } from "../_generated/api";
 import { photos } from "../features/photos/model";
 import { convex } from "../schema";
-import {
-  competitions,
-  CURRENT_COMPETITION_YEAR,
-} from "../features/competitions/model";
+import { competitions } from "../features/competitions/model";
 import type { QueryCtx } from "../_generated/server";
 import type { ApprovedEntryDoc } from "../features/entries/schema";
 import { publicEntryValidator } from "../features/entries/schema";
@@ -28,10 +25,9 @@ const entryWithPhotosValidator = v.object({
 });
 
 const resolveCompetition = (ctx: QueryCtx, competitionYear?: number) =>
-  competitions
-    .query(ctx)
-    .forYear(competitionYear ?? CURRENT_COMPETITION_YEAR)
-    .get();
+  competitionYear === undefined
+    ? competitions.query(ctx).current()
+    : competitions.query(ctx).forYear(competitionYear).get();
 
 const withFirstPhoto = async (ctx: QueryCtx, entry: ApprovedEntryDoc) => ({
   entry: entries.toPublic(entry),

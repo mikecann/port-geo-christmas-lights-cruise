@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { api } from "../../_generated/api";
 import type { AuthenticatedConvexTest } from "../common/tests/testingHelpers.vitest";
 import {
+  ensureTestCompetitions,
   createConvexTestWithUser,
   createTestEntry,
   getTestUser,
   moveEntryToStatus,
 } from "../common/tests/testingHelpers.vitest";
-import { VOTING_CLOSED_MESSAGE } from "../../../shared/eventStatus";
+import { votingClosedMessage } from "../../../shared/eventStatus";
 import { competitions } from "../competitions/model";
 import { aggregateVotes, voteNamespace } from "./lib";
 import type { VoteCategory } from "./schema";
@@ -37,7 +38,7 @@ describe("voting pause", () => {
         entryId: entry._id,
         category: "best_display",
       }),
-    ).rejects.toThrow(VOTING_CLOSED_MESSAGE);
+    ).rejects.toThrow(votingClosedMessage(2026));
 
     const storedVotes = await t.run((ctx) => ctx.db.query("votes").collect());
     expect(storedVotes).toHaveLength(0);
@@ -58,7 +59,7 @@ describe("voting pause", () => {
     });
 
     await expect(t.mutation(api.my.votes.cancel, { voteId })).rejects.toThrow(
-      VOTING_CLOSED_MESSAGE,
+      votingClosedMessage(2026),
     );
 
     const storedVote = await t.run((ctx) => ctx.db.get(voteId));
@@ -132,7 +133,7 @@ describe("voting while open", () => {
     if (!entry) throw new Error("Failed to create entry");
     await moveEntryToStatus(t, { entryId: entry._id, status: "approved" });
     await t.run(async (ctx) => {
-      const legacy = await competitions.mutate(ctx).ensureLegacy();
+      const legacy = (await ensureTestCompetitions(ctx)).past;
       await ctx.db.patch(entry._id, { competitionId: legacy._id });
     });
 

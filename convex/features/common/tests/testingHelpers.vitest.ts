@@ -26,6 +26,24 @@ export type AuthenticatedConvexTest = ReturnType<typeof signInAsTestUser>;
 export type TestOrAuthenticatedConvexTest =
   ConvexTest | AuthenticatedConvexTest;
 
+// Last year's competition and this year's. The newest year is current.
+export const ensureTestCompetitions = async (ctx: MutationCtx) => {
+  const ensureYear = async (year: number, entriesOpen: boolean) => {
+    const existing = await competitions.query(ctx).forYear(year).find();
+    if (existing) return existing;
+    const competitionId = await ctx.db.insert("competitions", {
+      year,
+      entriesOpen,
+      votingOpen: false,
+    });
+    return ensure(await ctx.db.get(competitionId));
+  };
+  return {
+    past: await ensureYear(2025, false),
+    current: await ensureYear(2026, true),
+  };
+};
+
 export const createTestUser = async (
   t: ConvexTest,
   options: {
@@ -33,8 +51,7 @@ export const createTestUser = async (
   } = {},
 ): Promise<Doc<"users">> => {
   return t.run(async (ctx) => {
-    await competitions.mutate(ctx).ensureLegacy();
-    await competitions.mutate(ctx).ensureCurrent();
+    await ensureTestCompetitions(ctx);
     const userId = await ctx.db.insert("users", {
       ...options.user,
     });
@@ -213,7 +230,7 @@ export const createTestEntry = async (
 ) => {
   const user = await getTestUser(t);
   return t.run(async (ctx) => {
-    const competition = await competitions.mutate(ctx).ensureCurrent();
+    const { current: competition } = await ensureTestCompetitions(ctx);
     // Create a basic draft entry first
     const entryId = await ctx.db.insert("entries", {
       competitionId: competition._id,

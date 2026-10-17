@@ -5,6 +5,7 @@ import {
   createConvexTest,
   createTestUser,
   signInAsTestUser,
+  ensureTestCompetitions,
 } from "../../features/common/tests/testingHelpers.vitest";
 import type { ConvexTest } from "../../features/common/tests/testingHelpers.vitest";
 import { competitions } from "../../features/competitions/model";
@@ -42,7 +43,7 @@ describe("returning entrant flag", () => {
     const t = createConvexTest();
     const user = await createTestUser(t);
     await t.run(async (ctx) => {
-      const legacy = await competitions.mutate(ctx).ensureLegacy();
+      const legacy = (await ensureTestCompetitions(ctx)).past;
       await ctx.db.insert("entries", {
         competitionId: legacy._id,
         submittedByUserId: user._id,
@@ -65,7 +66,7 @@ describe("returning entrant flag", () => {
     const t = createConvexTest();
     const user = await createTestUser(t);
     await t.run(async (ctx) => {
-      const legacy = await competitions.mutate(ctx).ensureLegacy();
+      const legacy = (await ensureTestCompetitions(ctx)).past;
       await ctx.db.insert("entries", {
         competitionId: legacy._id,
         submittedByUserId: user._id,

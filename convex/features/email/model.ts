@@ -3,6 +3,7 @@ import { Resend } from "@convex-dev/resend";
 import type { MutationCtx } from "../../_generated/server";
 import type { Doc, Id } from "../../_generated/dataModel";
 import { entries } from "../entries/model";
+import { competitions } from "../competitions/model";
 import { users } from "../users/model";
 
 // Entry names, addresses and rejection reasons are user or admin written text
@@ -84,11 +85,21 @@ export const email = {
       replyTo: [email.replyToAddress],
       to: args.to,
       subject: "🎉 Your Christmas Lights Entry Has Been Approved!",
-      html: email.approvalHtml(args),
+      html: email.approvalHtml({
+        ...args,
+        competition: await competitions
+          .query(ctx)
+          .forCompetition(args.entry.competitionId)
+          .get(),
+      }),
     });
   },
 
-  approvalHtml(args: { entry: Doc<"entries">; entryNumber: number }) {
+  approvalHtml(args: {
+    entry: Doc<"entries">;
+    entryNumber: number;
+    competition: Doc<"competitions">;
+  }) {
     return `
         <h2>Congratulations! Your Entry Has Been Approved</h2>
         <p>We're excited to let you know that your entry for the Port Geographe Christmas Lights Competition has been approved!</p>
@@ -102,7 +113,7 @@ export const email = {
         <h3>Next Steps:</h3>
         <ol>
           <li><strong>Collect Your Sign:</strong> We'll email you the sign collection details separately.</li>
-          <li><strong>Decorate Your Home:</strong> Make sure your Christmas lights display is ready for the cruise dates in December 2026.</li>
+          <li><strong>Decorate Your Home:</strong> Make sure your Christmas lights display is ready for the cruise dates in December ${escapeHtml(args.competition.year)}.</li>
           <li><strong>Be Visible:</strong> Ensure your lights are switched on during cruise hours (we'll send you the schedule closer to the date).</li>
           <li><strong>Share the Joy:</strong> Tell your friends and neighbours about the event!</li>
           <li><strong>Stay Updated:</strong> Keep an eye on your email for important updates about the cruise schedule.</li>

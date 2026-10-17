@@ -6,6 +6,7 @@ import {
   createTestStorageId,
   createTestUser,
   signInAsTestUser,
+  ensureTestCompetitions,
 } from "../common/tests/testingHelpers.vitest";
 import type { ConvexTest } from "../common/tests/testingHelpers.vitest";
 import { competitions } from "../competitions/model";
@@ -30,7 +31,7 @@ const insertUploadedPhoto = (
   entryId?: Id<"entries">,
 ) =>
   t.run(async (ctx) => {
-    const competition = await competitions.mutate(ctx).ensureCurrent();
+    const competition = (await ensureTestCompetitions(ctx)).current;
     const owner = await ctx.db.insert("users", {});
     entryId ??= await ctx.db.insert("entries", {
       competitionId: competition._id,

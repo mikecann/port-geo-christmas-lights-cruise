@@ -1,16 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { convexTest } from "convex-test";
-import schema from "../schema";
-import { competitions } from "../features/competitions/model";
+import {
+  createConvexTest,
+  ensureTestCompetitions,
+} from "../features/common/tests/testingHelpers.vitest";
 import { repairCurrentReturningEntryNumbersForContext } from "./entries";
 
 describe("repairCurrentReturningEntryNumbers", () => {
   it("retries a repair after another returning entry frees its number", async () => {
-    const t = convexTest(schema);
+    const t = createConvexTest();
 
     await t.run(async (ctx) => {
-      const previousCompetition = await competitions.mutate(ctx).ensureLegacy();
-      const currentCompetition = await competitions.mutate(ctx).ensureCurrent();
+      const { past: previousCompetition, current: currentCompetition } =
+        await ensureTestCompetitions(ctx);
       const firstUserId = await ctx.db.insert("users", { name: "First" });
       const secondUserId = await ctx.db.insert("users", { name: "Second" });
       const entryDetails = {
