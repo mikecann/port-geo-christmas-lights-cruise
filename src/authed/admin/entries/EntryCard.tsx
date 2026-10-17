@@ -22,14 +22,14 @@ import {
 import React from "react";
 import { useDisclosure } from "@mantine/hooks";
 import { api } from "../../../../convex/_generated/api";
-import type { Doc } from "../../../../convex/_generated/dataModel";
+import type { AdminEntry } from "../../../../convex/admin/competition/entries";
 import { useErrorCatchingMutation } from "../../../common/errors";
 import PhotoLightbox from "../../myEntries/photos/PhotoLightbox";
 import { PhotoImage } from "./PhotoImage";
 import { useQuery } from "convex/react";
 import RejectEntryModal from "./RejectEntryModal";
 
-export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
+export default function EntryCard({ entry }: { entry: AdminEntry }) {
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
   const [
@@ -37,13 +37,7 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
     { open: openRejectModal, close: closeRejectModal },
   ] = useDisclosure(false);
   const [selectedImageUrl, setSelectedImageUrl] = React.useState<string>("");
-  const photos =
-    useQuery(api.admin.competition.photos.listForEntry, {
-      entryId: entry._id,
-    }) ?? [];
-  const user = useQuery(api.admin.competition.entries.getUserDetails, {
-    userId: entry.submittedByUserId,
-  });
+  const { photos, submitter: user } = entry;
   const validationStatus = useQuery(
     api.admin.competition.entries.getEntryValidationStatus,
     {

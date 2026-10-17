@@ -1,12 +1,13 @@
 import { Stack, Card, Text, Center, Loader, SimpleGrid } from "@mantine/core";
 import { IconClipboardList } from "@tabler/icons-react";
-import { Doc } from "../../../../convex/_generated/dataModel";
 import EntryCard from "./EntryCard";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 
 export default function PendingEntriesSection() {
-  const pendingEntries = useQuery(api.admin.competition.entries.listPending);
+  const pendingEntries = useQuery(api.admin.competition.entries.list, {
+    status: "submitted",
+  });
 
   return (
     <Stack gap="md">

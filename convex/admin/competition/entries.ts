@@ -6,30 +6,46 @@ import { entries } from "../../features/entries/model";
 import { photos } from "../../features/photos/model";
 import { email } from "../../features/email/model";
 import { v } from "convex/values";
+import type { FunctionReturnType } from "convex/server";
+import type { api } from "../../_generated/api";
 import { competitions } from "../../features/competitions/model";
 import { isWithinBoundary } from "../../../shared/geo";
 
+const reviewableStatusValidator = v.union(
+  v.literal("submitted"),
+  v.literal("approved"),
+  v.literal("rejected"),
+);
+
+export type AdminEntry = FunctionReturnType<
+  typeof api.admin.competition.entries.list
+>[number];
+
 // Queries
 
-export const listPending = competitionAdminQuery
-  .input({})
-  .handler(async (context) => {
+// What the admin entry cards and tables show, including the photos and the
+// person who entered, so each card doesn't have to fetch them again
+export const list = competitionAdminQuery
+  .input({ status: reviewableStatusValidator })
+  .handler(async (context, input) => {
     const competition = await competitions.query(context).current();
-    const pendingEntries = await entries
+    const statusEntries = await entries
       .query(context)
-      .listPendingReview(competition._id);
+      .listWithStatus(competition._id, input.status);
 
-    const entriesWithPhotos = await Promise.all(
-      pendingEntries.map(async (entry) => {
-        const entryPhotos = await photos.forEntry(entry._id).list(context.db);
+    return await Promise.all(
+      statusEntries.map(async (entry) => {
+        const submitter = await context.db.get(entry.submittedByUserId);
         return {
           ...entry,
-          photos: entryPhotos,
+          photos: await photos.forEntry(entry._id).list(context.db),
+          submitter: submitter && {
+            name: submitter.name,
+            email: submitter.email,
+          },
         };
       }),
     );
-
-    return entriesWithPhotos;
   })
   .public();
 
@@ -38,50 +54,6 @@ export const getStats = competitionAdminQuery
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
     return await entries.query(context).getStats(competition._id);
-  })
-  .public();
-
-export const listApproved = competitionAdminQuery
-  .input({})
-  .handler(async (context) => {
-    const competition = await competitions.query(context).current();
-    const approvedEntries = await entries
-      .query(context)
-      .listApproved(competition._id);
-
-    const entriesWithPhotos = await Promise.all(
-      approvedEntries.map(async (entry) => {
-        const entryPhotos = await photos.forEntry(entry._id).list(context.db);
-        return {
-          ...entry,
-          photos: entryPhotos,
-        };
-      }),
-    );
-
-    return entriesWithPhotos;
-  })
-  .public();
-
-export const listRejected = competitionAdminQuery
-  .input({})
-  .handler(async (context) => {
-    const competition = await competitions.query(context).current();
-    const rejectedEntries = await entries
-      .query(context)
-      .listRejected(competition._id);
-
-    const entriesWithPhotos = await Promise.all(
-      rejectedEntries.map(async (entry) => {
-        const entryPhotos = await photos.forEntry(entry._id).list(context.db);
-        return {
-          ...entry,
-          photos: entryPhotos,
-        };
-      }),
-    );
-
-    return entriesWithPhotos;
   })
   .public();
 

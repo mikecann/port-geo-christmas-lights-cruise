@@ -17,8 +17,7 @@ import { useMe } from "../../../auth/useMeHooks";
 import { Breadcrumbs } from "../../../common/components/Breadcrumbs";
 import { routes } from "../../../routes";
 import PendingEntriesSection from "./PendingEntriesSection";
-import ApprovedEntries from "./ApprovedEntries";
-import RejectedEntries from "./RejectedEntries";
+import ReviewedEntries from "./ReviewedEntries";
 
 export default function EntryManagementPage() {
   const me = useMe();
@@ -172,11 +171,11 @@ export default function EntryManagementPage() {
               </Tabs.Panel>
 
               <Tabs.Panel value="approved" pt="lg">
-                <ApprovedEntries />
+                <ReviewedEntries status="approved" />
               </Tabs.Panel>
 
               <Tabs.Panel value="rejected" pt="lg">
-                <RejectedEntries />
+                <ReviewedEntries status="rejected" />
               </Tabs.Panel>
             </Tabs>
           </Stack>

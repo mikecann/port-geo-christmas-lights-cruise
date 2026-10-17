@@ -95,3 +95,45 @@ describe("returning entrant flag", () => {
     });
   });
 });
+
+describe("admin entry list", () => {
+  it("returns one status's entries with their photos and who entered", async () => {
+    const t = createConvexTest();
+    const entrant = await createTestUser(t, {
+      user: { name: "Holly Ivy", email: "holly@example.com" },
+    });
+    const entryId = await submitCurrentEntry(t, entrant._id);
+    const photoId = await t.run(async (ctx) => {
+      await ctx.db.insert("entries", {
+        competitionId: (await competitions.query(ctx).current())._id,
+        submittedByUserId: await ctx.db.insert("users", {}),
+        status: "rejected",
+        submittedAt: Date.now(),
+        rejectedAt: Date.now(),
+        rejectedReason: "Outside the area",
+        name: "Rejected",
+        houseAddress: { ...houseAddress, placeId: "other" },
+      });
+      return await ctx.db.insert("photos", {
+        entryId,
+        kind: "mock",
+        mockPath: "1.jpg",
+      });
+    });
+    const admin = await createTestUser(t, {
+      user: { isCompetitionAdmin: true },
+    });
+
+    const pending = await signInAsTestUser(t, admin).query(
+      api.admin.competition.entries.list,
+      { status: "submitted" },
+    );
+
+    expect(pending).toHaveLength(1);
+    expect(pending[0]).toMatchObject({
+      _id: entryId,
+      submitter: { name: "Holly Ivy", email: "holly@example.com" },
+    });
+    expect(pending[0].photos.map((photo) => photo._id)).toEqual([photoId]);
+  });
+});

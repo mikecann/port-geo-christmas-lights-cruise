@@ -16,7 +16,7 @@ import {
   MAX_REJECTED_REASON_LENGTH,
 } from "../../../shared/constants";
 import { competitions } from "../competitions/model";
-import type { ApprovedEntryDoc, PublicEntry } from "./schema";
+import type { ApprovedEntryDoc, EntryStatusKinds, PublicEntry } from "./schema";
 
 function trimToLimit(value: string, maxLength: number, label: string) {
   const trimmed = value.trim();
@@ -159,20 +159,14 @@ export const entries = {
         return (await this.listApproved(competitionId)).length;
       },
 
-      async listPendingReview(competitionId: Id<"competitions">) {
+      async listWithStatus(
+        competitionId: Id<"competitions">,
+        status: EntryStatusKinds,
+      ) {
         return await db
           .query("entries")
           .withIndex("by_competitionId_and_status", (q) =>
-            q.eq("competitionId", competitionId).eq("status", "submitted"),
-          )
-          .collect();
-      },
-
-      async listRejected(competitionId: Id<"competitions">) {
-        return await db
-          .query("entries")
-          .withIndex("by_competitionId_and_status", (q) =>
-            q.eq("competitionId", competitionId).eq("status", "rejected"),
+            q.eq("competitionId", competitionId).eq("status", status),
           )
           .collect();
       },
