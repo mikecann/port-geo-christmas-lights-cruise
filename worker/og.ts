@@ -29,6 +29,7 @@ export function entryIdFromPath(pathname: string): string | null {
   return id;
 }
 
+// Keyed like the cache, since each origin (apex, www) has its own entry
 const refreshing = new Map<string, Promise<OgMeta | null>>();
 
 // Resolves to null rather than rejecting, so a Convex problem never breaks
@@ -49,7 +50,7 @@ export async function loadEntryOg({
   now?: number;
 }): Promise<OgMeta | null> {
   const refresh = () => {
-    const inFlight = refreshing.get(entryId);
+    const inFlight = refreshing.get(cacheKey);
     if (inFlight) return inFlight;
     const next = fetchEntryOg(env, entryId)
       .then(async (meta) => {
@@ -69,8 +70,8 @@ export async function loadEntryOg({
         console.warn(`Couldn't load OG data for ${entryId}:`, error);
         return null;
       })
-      .finally(() => refreshing.delete(entryId));
-    refreshing.set(entryId, next);
+      .finally(() => refreshing.delete(cacheKey));
+    refreshing.set(cacheKey, next);
     ctx.waitUntil(next);
     return next;
   };

@@ -100,6 +100,25 @@ describe("loadEntryOg", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("shares a refresh only between requests for the same cache key", async () => {
+    const cache = memoryCache();
+    const loadFor = (cacheKey: string) =>
+      loadEntryOg({ env, ctx, entryId: id, cache, cacheKey });
+
+    await Promise.all([
+      loadFor("https://apex/og"),
+      loadFor("https://apex/og"),
+      loadFor("https://www/og"),
+    ]);
+    await Promise.all(waiting);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect([...cache.store.keys()].sort()).toEqual([
+      "https://apex/og",
+      "https://www/og",
+    ]);
+  });
+
   it("returns null and caches nothing when Convex fails", async () => {
     const cache = memoryCache();
     fetchMock.mockImplementation(
