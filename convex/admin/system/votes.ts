@@ -1,4 +1,4 @@
-import { userSystemAdminMutation } from "./lib";
+import { ensureDestructiveWipesAllowed, userSystemAdminMutation } from "./lib";
 import { votes } from "../../features/votes/model";
 import { v } from "convex/values";
 import { competitions } from "../../features/competitions/model";
@@ -14,8 +14,9 @@ export const wipeCurrentCompetition = userSystemAdminMutation
     }),
   )
   .handler(async (context) => {
+    ensureDestructiveWipesAllowed();
     const competition = await competitions.query(context).current();
-    const result = await votes.wipeAll(context.db, competition._id);
+    const result = await votes.wipeForCompetition(context.db, competition._id);
     return {
       message: `Successfully deleted ${result.deleted} current competition votes`,
       deleted: result.deleted,

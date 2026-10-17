@@ -1,5 +1,5 @@
-import { v } from "convex/values";
-import { userSystemAdminMutation } from "./lib";
+import { ConvexError, v } from "convex/values";
+import { ensureDestructiveWipesAllowed, userSystemAdminMutation } from "./lib";
 import { entries } from "../../features/entries/model";
 import { createMockEntries } from "../../features/entries/testing";
 import { competitions } from "../../features/competitions/model";
@@ -23,8 +23,8 @@ export const generateMock = userSystemAdminMutation
 export const wipeCurrentCompetition = userSystemAdminMutation
   .input({})
   .handler(async (context) => {
-    const competition = await competitions.query(context).current();
-    const result = await entries.mutate(context).wipeAll(competition._id);
+    ensureDestructiveWipesAllowed();
+    const result = await entries.mutate(context).wipeCurrentCompetition();
 
     return {
       message: `Successfully deleted ${result.deletedCount} current competition entries`,
@@ -43,7 +43,8 @@ export const deleteMine = userSystemAdminMutation
       .forUser(competition._id, user._id)
       .get();
     if (!myEntry) throw new Error("No entry found for current user");
-    await context.db.delete(myEntry._id);
+    // Goes through the model so the entry's photos and files go too
+    await entries.mutate(context).forEntry(myEntry._id).delete();
     return null;
   })
   .public();
@@ -51,6 +52,12 @@ export const deleteMine = userSystemAdminMutation
 export const deleteById = userSystemAdminMutation
   .input({ entryId: v.id("entries") })
   .handler(async (context, input) => {
+    const entry = await entries.query(context).forEntry(input.entryId).get();
+    const competition = await competitions.query(context).current();
+    if (entry.competitionId !== competition._id)
+      throw new ConvexError(
+        "Entries from past competitions are kept as history and can't be deleted here.",
+      );
     await entries.mutate(context).forEntry(input.entryId).delete();
     return null;
   })

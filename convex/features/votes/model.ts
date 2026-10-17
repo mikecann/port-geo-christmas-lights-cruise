@@ -88,15 +88,16 @@ export const votes = {
     };
   },
 
-  async wipeAll(db: DatabaseWriter, competitionId?: Id<"competitions">) {
-    const allVotes = competitionId
-      ? await db
-          .query("votes")
-          .withIndex("by_competitionId", (q) =>
-            q.eq("competitionId", competitionId),
-          )
-          .collect()
-      : await db.query("votes").collect();
+  async wipeForCompetition(
+    db: DatabaseWriter,
+    competitionId: Id<"competitions">,
+  ) {
+    const allVotes = await db
+      .query("votes")
+      .withIndex("by_competitionId", (q) =>
+        q.eq("competitionId", competitionId),
+      )
+      .collect();
     let deleted = 0;
     for (const v of allVotes) {
       await db.delete(v._id);

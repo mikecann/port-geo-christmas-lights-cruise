@@ -550,15 +550,15 @@ export const entries = {
         };
       },
 
-      async wipeAll(competitionId?: Id<"competitions">) {
-        const allEntries = competitionId
-          ? await context.db
-              .query("entries")
-              .withIndex("by_competitionId_and_status", (q) =>
-                q.eq("competitionId", competitionId),
-              )
-              .collect()
-          : await context.db.query("entries").collect();
+      // Only ever the current competition, so past seasons can't be wiped
+      async wipeCurrentCompetition() {
+        const competition = await competitions.query(context).current();
+        const allEntries = await context.db
+          .query("entries")
+          .withIndex("by_competitionId_and_status", (q) =>
+            q.eq("competitionId", competition._id),
+          )
+          .collect();
         let deletedCount = 0;
         for (const entry of allEntries) {
           // Use the proper delete method to clean up photos

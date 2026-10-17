@@ -1,33 +1,60 @@
-import { userSystemAdminMutation } from "./lib";
+import {
+  areDestructiveWipesAllowed,
+  ensureDestructiveWipesAllowed,
+  userSystemAdminMutation,
+  userSystemAdminQuery,
+} from "./lib";
 import { votes } from "../../features/votes/model";
-import { aggregateVotes } from "../../features/votes/lib";
 import { entries } from "../../features/entries/model";
-import type { Id } from "../../_generated/dataModel";
+import { photos } from "../../features/photos/model";
+import { competitions } from "../../features/competitions/model";
 import { v } from "convex/values";
 
+export const wipesAllowed = userSystemAdminQuery
+  .input({})
+  .returns(v.boolean())
+  .handler(async () => areDestructiveWipesAllowed())
+  .public();
+
+// Resets the current competition for testing. Past competitions, the people
+// who took part in them and their photos are always kept.
 export const wipeAllData = userSystemAdminMutation
   .input({})
   .returns(v.null())
   .handler(async (context) => {
-    // Wipe all votes
-    await votes.wipeAll(context._db);
-    await aggregateVotes.clearAll(context);
+    ensureDestructiveWipesAllowed();
+    const competition = await competitions.query(context).current();
 
-    // Wipe all entries (this also handles photos)
-    await entries.mutate(context).wipeAll();
+    // Through the trigger-wrapped db so the vote aggregate stays in step
+    await votes.wipeForCompetition(context.db, competition._id);
 
-    // Delete all users except system and competition admins
+    // This also handles photos
+    await entries.mutate(context).wipeCurrentCompetition();
+
+    // Delete non-admin users who have no entries or votes left
     const allUsers = await context.db.query("users").collect();
     for (const user of allUsers) {
-      const isAdmin =
-        user.isSystemAdmin === true || user.isCompetitionAdmin === true;
-      if (!isAdmin) await context.db.delete(user._id);
+      if (user.isSystemAdmin === true || user.isCompetitionAdmin === true)
+        continue;
+      const pastEntries = await entries
+        .query(context)
+        .forUser(user._id)
+        .listAcrossCompetitions();
+      const pastVote = await context.db
+        .query("votes")
+        .withIndex("by_votingUserId_and_competitionId_and_category", (q) =>
+          q.eq("votingUserId", user._id),
+        )
+        .first();
+      if (pastEntries.length === 0 && pastVote === null)
+        await context.db.delete(user._id);
     }
 
-    // Delete all stored files
+    // Delete stored files that no remaining photo uses
     const storedFiles = await context.db.system.query("_storage").collect();
     for (const file of storedFiles)
-      await context.storage.delete(file._id as Id<"_storage">);
+      if (!(await photos.isStorageReferenced(context.db, file._id)))
+        await context.storage.delete(file._id);
     return null;
   })
   .public();

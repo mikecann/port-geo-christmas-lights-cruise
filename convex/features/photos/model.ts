@@ -201,14 +201,4 @@ export const photos = {
       },
     };
   },
-
-  async wipeAll(ctx: MutationCtx) {
-    const allPhotos = await ctx.db.query("photos").collect();
-    let deletedCount = 0;
-    for (const photo of allPhotos) {
-      await photos.forPhoto(photo._id).delete(ctx);
-      deletedCount++;
-    }
-    return { deletedCount };
-  },
 };

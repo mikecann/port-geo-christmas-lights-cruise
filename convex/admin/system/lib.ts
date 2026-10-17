@@ -2,6 +2,19 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { ensure } from "../../../shared/ensure";
 import { triggers } from "../../features/common/lib";
 import { convex } from "../../schema";
+import { ConvexError } from "convex/values";
+
+// Production never sets this, so wipes only ever run on dev deployments
+export function areDestructiveWipesAllowed() {
+  return process.env.ALLOW_DESTRUCTIVE_WIPES === "true";
+}
+
+export function ensureDestructiveWipesAllowed() {
+  if (!areDestructiveWipesAllowed())
+    throw new ConvexError(
+      "Wipes are turned off on this deployment. Set ALLOW_DESTRUCTIVE_WIPES=true on a dev deployment to use them.",
+    );
+}
 
 export const userSystemAdminQueryMiddleware = convex
   .query()
@@ -41,7 +54,6 @@ export const userSystemAdminMutationMiddleware = convex
 
     return next({
       ...triggers.wrapDB(context),
-      _db: context.db,
       storage: context.storage,
       getUser: async () => user,
     });
