@@ -5,6 +5,7 @@ import type { LatLng } from "../features/map/lib";
 import { geocodeAddress } from "../features/map/lib";
 import { internal } from "../../shared/api";
 import { competitions } from "../features/competitions/model";
+import { enforceUserRateLimit } from "../features/rateLimits/lib";
 
 export const find = myQuery
   .input({})
@@ -35,6 +36,7 @@ export const enter = myMutation
   .input({})
   .returns(v.null())
   .handler(async (context) => {
+    await enforceUserRateLimit(context, "enterCompetition", context.userId);
     const competition = await competitions.query(context).current();
     if (!competition.entriesOpen)
       throw new Error("Competition entries are currently closed");
@@ -96,6 +98,7 @@ export const submit = myAction
   .input({})
   .returns(v.null())
   .handler(async (context) => {
+    await enforceUserRateLimit(context, "submitEntry", context.userId);
     const entry = await context.runMutation(internal.entries.startSubmitting, {
       userId: context.userId,
     });

@@ -11,6 +11,7 @@ import { entries } from "../features/entries/model";
 import type { Doc } from "../_generated/dataModel";
 import { VOTING_CLOSED_MESSAGE } from "../../shared/eventStatus";
 import { competitions } from "../features/competitions/model";
+import { enforceUserRateLimit } from "../features/rateLimits/lib";
 
 function requireVotingToBeOpen(votingOpen: boolean) {
   if (!votingOpen) throw new Error(VOTING_CLOSED_MESSAGE);
@@ -95,6 +96,7 @@ export const vote = myMutation
   })
   .returns(v.null())
   .handler(async (context, input) => {
+    await enforceUserRateLimit(context, "changeVote", context.userId);
     const competition = await competitions.query(context).current();
     requireVotingToBeOpen(competition.votingOpen);
 
@@ -121,6 +123,7 @@ export const cancel = myMutation
   })
   .returns(v.null())
   .handler(async (context, input) => {
+    await enforceUserRateLimit(context, "changeVote", context.userId);
     const vote = await context.db.get(input.voteId);
     if (!vote) throw new Error(`Vote '${input.voteId}' not found`);
     const competition = await competitions

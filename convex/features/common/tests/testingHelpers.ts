@@ -1,4 +1,5 @@
 import { convexTest } from "convex-test";
+import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "../../../schema";
 import type { Doc, Id } from "../../../_generated/dataModel";
 import { ensure } from "../../../../shared/ensure";
@@ -8,6 +9,7 @@ import { competitions } from "../../competitions/model";
 
 export const createConvexTest = () => {
   const t = convexTest(schema);
+  rateLimiter.register(t);
 
   return t;
 };

@@ -26,6 +26,7 @@
     "@convex-dev/aggregate": "^0.2.2",
     "@convex-dev/auth": "^0.0.94",
     "@convex-dev/r2": "^0.10.2",
+    "@convex-dev/rate-limiter": "^0.4.2",
     "@convex-dev/resend": "^0.2.6",
     "@mantine/carousel": "^9.5.1",
     "@mantine/core": "^9.5.1",

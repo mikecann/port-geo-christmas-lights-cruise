@@ -3,6 +3,7 @@ import { entries } from "../features/entries/model";
 import { photos } from "../features/photos/model";
 import { v } from "convex/values";
 import { competitions } from "../features/competitions/model";
+import { enforceUserRateLimit } from "../features/rateLimits/lib";
 
 export const list = myQuery
   .input({})
@@ -19,6 +20,7 @@ export const list = myQuery
 export const beginUpload = myMutation
   .input({})
   .handler(async (context) => {
+    await enforceUserRateLimit(context, "beginPhotoUpload", context.userId);
     const competition = await competitions.query(context).current();
     const entry = await entries
       .query(context)

@@ -28,6 +28,7 @@ import type * as features_entries_model from "../features/entries/model.js";
 import type * as features_entries_testing from "../features/entries/testing.js";
 import type * as features_map_lib from "../features/map/lib.js";
 import type * as features_photos_model from "../features/photos/model.js";
+import type * as features_rateLimits_lib from "../features/rateLimits/lib.js";
 import type * as features_users_model from "../features/users/model.js";
 import type * as features_votes_lib from "../features/votes/lib.js";
 import type * as features_votes_model from "../features/votes/model.js";
@@ -72,6 +73,7 @@ declare const fullApi: ApiFromModules<{
   "features/entries/testing": typeof features_entries_testing;
   "features/map/lib": typeof features_map_lib;
   "features/photos/model": typeof features_photos_model;
+  "features/rateLimits/lib": typeof features_rateLimits_lib;
   "features/users/model": typeof features_users_model;
   "features/votes/lib": typeof features_votes_lib;
   "features/votes/model": typeof features_votes_model;
@@ -119,4 +121,5 @@ export declare const internal: FilterApi<
 export declare const components: {
   aggregateVotes: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"aggregateVotes">;
   resend: import("@convex-dev/resend/_generated/component.js").ComponentApi<"resend">;
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
 };
