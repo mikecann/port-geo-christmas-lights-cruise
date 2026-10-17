@@ -44,15 +44,13 @@ http.route({
       if (!firstPhoto) return null;
       if (firstPhoto.kind === "mock")
         return `/mockPhotos/${firstPhoto.mockPath}`;
-      if (firstPhoto.uploadState.status === "uploaded")
-        return firstPhoto.uploadState.url;
-      return null;
+      return firstPhoto.url;
     });
 
-    const title = entry.name ?? "Christmas Lights Entry";
-    const description = entry.houseAddress?.address
-      ? entry.houseAddress.address
-      : "Check out this Port Geographe Christmas Lights entry!";
+    const title = entry.name || "Christmas Lights Entry";
+    const description =
+      entry.houseAddress.address ||
+      "Check out this Port Geographe Christmas Lights entry!";
 
     return new Response(
       JSON.stringify(

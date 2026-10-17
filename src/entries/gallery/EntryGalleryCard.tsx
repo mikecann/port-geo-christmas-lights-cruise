@@ -10,14 +10,15 @@ import {
   Center,
 } from "@mantine/core";
 import { IconMapPin, IconPhoto } from "@tabler/icons-react";
-import type { Doc } from "../../../convex/_generated/dataModel";
+import type { PublicEntry } from "../../../convex/features/entries/schema";
+import type { PublicPhoto } from "../../../convex/features/photos/schema";
 import { routes } from "../../routes";
 import { getAddressString } from "../../../shared/misc";
 import { usePhotoUrl } from "../../common/hooks/usePhotoUrl";
 
 interface EntryGalleryCardProps {
-  entry: Doc<"entries">;
-  photo: Doc<"photos"> | null;
+  entry: PublicEntry;
+  photo: PublicPhoto | null;
 }
 
 export default function EntryGalleryCard({
@@ -25,8 +26,6 @@ export default function EntryGalleryCard({
   photo,
 }: EntryGalleryCardProps) {
   const firstPhotoUrl = usePhotoUrl(photo, { size: "sm" });
-
-  if (entry.status !== "approved") return null;
 
   return (
     <Card

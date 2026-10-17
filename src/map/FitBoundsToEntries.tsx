@@ -17,19 +17,12 @@ export const FitBoundsToEntries = ({ entries }: FitBoundsToEntriesProps) => {
 
     hasInitted.current = true;
 
-    const validEntries = entries.filter(
-      (entry) =>
-        entry.entry.status === "approved" &&
-        entry.entry.houseAddress &&
-        typeof entry.entry.houseAddress === "object",
-    );
-
-    if (validEntries.length === 0) return;
+    if (entries.length === 0) return;
 
     const bounds = new google.maps.LatLngBounds();
 
-    validEntries.forEach((entry) => {
-      const address = entry.entry.houseAddress as { lat: number; lng: number };
+    entries.forEach((entry) => {
+      const address = entry.entry.houseAddress;
       bounds.extend({ lat: address.lat, lng: address.lng });
     });
 

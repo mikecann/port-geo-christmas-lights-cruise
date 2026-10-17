@@ -35,7 +35,6 @@ export default function MyVoteEntryCard({ entryId }: Props) {
   if (!entryWithPhotos) return null;
 
   const { entry, photos } = entryWithPhotos;
-  if (entry.status !== "approved") return null;
 
   return (
     <Card withBorder radius="md" padding="sm">

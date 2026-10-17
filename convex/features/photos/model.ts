@@ -12,6 +12,8 @@ import {
   MAX_PHOTOS_PER_ENTRY,
 } from "../../../shared/constants";
 import { exhaustiveCheck } from "../../../shared/misc";
+import { isNotNullOrUndefined } from "../../../shared/filter";
+import type { PhotoDoc, PublicPhoto } from "./schema";
 
 // The upload's storage timestamp can land slightly before uploadStartedAt
 const UPLOAD_CLOCK_SKEW_MS = 5_000;
@@ -20,6 +22,14 @@ const UPLOAD_NOT_SAVED_MESSAGE =
   "Sorry, we couldn't save that photo. Please try uploading it again.";
 
 export const photos = {
+  toPublic(photo: PhotoDoc): PublicPhoto | null {
+    const { _id, entryId } = photo;
+    if (photo.kind === "mock")
+      return { _id, entryId, kind: "mock", mockPath: photo.mockPath };
+    if (photo.uploadState.status === "uploading") return null;
+    return { _id, entryId, kind: "convex_stored", url: photo.uploadState.url };
+  },
+
   forPhoto(photoId: Id<"photos">) {
     return {
       find(db: DatabaseReader) {
@@ -139,6 +149,16 @@ export const photos = {
           .query("photos")
           .withIndex("by_entryId", (q) => q.eq("entryId", entryId))
           .first();
+      },
+
+      async listPublic(db: DatabaseReader) {
+        const allPhotos = await this.list(db);
+        return allPhotos.map(photos.toPublic).filter(isNotNullOrUndefined);
+      },
+
+      async findFirstPublic(db: DatabaseReader) {
+        const [first] = await this.listPublic(db);
+        return first ?? null;
       },
 
       async count(db: DatabaseReader) {

@@ -14,9 +14,21 @@ import {
   usersWhiteList,
 } from "../../../shared/constants";
 import { competitions } from "../competitions/model";
+import type { ApprovedEntryDoc, PublicEntry } from "./schema";
 
 export const entries = {
   testing,
+
+  toPublic(entry: ApprovedEntryDoc): PublicEntry {
+    const { address, lat, lng } = entry.houseAddress;
+    return {
+      _id: entry._id,
+      competitionId: entry.competitionId,
+      name: entry.name,
+      entryNumber: entry.entryNumber,
+      houseAddress: { address, lat, lng },
+    };
+  },
 
   doc(entry: Doc<"entries">) {
     return {
@@ -151,7 +163,7 @@ export const entries = {
               .eq("status", "approved"),
           )
           .collect()
-          .then((a) => a.filter((e) => e.status == "approved"));
+          .then((a) => a.filter(isStatus("approved")));
 
         return approved;
       },

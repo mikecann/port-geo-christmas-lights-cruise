@@ -36,7 +36,7 @@ export default function EntryPage({
   const competition = useQuery(api.public.competitions.current, {});
 
   useEntryView(
-    entryWithPhotos?.entry.status === "approved" ? entryId : undefined,
+    entryWithPhotos ? entryId : undefined,
     entryWithPhotos?.entry.competitionId,
     "entry",
   );
@@ -44,17 +44,6 @@ export default function EntryPage({
   if (!entryWithPhotos) return <EntryPageSkeleton />;
 
   const { entry, photos } = entryWithPhotos;
-
-  if (entry.status !== "approved")
-    return (
-      <Container size="lg" py="xl">
-        <Center>
-          <Text size="lg" c="dimmed">
-            This entry is not available for viewing.
-          </Text>
-        </Center>
-      </Container>
-    );
 
   return (
     <Container size="lg" py="xl">

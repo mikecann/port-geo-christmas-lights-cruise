@@ -1,6 +1,6 @@
 import { Carousel } from "@mantine/carousel";
 import { usePhotoUrl } from "../common/hooks/usePhotoUrl";
-import type { PhotoDoc } from "../../convex/features/photos/schema";
+import type { PublicPhoto } from "../../convex/features/photos/schema";
 
 export function PhotoSlide({
   photo,
@@ -8,7 +8,7 @@ export function PhotoSlide({
   onImageClick,
   isPriority,
 }: {
-  photo: PhotoDoc;
+  photo: PublicPhoto;
   entry: { name: string };
   onImageClick: (imageUrl: string) => void;
   isPriority?: boolean;

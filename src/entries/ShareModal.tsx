@@ -1,6 +1,5 @@
 import { track } from "../analytics/client";
 import { shareLink, type ShareSource } from "../analytics/privacy";
-import { useMe } from "../auth/useMeHooks";
 import {
   Modal,
   Stack,
@@ -23,6 +22,8 @@ import {
   IconCheck,
   IconShare,
 } from "@tabler/icons-react";
+import { useConvexAuth, useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
 type ShareModalProps = {
@@ -30,7 +31,6 @@ type ShareModalProps = {
   onClose: () => void;
   entry: {
     name: string;
-    submittedByUserId?: string;
     competitionId?: string;
     houseAddress:
       | string
@@ -48,11 +48,16 @@ export default function ShareModal({
   entry,
   entryId,
 }: ShareModalProps) {
-  const me = useMe();
+  const { isAuthenticated } = useConvexAuth();
+  // Public entries don't say who entered, so ask whether this one is ours
+  const myEntry = useQuery(
+    api.my.entries.find,
+    opened && isAuthenticated ? {} : "skip",
+  );
   const properties = {
     entry_id: entryId,
     competition_id: entry.competitionId,
-    is_entrant: me != null && me._id === entry.submittedByUserId,
+    is_entrant: myEntry?._id === entryId,
   };
   const entryUrl = shareLink(window.location.origin, entryId, "copy");
   const shareTitle = `Check out ${entry.name} - Entry #${entry.entryNumber}`;

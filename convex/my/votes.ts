@@ -50,7 +50,9 @@ export const getForCategory = myQuery
     const entry = await context.db.get(vote.entryId);
     if (!entry || entry.status !== "approved") return null;
 
-    const entryPhotos = await photos.forEntry(vote.entryId).list(context.db);
+    const entryPhotos = await photos
+      .forEntry(vote.entryId)
+      .listPublic(context.db);
 
     return {
       vote,

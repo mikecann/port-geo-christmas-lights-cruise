@@ -24,19 +24,9 @@ export default function EntryMarkerPopup({ entryId }: EntryMarkerPopupProps) {
   const entry = useQuery(api.public.entries.get, { entryId });
   const competition = useQuery(api.public.competitions.current, {});
 
-  useEntryView(
-    entry?.status === "approved" ? entryId : undefined,
-    entry?.competitionId,
-    "map",
-  );
+  useEntryView(entry ? entryId : undefined, entry?.competitionId, "map");
 
   if (!entry) return <Loader />;
-
-  // Handle the case where houseAddress might be a string or undefined
-  if (!entry.houseAddress || typeof entry.houseAddress === "string")
-    return null;
-
-  const { lat, lng, address } = entry.houseAddress;
 
   return (
     <Card padding="0" radius="md" maw={280} bg="white">

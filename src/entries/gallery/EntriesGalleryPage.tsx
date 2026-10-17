@@ -59,12 +59,8 @@ export default function EntriesGalleryPage() {
       ? list.filter(
           (item) =>
             (item.entry.name ?? "").toLowerCase().includes(q) ||
-            (item.entry.houseAddress?.address ?? "")
-              .toLowerCase()
-              .includes(q) ||
-            (item.entry.status === "approved"
-              ? `${item.entry.entryNumber}`.includes(q)
-              : false),
+            item.entry.houseAddress.address.toLowerCase().includes(q) ||
+            `${item.entry.entryNumber}`.includes(q),
         )
       : list;
     return shuffleDeterministic(filtered, dailySeed);

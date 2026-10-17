@@ -12,14 +12,7 @@ export const CenterOnEntry = ({ entry }: CenterOnEntryProps) => {
   useEffect(() => {
     if (!map || !entry) return;
 
-    if (
-      entry.entry.status !== "approved" ||
-      !entry.entry.houseAddress ||
-      typeof entry.entry.houseAddress !== "object"
-    )
-      return;
-
-    const address = entry.entry.houseAddress as { lat: number; lng: number };
+    const address = entry.entry.houseAddress;
 
     // Center the map on the entry with a good zoom level
     map.setCenter({ lat: address.lat, lng: address.lng });
