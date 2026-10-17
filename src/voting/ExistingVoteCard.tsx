@@ -44,7 +44,7 @@ export default function ExistingVoteCard({
         }
       : "skip",
   );
-  const photoUrl = usePhotoUrl(photo, { size: "sm" });
+  const photoUrl = usePhotoUrl(photo, { size: "xs" });
 
   return (
     <Card

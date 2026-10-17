@@ -31,7 +31,7 @@ export default function AdminPhotoCard({ photo }: AdminPhotoCardProps) {
     useDisclosure(false);
 
   const imageUrl = usePhotoUrl(photo, { size: "md" });
-  const lightboxUrl = usePhotoUrl(photo);
+  const lightboxUrl = usePhotoUrl(photo, { size: "lg" });
 
   const isUploading =
     photo.kind === "convex_stored" && photo.uploadState.status === "uploading";

@@ -3,63 +3,73 @@ import type {
   PublicPhoto,
 } from "../../../convex/features/photos/schema";
 import { exhaustiveCheck, iife } from "../../../shared/misc";
-import type { ImageSize } from "../utils/imageOptimization";
+import { resizedPhotoSrcSet, resizedPhotoUrl } from "../../../shared/photoUrls";
 
-// Re-export for convenience
-export type { ImageSize };
+export type ImageSize = "xs" | "sm" | "md" | "lg";
 
-interface UsePhotoUrlOptions {
-  size?: ImageSize;
-  quality?: number;
-}
+// Fixed widths, roughly 2x the largest place each size is shown
+const SIZE_WIDTHS: Record<ImageSize, number> = {
+  xs: 128, // map markers and small thumbnails
+  sm: 480,
+  md: 780,
+  lg: 1200, // lightbox
+};
 
-/**
- * Get optimized photo URL from stored photo data
- * Note: Despite the name "use", this is no longer a hook since we store URLs directly
- * @param photo - The photo object (discriminated union)
- * @param options - Optional configuration for image optimization
- * @returns The optimized photo URL or null if not available
- */
-export function usePhotoUrl(
-  photo: PhotoDoc | PublicPhoto | null | undefined,
-  options: UsePhotoUrlOptions = {},
-): string | null {
-  // Handle null/undefined
+type Photo = PhotoDoc | PublicPhoto | null | undefined;
+
+// The uploaded photo's URL, or a local path for mock photos
+function sourceOf(photo: Photo) {
   if (!photo) return null;
-
-  // Handle mock photos - return local path
-  if (photo.kind === "mock") return `/mockPhotos/${photo.mockPath}`;
+  if (photo.kind === "mock")
+    return { url: `/mockPhotos/${photo.mockPath}`, isMock: true };
 
   // Public photos carry their URL directly; stored docs keep it in uploadState
-  const sourceUrl = iife(() => {
+  const url = iife(() => {
     if ("url" in photo) return photo.url;
     // Return null for photos that are still uploading
     if (photo.uploadState.status === "uploading") return null;
     if (photo.uploadState.status === "uploaded") return photo.uploadState.url;
     exhaustiveCheck(photo.uploadState);
   });
-  if (!sourceUrl) return null;
+  return url ? { url, isMock: false } : null;
+}
 
-  // Default to "md" size if not specified
-  const size = options.size ?? "md";
-  const qualityOverride = options.quality;
+/**
+ * Get a resized photo URL from stored photo data
+ * Note: Despite the name "use", this is not a hook since we store URLs directly
+ */
+export function usePhotoUrl(
+  photo: Photo,
+  options: { size?: ImageSize; quality?: number } = {},
+): string | null {
+  const source = sourceOf(photo);
+  if (!source) return null;
+  if (source.isMock) return source.url;
+  return resizedPhotoUrl(
+    source.url,
+    SIZE_WIDTHS[options.size ?? "md"],
+    options.quality,
+  );
+}
 
-  // Map sizes to sensible defaults
-  const sizeMappings: Record<ImageSize, { width: number; quality: number }> = {
-    xs: { width: 150, quality: 80 },
-    sm: { width: 400, quality: 85 },
-    md: { width: 800, quality: 90 },
+/**
+ * Get src, srcSet and sizes for an <img> that picks a width to suit the screen
+ */
+export function usePhotoSrcSet(
+  photo: Photo,
+  options: {
+    widths: ReadonlyArray<number>;
+    sizes: string;
+    fallbackWidth: number;
+    quality?: number;
+  },
+): { src: string; srcSet?: string; sizes?: string } | null {
+  const source = sourceOf(photo);
+  if (!source) return null;
+  if (source.isMock) return { src: source.url };
+  return {
+    src: resizedPhotoUrl(source.url, options.fallbackWidth, options.quality),
+    srcSet: resizedPhotoSrcSet(source.url, options.widths, options.quality),
+    sizes: options.sizes,
   };
-  const { width, quality } = sizeMappings[size];
-  const dpr =
-    typeof window === "undefined"
-      ? 1
-      : Math.min(Math.max(window.devicePixelRatio || 1, 1), 3);
-
-  const q = qualityOverride ?? quality;
-
-  // Use Cloudflare's URL-based image transformation
-  // Format: https://ZONE/cdn-cgi/image/<OPTIONS>/<SOURCE-IMAGE>
-  const transformOptions = `width=${width},quality=${q},format=auto,dpr=${dpr},fit=cover`;
-  return `https://portgeochristmascruise.com.au/cdn-cgi/image/${transformOptions}/${sourceUrl}`;
 }

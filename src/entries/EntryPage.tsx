@@ -16,6 +16,7 @@ import EntryVoting from "./voting/EntryVoting";
 import VoteModal from "../voting/VoteModal";
 import ShareModal from "./ShareModal";
 import { PhotoSlide } from "./PhotoSlide";
+import { ENTRY_PHOTO } from "../../shared/photoUrls";
 import { Route } from "type-route";
 
 export default function EntryPage({
@@ -50,41 +51,43 @@ export default function EntryPage({
         {/* Image Carousel */}
         <Card withBorder p={0} radius="md">
           {photos.length > 0 ? (
-            <Carousel
-              withIndicators={photos.length > 1}
-              withControls={photos.length > 1}
-              height={500}
-              emblaOptions={{
-                loop: photos.length > 1,
-                dragFree: false,
-                align: "center",
-              }}
-              controlSize={40}
-              style={{
-                "--carousel-control-bg": "rgba(0, 0, 0, 0.6)",
-                "--carousel-control-color": "white",
-                "--carousel-indicator-size": "10px",
-                "--carousel-indicator-bg": "rgba(255, 255, 255, 0.4)",
-                "--carousel-indicator-bg-active": "white",
-              }}
-            >
-              {photos.map((photo, i) => {
-                return (
-                  <PhotoSlide
-                    key={photo._id}
-                    photo={photo}
-                    entry={entry}
-                    isPriority={i === 0}
-                    onImageClick={(imageUrl) => {
-                      setSelectedImageUrl(imageUrl);
-                      setLightboxOpened(true);
-                    }}
-                  />
-                );
-              })}
-            </Carousel>
+            <AspectRatio ratio={ENTRY_PHOTO.aspectRatio}>
+              <Carousel
+                withIndicators={photos.length > 1}
+                withControls={photos.length > 1}
+                height="100%"
+                emblaOptions={{
+                  loop: photos.length > 1,
+                  dragFree: false,
+                  align: "center",
+                }}
+                controlSize={40}
+                style={{
+                  "--carousel-control-bg": "rgba(0, 0, 0, 0.6)",
+                  "--carousel-control-color": "white",
+                  "--carousel-indicator-size": "10px",
+                  "--carousel-indicator-bg": "rgba(255, 255, 255, 0.4)",
+                  "--carousel-indicator-bg-active": "white",
+                }}
+              >
+                {photos.map((photo, i) => {
+                  return (
+                    <PhotoSlide
+                      key={photo._id}
+                      photo={photo}
+                      entry={entry}
+                      isPriority={i === 0}
+                      onImageClick={(imageUrl) => {
+                        setSelectedImageUrl(imageUrl);
+                        setLightboxOpened(true);
+                      }}
+                    />
+                  );
+                })}
+              </Carousel>
+            </AspectRatio>
           ) : (
-            <AspectRatio ratio={16 / 10}>
+            <AspectRatio ratio={ENTRY_PHOTO.aspectRatio}>
               <Center
                 bg="var(--mantine-color-gray-9)"
                 style={{ borderRadius: "var(--mantine-radius-md)" }}

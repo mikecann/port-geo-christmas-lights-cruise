@@ -12,7 +12,14 @@ import { IconMapPin, IconPhoto } from "@tabler/icons-react";
 import type { PublicEntry } from "../../../convex/features/entries/schema";
 import type { PublicPhoto } from "../../../convex/features/photos/schema";
 import { routes } from "../../routes";
-import { usePhotoUrl } from "../../common/hooks/usePhotoUrl";
+import { usePhotoSrcSet } from "../../common/hooks/usePhotoUrl";
+
+// One column on phones, two from sm and three from lg, in a size="xl" container
+const CARD_PHOTO = {
+  widths: [400, 700],
+  sizes: "(max-width: 48em) 100vw, (max-width: 75em) 50vw, 440px",
+  fallbackWidth: 700,
+} as const;
 
 interface EntryGalleryCardProps {
   entry: PublicEntry;
@@ -23,7 +30,7 @@ export default function EntryGalleryCard({
   entry,
   photo,
 }: EntryGalleryCardProps) {
-  const firstPhotoUrl = usePhotoUrl(photo, { size: "sm" });
+  const firstPhoto = usePhotoSrcSet(photo, CARD_PHOTO);
 
   return (
     <Card
@@ -56,10 +63,10 @@ export default function EntryGalleryCard({
       <Stack gap={0}>
         {/* First Photo with Entry Number Overlay */}
         <Box style={{ position: "relative" }}>
-          {firstPhotoUrl ? (
+          {firstPhoto ? (
             <AspectRatio ratio={16 / 12}>
               <Image
-                src={firstPhotoUrl}
+                {...firstPhoto}
                 alt={`${entry.name} - Christmas lights display`}
                 radius={0}
                 fit="cover"
