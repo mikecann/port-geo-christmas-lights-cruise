@@ -28,7 +28,7 @@ describe("photo access", () => {
 
     await expect(
       t.query(api.public.photos.listForEntry, { entryId }),
-    ).rejects.toThrow("Entry is not approved");
+    ).rejects.toThrow("that entry isn't available");
   });
 
   it("does not let a user remove another entrant's photo", async () => {

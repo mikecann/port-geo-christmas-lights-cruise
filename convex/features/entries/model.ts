@@ -24,6 +24,9 @@ function trimToLimit(value: string, maxLength: number, label: string) {
   return trimmed;
 }
 
+export const ENTRY_UNAVAILABLE_MESSAGE =
+  "Sorry, that entry isn't available. It may have been removed from the competition.";
+
 export const entries = {
   toPublic(entry: ApprovedEntryDoc): PublicEntry {
     const { address, lat, lng } = entry.houseAddress;
@@ -63,9 +66,9 @@ export const entries = {
           },
 
           async getApproved() {
-            const entry = await this.get();
-            if (entry.status !== "approved")
-              throw new Error("Entry is not approved");
+            const entry = await this.find();
+            if (entry?.status !== "approved")
+              throw new ConvexError(ENTRY_UNAVAILABLE_MESSAGE);
             return entry;
           },
         };
@@ -97,7 +100,11 @@ export const entries = {
 
           async get() {
             const entry = await this.find();
-            return ensure(entry, `User '${userId}' has no entry`);
+            if (!entry)
+              throw new ConvexError(
+                "We couldn't find your entry. Please refresh the page and try again.",
+              );
+            return entry;
           },
 
           async getForModification() {
@@ -289,8 +296,8 @@ export const entries = {
           async create() {
             const existing = await query.find();
             if (existing)
-              throw new Error(
-                `Cannot enter competition, user '${userId}' already has an entry`,
+              throw new ConvexError(
+                "You've already entered this year's competition.",
               );
 
             return await db.insert("entries", {
@@ -307,8 +314,8 @@ export const entries = {
             const entry = await query.get();
 
             if (entry.status != "draft")
-              throw new Error(
-                `Entry '${entry._id}' is not in the draft status`,
+              throw new ConvexError(
+                "Your entry has already been submitted, so it can't be changed here.",
               );
 
             const updateFields: {
@@ -339,7 +346,9 @@ export const entries = {
             const entry = await query.get();
 
             if (entry.status !== "approved")
-              throw new Error(`Entry '${entry._id}' is not in approved status`);
+              throw new ConvexError(
+                "Your entry can only be renamed once it's been approved.",
+              );
 
             const updateFields: {
               name?: string;
@@ -358,8 +367,8 @@ export const entries = {
             const entry = await query.get();
 
             if (entry.status != "draft")
-              throw new Error(
-                `Entry of id '${entry._id}' with status '${entry.status}' is not in the draft status`,
+              throw new ConvexError(
+                "Your entry can only be deleted while it's a draft.",
               );
 
             await entries.mutate(context).forEntry(entry._id).delete();
@@ -369,37 +378,34 @@ export const entries = {
             const entry = await query.get();
 
             if (entry.status != "draft")
-              throw new Error(
-                `Entry '${entry._id}' is not in the draft status`,
-              );
+              throw new ConvexError("Your entry has already been submitted.");
 
-            if (!entry.houseAddress)
-              throw new Error(
-                `Entry '${entry._id}' is missing required house address`,
+            const { houseAddress, name } = entry;
+            if (!houseAddress?.address.trim() || !houseAddress.placeId.trim())
+              throw new ConvexError(
+                "Please choose your house address from the suggestions before submitting.",
               );
-
-            const { address, placeId } = entry.houseAddress;
-            if (address.trim().length === 0 || placeId.trim().length === 0)
-              throw new Error(
-                `Invalid house address: address '${address}' and placeId '${placeId}' must be provided`,
+            if (!name?.trim())
+              throw new ConvexError(
+                "Please give your entry a name before submitting.",
               );
 
             if (
               await entries
                 .query(context)
-                .hasEntryWithPlaceIdAlreadyBeenSubmitted(competitionId, placeId)
+                .hasEntryWithPlaceIdAlreadyBeenSubmitted(
+                  competitionId,
+                  houseAddress.placeId,
+                )
             )
               throw new ConvexError(
-                `Address ${entry.houseAddress.address} is already used!`,
+                `Address ${houseAddress.address} is already used!`,
               );
 
             await db.patch(entry._id, {
               status: "submitting" as const,
-              name: ensure(
-                entry.name,
-                `Entry '${entry._id}' is missing required name`,
-              ),
-              houseAddress: entry.houseAddress,
+              name,
+              houseAddress,
             });
 
             return await query.get();

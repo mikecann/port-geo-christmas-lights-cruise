@@ -122,7 +122,7 @@ describe("voting while open", () => {
           entryId: entry._id,
           category: "best_display",
         }),
-      ).rejects.toThrow("Entry is not approved");
+      ).rejects.toThrow("that entry isn't available");
     }
 
     const storedVotes = await t.run((ctx) => ctx.db.query("votes").collect());
@@ -143,7 +143,7 @@ describe("voting while open", () => {
         entryId: entry._id,
         category: "best_display",
       }),
-    ).rejects.toThrow("Entry does not belong to the current competition");
+    ).rejects.toThrow("from a past competition");
   });
 });
 

@@ -27,7 +27,7 @@ describe("rate limits", () => {
     await createTestEntry(t);
     for (let i = 0; i < 10; i++)
       await expect(t.action(api.my.entries.submit, {})).rejects.toThrow(
-        "missing required house address",
+        "choose your house address",
       );
 
     await expect(t.action(api.my.entries.submit, {})).rejects.toThrow(

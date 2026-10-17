@@ -1,6 +1,6 @@
 import type { Id } from "../../_generated/dataModel";
 import type { DatabaseReader, MutationCtx } from "../../_generated/server";
-import { ensure } from "../../../shared/ensure";
+import { ConvexError } from "convex/values";
 import { internal } from "../../../shared/api";
 import {
   ALLOWED_PHOTO_CONTENT_TYPES,
@@ -34,7 +34,11 @@ export const photos = {
 
       async get(db: DatabaseReader) {
         const photo = await this.find(db);
-        return ensure(photo, `Photo with id '${photoId}' not found`);
+        if (!photo)
+          throw new ConvexError(
+            "Sorry, we couldn't find that photo. Please refresh the page and try again.",
+          );
+        return photo;
       },
 
       async delete(ctx: MutationCtx) {
@@ -179,8 +183,8 @@ export const photos = {
         const photoCount = await this.count(ctx.db);
 
         if (photoCount >= MAX_PHOTOS_PER_ENTRY)
-          throw new Error(
-            `Entry '${entryId}' already has the maximum number of photos (${MAX_PHOTOS_PER_ENTRY})`,
+          throw new ConvexError(
+            `You can upload up to ${MAX_PHOTOS_PER_ENTRY} photos.`,
           );
 
         const uploadUrl = await ctx.storage.generateUploadUrl();

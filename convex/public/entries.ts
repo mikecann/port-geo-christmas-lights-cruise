@@ -1,5 +1,5 @@
-import { entries } from "../features/entries/model";
-import { v } from "convex/values";
+import { ENTRY_UNAVAILABLE_MESSAGE, entries } from "../features/entries/model";
+import { ConvexError, v } from "convex/values";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "../_generated/api";
 import { photos } from "../features/photos/model";
@@ -116,7 +116,8 @@ export const find = convex
   .handler(async (context, input) => {
     const entry = await entries.query(context).forEntry(input.entryId).find();
     if (!entry) return null;
-    if (entry.status !== "approved") throw new Error("Entry is not approved");
+    if (entry.status !== "approved")
+      throw new ConvexError(ENTRY_UNAVAILABLE_MESSAGE);
     return entries.toPublic(entry);
   })
   .public();

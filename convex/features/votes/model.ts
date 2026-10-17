@@ -3,6 +3,9 @@ import type { Id } from "../../_generated/dataModel";
 import type { DatabaseReader, DatabaseWriter } from "../../_generated/server";
 import type { VoteCategory } from "./schema";
 
+export const VOTE_ALREADY_REMOVED_MESSAGE =
+  "That vote has already been removed.";
+
 export const votes = {
   forUser(userId: Id<"users">) {
     return {
@@ -75,7 +78,7 @@ export const votes = {
     return {
       async cancel(db: DatabaseWriter, { userId }: { userId: Id<"users"> }) {
         const vote = await db.get(voteId);
-        if (!vote) throw new Error(`Vote '${voteId}' not found`);
+        if (!vote) throw new ConvexError(VOTE_ALREADY_REMOVED_MESSAGE);
         if (vote.votingUserId !== userId)
           throw new Error(`User '${userId}' cannot cancel another user's vote`);
         await db.delete(voteId);

@@ -101,6 +101,124 @@ describe("errors a user can hit", () => {
     );
   });
 
+  it("says when an entry can't be voted for", async () => {
+    const { t } = await createConvexTestWithUser();
+    await setCurrentCompetition(t, { votingOpen: true });
+    const entry = await createTestEntry(t);
+    if (!entry) throw new Error("Failed to create entry");
+    const vote = () =>
+      t.mutation(api.my.votes.vote, {
+        entryId: entry._id,
+        category: "best_display",
+      });
+
+    await expectConvexError(vote(), "that entry isn't available");
+
+    await moveEntryToStatus(t, { entryId: entry._id, status: "approved" });
+    await t.run(async (ctx) => {
+      const competitionId = await ctx.db.insert("competitions", {
+        year: 2020,
+        entriesOpen: false,
+        votingOpen: false,
+      });
+      await ctx.db.patch(entry._id, { competitionId });
+    });
+    await expectConvexError(vote(), "from a past competition");
+
+    await t.run((ctx) => ctx.db.delete(entry._id));
+    await expectConvexError(vote(), "that entry isn't available");
+  });
+
+  it("says when a vote has already been removed", async () => {
+    const { t } = await createConvexTestWithUser();
+    await setCurrentCompetition(t, { votingOpen: true });
+    const entry = await createTestEntry(t);
+    if (!entry) throw new Error("Failed to create entry");
+    await moveEntryToStatus(t, { entryId: entry._id, status: "approved" });
+    await t.mutation(api.my.votes.vote, {
+      entryId: entry._id,
+      category: "best_display",
+    });
+    const [vote] = await t.query(api.my.votes.list, {});
+    await t.mutation(api.my.votes.cancel, { voteId: vote._id });
+
+    await expectConvexError(
+      t.mutation(api.my.votes.cancel, { voteId: vote._id }),
+      "already been removed",
+    );
+  });
+
+  it("says when someone enters twice", async () => {
+    const { t } = await createConvexTestWithUser();
+    await t.mutation(api.my.entries.enter, {});
+
+    await expectConvexError(
+      t.mutation(api.my.entries.enter, {}),
+      "already entered",
+    );
+  });
+
+  it("says when a submitted entry is changed or submitted again", async () => {
+    const { t } = await createConvexTestWithUser();
+    const entry = await createTestEntry(t);
+    if (!entry) throw new Error("Failed to create entry");
+    await moveEntryToStatus(t, { entryId: entry._id, status: "submitted" });
+
+    await expectConvexError(
+      t.mutation(api.my.entries.updateDraft, { name: "New name" }),
+      "already been submitted",
+    );
+    await expectConvexError(
+      t.mutation(api.my.entries.remove, {}),
+      "only be deleted while it's a draft",
+    );
+    await expectConvexError(
+      t.action(api.my.entries.submit, {}),
+      "already been submitted",
+    );
+  });
+
+  it("says when an entry is submitted without a name", async () => {
+    const { t } = await createConvexTestWithUser();
+    await t.mutation(api.my.entries.enter, {});
+    await t.mutation(api.my.entries.updateDraft, {
+      houseAddress: { address: "35 Keel Retreat", placeId: "pid" },
+    });
+
+    await expectConvexError(
+      t.action(api.my.entries.submit, {}),
+      "give your entry a name",
+    );
+  });
+
+  it("says when an entrant has no entry", async () => {
+    const { t } = await createConvexTestWithUser();
+
+    await expectConvexError(
+      t.mutation(api.my.photos.beginUpload, {}),
+      "couldn't find your entry",
+    );
+  });
+
+  it("says when the photo limit is reached or a photo is gone", async () => {
+    const { t } = await createConvexTestWithUser();
+    await t.mutation(api.my.entries.enter, {});
+    const uploads = [];
+    for (let i = 0; i < 5; i++)
+      uploads.push(await t.mutation(api.my.photos.beginUpload, {}));
+
+    await expectConvexError(
+      t.mutation(api.my.photos.beginUpload, {}),
+      "up to 5 photos",
+    );
+
+    await t.mutation(api.my.photos.remove, { photoId: uploads[0].photoId });
+    await expectConvexError(
+      t.mutation(api.my.photos.remove, { photoId: uploads[0].photoId }),
+      "couldn't find that photo",
+    );
+  });
+
   it("says when the address can't be found", async () => {
     vi.stubEnv("GOOGLE_MAPS_API_KEY", "");
     const { t } = await createConvexTestWithUser();

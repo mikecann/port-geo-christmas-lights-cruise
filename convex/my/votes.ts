@@ -11,6 +11,7 @@ import type { Doc } from "../_generated/dataModel";
 import { votingClosedMessage } from "../../shared/eventStatus";
 import { competitions } from "../features/competitions/model";
 import { enforceUserRateLimit } from "../features/rateLimits/lib";
+import { VOTE_ALREADY_REMOVED_MESSAGE } from "../features/votes/model";
 
 function requireVotingToBeOpen(competition: Doc<"competitions">) {
   if (!competition.votingOpen)
@@ -64,7 +65,9 @@ export const vote = userMutation
       .forEntry(input.entryId)
       .getApproved();
     if (entry.competitionId !== competition._id)
-      throw new Error("Entry does not belong to the current competition");
+      throw new ConvexError(
+        "Sorry, that entry is from a past competition, so it can't be voted for.",
+      );
 
     await votes.forUser(context.userId).voteForEntry(context.db, {
       competitionId: competition._id,
@@ -84,7 +87,7 @@ export const cancel = userMutation
   .handler(async (context, input) => {
     await enforceUserRateLimit(context, "changeVote", context.userId);
     const vote = await context.db.get(input.voteId);
-    if (!vote) throw new Error(`Vote '${input.voteId}' not found`);
+    if (!vote) throw new ConvexError(VOTE_ALREADY_REMOVED_MESSAGE);
     const competition = await competitions
       .query(context)
       .forCompetition(vote.competitionId)
