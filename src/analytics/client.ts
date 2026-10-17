@@ -1,16 +1,32 @@
 import type { PostHog } from "posthog-js/dist/module.no-external";
 import {
   attribution,
+  events,
   sanitize,
   type EventName,
   type Properties,
 } from "./privacy";
 
+// Events tracked before the SDK loads. The visit is merged in when they're
+// queued, and the uuid lets PostHog drop a copy if one is ever sent twice.
+type QueuedEvent = {
+  event: EventName;
+  properties: Record<string, unknown>;
+  timestamp: number;
+  uuid: string;
+};
+
 let posthog: PostHog | undefined;
-let pending: Array<[EventName, Properties]> = [];
+let pending: QueuedEvent[] = [];
 let enabled = false;
 let visit: Record<string, unknown> = {};
+let startNow: (() => void) | undefined;
 const storageKey = "pg-analytics-v1";
+// The queue is mirrored here so events survive the page going away, like the
+// Google sign-in redirect, and are sent by the next page in this tab
+const pendingKey = "pg-analytics-pending-v1";
+const maxPending = 100;
+const maxWaitMs = 3000;
 
 export async function initAnalytics() {
   if (enabled) return;
@@ -23,8 +39,14 @@ export async function initAnalytics() {
       env.VITE_POSTHOG_HOST,
     ) ||
     navigator.doNotTrack === "1"
-  )
+  ) {
+    try {
+      sessionStorage.removeItem(pendingKey);
+    } catch {
+      /* Storage unavailable. */
+    }
     return;
+  }
   try {
     const now = Date.now();
     const saved = JSON.parse(sessionStorage.getItem(storageKey) ?? "null");
@@ -42,12 +64,18 @@ export async function initAnalytics() {
       : saved;
     visit = sanitize("visit_started", state.attribution) ?? {};
     sessionStorage.setItem(storageKey, JSON.stringify(state));
+    pending = readPending();
     enabled = true;
     if (fresh) track("visit_started");
     // Keep the SDK out of the initial bundle and never load it when disabled.
     // Wait until the page has loaded and gone idle, so on a slow connection it
-    // doesn't compete with the app. Events tracked until then are queued.
-    await afterLoadAndIdle();
+    // doesn't compete with the app, but no more than a few seconds. Sign-in
+    // starts it straight away. Events tracked until then are queued.
+    await Promise.race([
+      afterLoadAndIdle(),
+      new Promise((resolve) => setTimeout(resolve, maxWaitMs)),
+      new Promise<void>((resolve) => (startNow = resolve)),
+    ]);
     const sdk = (await import("posthog-js/dist/module.no-external")).default;
     sdk.init(env.VITE_POSTHOG_KEY, {
       api_host: env.VITE_POSTHOG_HOST,
@@ -99,12 +127,57 @@ export async function initAnalytics() {
       },
     });
     posthog = sdk;
-    for (const [event, properties] of pending) track(event, properties);
+    const queued = pending;
     pending = [];
+    // Clear the stored copy first so the next page can't send these again
+    writePending();
+    for (const queuedEvent of queued) send(queuedEvent);
   } catch {
     enabled = false;
     pending = [];
     /* Analytics and blocked storage must never prevent app startup. */
+  }
+}
+
+function readPending(): QueuedEvent[] {
+  try {
+    const saved: unknown = JSON.parse(
+      sessionStorage.getItem(pendingKey) ?? "[]",
+    );
+    if (!Array.isArray(saved)) return [];
+    return saved
+      .filter(
+        (item: QueuedEvent) =>
+          events.includes(item?.event) &&
+          typeof item.properties === "object" &&
+          item.properties !== null &&
+          typeof item.timestamp === "number" &&
+          typeof item.uuid === "string",
+      )
+      .slice(0, maxPending);
+  } catch {
+    // A corrupt copy is dropped rather than turning analytics off
+    return [];
+  }
+}
+
+function writePending() {
+  try {
+    if (pending.length === 0) sessionStorage.removeItem(pendingKey);
+    else sessionStorage.setItem(pendingKey, JSON.stringify(pending));
+  } catch {
+    /* Storage unavailable or full. The in-memory queue still works. */
+  }
+}
+
+function send({ event, properties, timestamp, uuid }: QueuedEvent) {
+  try {
+    posthog?.capture(event, properties, {
+      timestamp: new Date(timestamp),
+      uuid,
+    });
+  } catch {
+    /* Best effort only. */
   }
 }
 
@@ -122,20 +195,24 @@ function afterLoadAndIdle() {
 
 export function track(event: EventName, properties: Properties = {}) {
   if (!enabled) return;
-  if (!posthog) {
-    if (pending.length < 100) pending.push([event, properties]);
-    return;
-  }
-  try {
-    posthog.capture(event, { ...visit, ...properties });
-  } catch {
-    /* Best effort only. */
+  const queuedEvent = {
+    event,
+    properties: { ...visit, ...properties },
+    timestamp: Date.now(),
+    uuid: crypto.randomUUID(),
+  };
+  if (posthog) send(queuedEvent);
+  else if (pending.length < maxPending) {
+    pending.push(queuedEvent);
+    writePending();
   }
 }
 
 export function authStarted() {
   track("auth_started");
   if (!enabled) return;
+  // The page is about to go to Google, so give the SDK a chance to send
+  startNow?.();
   try {
     sessionStorage.setItem("pg-auth-start", String(Date.now()));
   } catch {
