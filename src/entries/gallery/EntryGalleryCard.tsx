@@ -13,7 +13,6 @@ import { IconMapPin, IconPhoto } from "@tabler/icons-react";
 import type { PublicEntry } from "../../../convex/features/entries/schema";
 import type { PublicPhoto } from "../../../convex/features/photos/schema";
 import { routes } from "../../routes";
-import { getAddressString } from "../../../shared/misc";
 import { usePhotoUrl } from "../../common/hooks/usePhotoUrl";
 
 interface EntryGalleryCardProps {
@@ -113,7 +112,7 @@ export default function EntryGalleryCard({
               style={{ marginTop: 2, flexShrink: 0 }}
             />
             <Text size="md" c="dimmed" lineClamp={2} style={{ flex: 1 }}>
-              {getAddressString(entry.houseAddress)}
+              {entry.houseAddress.address}
             </Text>
           </Group>
         </Stack>

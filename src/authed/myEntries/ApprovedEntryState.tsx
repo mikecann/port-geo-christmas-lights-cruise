@@ -14,7 +14,6 @@ import { useQuery } from "convex/react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import PhotoSection from "./photos/PhotoSection";
-import { getAddressString } from "../../../shared/misc";
 import { useErrorCatchingMutation } from "../../common/errors";
 import { MAX_ENTRY_NAME_LENGTH } from "../../../shared/constants";
 
@@ -73,7 +72,7 @@ export default function ApprovedEntryState({ entry }: ApprovedEntryStateProps) {
               House Address:
             </Text>
             <Text size="sm" c="dimmed">
-              {getAddressString(entry.houseAddress)}
+              {entry.houseAddress?.address}
             </Text>
           </Group>
         </div>

@@ -15,7 +15,6 @@ import { useMutation, useAction, useQuery } from "convex/react";
 import { useDebounce } from "use-debounce";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
-import { getAddressString } from "../../../shared/misc";
 import { useConfirmation } from "../../common/components/confirmation/useConfirmation";
 import { useErrorHandler, useErrorCatchingMutation } from "../../common/errors";
 import PhotoSection from "./photos/PhotoSection";
@@ -48,16 +47,12 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
 
   // Form state
   const [name, setName] = useState(() => entry.name || "");
-  const [address, setAddress] = useState(() =>
-    getAddressString(entry.houseAddress),
+  const [address, setAddress] = useState(
+    () => entry.houseAddress?.address ?? "",
   );
   const [selectedAddress, setSelectedAddress] = useState<
     { address: string; placeId: string } | undefined
-  >(() =>
-    typeof entry.houseAddress === "object" && entry.status === "draft"
-      ? entry.houseAddress
-      : undefined,
-  );
+  >(() => (entry.status === "draft" ? entry.houseAddress : undefined));
 
   // Debounce form values for auto-save
   const [debouncedName] = useDebounce(name, 500);

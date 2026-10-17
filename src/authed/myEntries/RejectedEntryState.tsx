@@ -4,7 +4,6 @@ import { useQuery } from "convex/react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import PhotoGallery from "./photos/PhotoGallery";
-import { getAddressString } from "../../../shared/misc";
 
 interface RejectedEntryStateProps {
   entry: Doc<"entries">;
@@ -48,7 +47,7 @@ export default function RejectedEntryState({ entry }: RejectedEntryStateProps) {
             House Address:
           </Text>
           <Text size="sm" c="dimmed">
-            {getAddressString(entry.houseAddress)}
+            {entry.houseAddress?.address}
           </Text>
         </div>
 

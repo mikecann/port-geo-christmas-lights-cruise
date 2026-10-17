@@ -39,9 +39,7 @@ export default function SubmittingEntryState({
             House Address:
           </Text>
           <Text size="sm" c="dimmed">
-            {typeof entry.houseAddress === "string"
-              ? entry.houseAddress
-              : entry.houseAddress?.address || "Address not available"}
+            {entry.houseAddress?.address || "Address not available"}
           </Text>
         </div>
 

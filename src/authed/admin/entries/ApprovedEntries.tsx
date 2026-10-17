@@ -5,7 +5,6 @@ import { api } from "../../../../convex/_generated/api";
 import { useState } from "react";
 import type { Doc } from "../../../../convex/_generated/dataModel";
 import EntryDetailsModal from "./entryDetailsModal/EntryDetailsModal";
-import { getAddressString } from "../../../../shared/misc";
 
 export default function ApprovedEntries() {
   const approvedEntries = useQuery(api.admin.competition.entries.listApproved);
@@ -59,7 +58,7 @@ export default function ApprovedEntries() {
                     {entry.status === "approved" ? entry.entryNumber : "-"}
                   </Table.Td>
                   <Table.Td>{entry.name}</Table.Td>
-                  <Table.Td>{getAddressString(entry.houseAddress)}</Table.Td>
+                  <Table.Td>{entry.houseAddress.address}</Table.Td>
                   <Table.Td>
                     {entry.status === "approved"
                       ? new Date(entry.approvedAt).toLocaleDateString()

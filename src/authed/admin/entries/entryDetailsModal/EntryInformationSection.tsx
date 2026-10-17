@@ -39,7 +39,7 @@ export default function EntryInformationSection({
     {
       icon: <IconMapPin size={16} color="gray" />,
       label: "Address",
-      value: entry.houseAddress,
+      value: entry.houseAddress?.address,
     },
     {
       icon: <IconCalendar size={16} color="gray" />,
@@ -74,12 +74,6 @@ export default function EntryInformationSection({
                 {typeof item.value === "string" ? (
                   <Text size="sm" c="dimmed">
                     {item.value}
-                  </Text>
-                ) : item.value &&
-                  typeof item.value === "object" &&
-                  "address" in item.value ? (
-                  <Text size="sm" c="dimmed">
-                    {item.value.address}
                   </Text>
                 ) : (
                   item.value

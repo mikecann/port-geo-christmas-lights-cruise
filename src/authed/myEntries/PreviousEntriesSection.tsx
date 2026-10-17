@@ -10,7 +10,6 @@ import {
 import { IconExternalLink } from "@tabler/icons-react";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "../../../convex/_generated/api";
-import { getAddressString } from "../../../shared/misc";
 import StatusBadge from "../../common/components/StatusBadge";
 import { routes } from "../../routes";
 
@@ -48,7 +47,7 @@ export default function PreviousEntriesSection({
 
             {entry.houseAddress && (
               <Text size="sm" c="dimmed">
-                {getAddressString(entry.houseAddress)}
+                {entry.houseAddress.address}
               </Text>
             )}
 

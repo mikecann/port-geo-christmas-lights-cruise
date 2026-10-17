@@ -32,11 +32,6 @@ type ShareModalProps = {
   entry: {
     name: string;
     competitionId?: string;
-    houseAddress:
-      | string
-      | { address: string; lat: number; lng: number }
-      | { address: string; placeId: string }
-      | undefined;
     entryNumber: number;
   };
   entryId: Id<"entries">;

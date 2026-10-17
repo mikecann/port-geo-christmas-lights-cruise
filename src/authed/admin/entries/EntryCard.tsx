@@ -25,7 +25,6 @@ import { api } from "../../../../convex/_generated/api";
 import type { Doc } from "../../../../convex/_generated/dataModel";
 import { useErrorCatchingMutation } from "../../../common/errors";
 import PhotoLightbox from "../../myEntries/photos/PhotoLightbox";
-import { getAddressString } from "../../../../shared/misc";
 import { PhotoImage } from "./PhotoImage";
 import { useQuery } from "convex/react";
 import RejectEntryModal from "./RejectEntryModal";
@@ -82,7 +81,7 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
             <Group gap="xs" mt="xs">
               <IconMapPin size={14} color="gray" />
               <Text size="sm" c="dimmed" lineClamp={1}>
-                {getAddressString(entry.houseAddress)}
+                {entry.houseAddress.address}
               </Text>
             </Group>
 

@@ -11,16 +11,10 @@ import {
 import { IconMap, IconMapPin, IconShare } from "@tabler/icons-react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { routes } from "../routes";
-import { getAddressString } from "../../shared/misc";
 
 type EntryHeaderProps = {
   entry: {
     name: string;
-    houseAddress:
-      | string
-      | { address: string; lat: number; lng: number }
-      | { address: string; placeId: string }
-      | undefined;
     entryNumber: number;
   };
   entryId: Id<"entries">;

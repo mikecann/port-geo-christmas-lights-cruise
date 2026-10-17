@@ -5,7 +5,6 @@ import { api } from "../../../../convex/_generated/api";
 import { useState } from "react";
 import type { Doc } from "../../../../convex/_generated/dataModel";
 import EntryDetailsModal from "./entryDetailsModal/EntryDetailsModal";
-import { getAddressString } from "../../../../shared/misc";
 
 export default function RejectedEntries() {
   const rejectedEntries = useQuery(api.admin.competition.entries.listRejected);
@@ -55,7 +54,7 @@ export default function RejectedEntries() {
                   }}
                 >
                   <Table.Td>{entry.name}</Table.Td>
-                  <Table.Td>{getAddressString(entry.houseAddress)}</Table.Td>
+                  <Table.Td>{entry.houseAddress?.address}</Table.Td>
                   <Table.Td>
                     {entry.status === "rejected"
                       ? new Date(entry.rejectedAt).toLocaleDateString()
