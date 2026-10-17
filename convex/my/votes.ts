@@ -98,8 +98,10 @@ export const vote = myMutation
     const competition = await competitions.query(context).current();
     requireVotingToBeOpen(competition.votingOpen);
 
-    // Validate entry exists
-    const entry = await entries.query(context).forEntry(input.entryId).get();
+    const entry = await entries
+      .query(context)
+      .forEntry(input.entryId)
+      .getApproved();
     if (entry.competitionId !== competition._id)
       throw new Error("Entry does not belong to the current competition");
 
