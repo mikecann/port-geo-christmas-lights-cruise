@@ -29,7 +29,7 @@ export async function maybeInjectOg(
     const entryMeta = await fetchEntryOgMeta(env, entryId);
     const entryTags = buildOgTags(url, entryMeta, "article");
     return injectHeadTags(originResponse, entryTags);
-  } catch (e) {
+  } catch {
     return originResponse;
   }
 }

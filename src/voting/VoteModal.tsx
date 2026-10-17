@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { track } from "../analytics/client";
-import { Modal, Tabs, Title, Group, Text } from "@mantine/core";
-import { IconStar, IconSparkles } from "@tabler/icons-react";
+import { Modal } from "@mantine/core";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -52,7 +51,7 @@ export default function VoteModal({ entryId, opened, onClose }: Props) {
             onClose={onClose}
           />
         ) : (
-          <VoteAuthPrompt onClose={onClose} />
+          <VoteAuthPrompt />
         )}
       </div>
     </Modal>

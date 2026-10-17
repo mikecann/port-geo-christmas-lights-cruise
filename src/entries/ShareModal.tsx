@@ -113,7 +113,7 @@ export default function ShareModal({
                     ...properties,
                     source: "native",
                   });
-                } catch (error) {
+                } catch {
                   // User cancelled or error occurred
                   console.log("Share cancelled or failed");
                 }

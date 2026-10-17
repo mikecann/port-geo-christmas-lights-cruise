@@ -807,7 +807,7 @@ describe("finalizeSubmission", () => {
     const user4 = await createTestUser(rawTest, {});
 
     // Create a draft entry with the shared placeId
-    const draftEntry = await createTestEntry(t, {
+    await createTestEntry(t, {
       submittedByUserId: user3._id,
       houseAddress: {
         address: "789 Pine St",

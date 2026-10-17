@@ -1,7 +1,6 @@
 import { useEntryView } from "../analytics/useEntryView";
 import {
   Button,
-  Text,
   Stack,
   Title,
   Badge,
@@ -10,7 +9,6 @@ import {
   Loader,
 } from "@mantine/core";
 import { routes } from "../routes";
-import { useIsSystemAdmin } from "../auth/useMeHooks";
 import EntryMarkerCarousel from "./EntryMarkerCarousel";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";

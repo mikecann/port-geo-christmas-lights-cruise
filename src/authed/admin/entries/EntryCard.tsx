@@ -107,12 +107,11 @@ export default function EntryCard({ entry }: { entry: AdminEntry }) {
                 Photos ({photos.length})
               </Text>
               <SimpleGrid cols={4} spacing="xs">
-                {photos.map((photo, i) => {
+                {photos.map((photo) => {
                   return (
                     <PhotoImage
                       key={photo._id}
                       photo={photo}
-                      index={i}
                       onImageClick={(imageUrl) => {
                         setSelectedImageUrl(imageUrl);
                         openModal();

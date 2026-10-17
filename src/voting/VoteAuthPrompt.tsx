@@ -1,7 +1,7 @@
 import { Button, Group, Stack, Text } from "@mantine/core";
 import { routes } from "../routes";
 
-export default function VoteAuthPrompt({ onClose }: { onClose: () => void }) {
+export default function VoteAuthPrompt() {
   return (
     <Stack justify="space-between">
       <Text size="xs" c="dimmed">

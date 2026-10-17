@@ -2,7 +2,6 @@ import {
   Card,
   Image,
   Text,
-  Badge,
   Stack,
   Group,
   Box,

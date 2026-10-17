@@ -18,7 +18,6 @@ import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { usePhotoUrl } from "../common/hooks/usePhotoUrl";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import type { ApprovedEntryDoc } from "../../convex/features/entries/schema";
 
 export interface ExistingVoteCardProps {
   vote: Doc<"votes">;

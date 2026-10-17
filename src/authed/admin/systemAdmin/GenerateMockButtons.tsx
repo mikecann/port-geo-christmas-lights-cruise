@@ -57,7 +57,7 @@ export function GenerateMockVotesButton({
             color: "green",
             icon: <IconCheck size={16} />,
           });
-        } catch (error) {
+        } catch {
           // Error already handled by useErrorCatchingMutation
         } finally {
           setIsGeneratingVotes(false);

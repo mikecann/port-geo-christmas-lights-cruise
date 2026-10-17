@@ -12,7 +12,7 @@ export default {
   async fetch(
     request: Request,
     env: Env,
-    ctx: ExecutionContext,
+    _ctx: ExecutionContext,
   ): Promise<Response> {
     // 1) Serve SPA/static assets first
     const originResponse = env.ASSETS

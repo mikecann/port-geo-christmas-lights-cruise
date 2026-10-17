@@ -4,7 +4,6 @@ import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { httpApiOgEntryReturnValidator } from "../shared/validators";
-import { find } from "./public/entries";
 import { iife } from "../shared/misc";
 
 const http = httpRouter();

@@ -1,14 +1,5 @@
-import {
-  Badge,
-  Button,
-  Group,
-  Stack,
-  Text,
-  Title,
-  Card,
-  Box,
-} from "@mantine/core";
-import { IconMap, IconMapPin, IconShare } from "@tabler/icons-react";
+import { Badge, Button, Group, Stack, Title, Card, Box } from "@mantine/core";
+import { IconMap, IconShare } from "@tabler/icons-react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { routes } from "../routes";
 

@@ -1,9 +1,5 @@
 import type { Id } from "../../_generated/dataModel";
-import type {
-  DatabaseReader,
-  DatabaseWriter,
-  MutationCtx,
-} from "../../_generated/server";
+import type { DatabaseReader, MutationCtx } from "../../_generated/server";
 import { ConvexError } from "convex/values";
 import { ensure } from "../../../shared/ensure";
 import {

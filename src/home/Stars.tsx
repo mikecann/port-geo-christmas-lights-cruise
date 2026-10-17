@@ -1,4 +1,3 @@
-import { Box } from "@mantine/core";
 import styles from "./Stars.module.css";
 
 export function Stars() {

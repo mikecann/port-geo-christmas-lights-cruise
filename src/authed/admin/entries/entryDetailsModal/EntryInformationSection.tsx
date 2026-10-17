@@ -1,4 +1,4 @@
-import { Text, Stack, Group, Card, SimpleGrid } from "@mantine/core";
+import { Text, Group, Card, SimpleGrid } from "@mantine/core";
 import {
   IconMapPin,
   IconCalendar,

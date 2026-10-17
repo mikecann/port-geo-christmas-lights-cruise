@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
+import { APIProvider, Map } from "@vis.gl/react-google-maps";
 import { CenterOnEntry } from "./CenterOnEntry";
 import { MapDebugInfo } from "./MapDebugInfo";
 import { CompetitionBoundaryOverlay } from "./CompetitionBoundaryOverlay";

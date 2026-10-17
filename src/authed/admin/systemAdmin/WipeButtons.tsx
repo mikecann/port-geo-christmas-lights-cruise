@@ -53,7 +53,7 @@ export function WipeEntriesButton({ disabled }: WipeButtonProps) {
             color: "green",
             icon: <IconCheck size={16} />,
           });
-        } catch (error) {
+        } catch {
           // Error already handled by useErrorCatchingMutation
         } finally {
           setIsWiping(false);
@@ -108,7 +108,7 @@ export function WipeVotesButton({ disabled }: WipeButtonProps) {
             color: "green",
             icon: <IconCheck size={16} />,
           });
-        } catch (error) {
+        } catch {
           // Error already handled by useErrorCatchingMutation
         } finally {
           setIsWipingVotes(false);
@@ -165,7 +165,7 @@ export function WipeAllDataButton({ disabled }: WipeButtonProps) {
             color: "green",
             icon: <IconCheck size={16} />,
           });
-        } catch (error) {
+        } catch {
           // Error already handled by useErrorCatchingMutation
         } finally {
           setIsWipingAllData(false);

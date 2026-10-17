@@ -53,7 +53,7 @@ export default [
       curly: ["error", "multi"],
       "@typescript-eslint/no-empty-object-type": "warn",
       "@typescript-eslint/no-unused-vars": [
-        "off",
+        "error",
         {
           argsIgnorePattern: "^_",
           varsIgnorePattern: "^_",

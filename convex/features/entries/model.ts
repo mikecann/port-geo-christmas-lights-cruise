@@ -7,7 +7,6 @@ import { photos } from "../photos/model";
 import { votes } from "../votes/model";
 import { isStatus } from "../../../shared/filter";
 import { randomIntRange } from "../../../shared/num";
-import { exhaustiveCheck } from "../../../shared/misc";
 import { isWithinBoundary } from "../../../shared/geo";
 import {
   MAX_ENTRY_ADDRESS_LENGTH,
@@ -50,7 +49,7 @@ export const entries = {
   },
 
   query(context: QueryCtx) {
-    const { auth, db, storage } = context;
+    const { db } = context;
     return {
       forEntry(entryId: Id<"entries">) {
         return {
@@ -230,7 +229,7 @@ export const entries = {
   },
 
   mutate(context: MutationCtx) {
-    const { auth, db, storage } = context;
+    const { db } = context;
     const query = entries.query(context);
     return {
       forEntry(entryId: Id<"entries">) {
@@ -278,7 +277,7 @@ export const entries = {
           },
 
           async setEntryNumber({ entryNumber }: { entryNumber: number }) {
-            const entry = await query.get();
+            await query.get();
             await db.patch(entryId, { entryNumber });
           },
         };
