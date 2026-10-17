@@ -18,13 +18,9 @@ export default function EntriesGalleryPage() {
     Array<EntryWithFirstPhoto>
   >([]);
   const [cachedSearchQuery, setCachedSearchQuery] = useState("");
-  const competitionArgs = {};
-  const totalCount = useQuery(api.public.entries.count, competitionArgs);
-
-  const results = useQuery(
-    api.public.entries.listWithFirstPhoto,
-    competitionArgs,
-  );
+  // Every approved entry, filtered on the client, so its length is the total
+  const results = useQuery(api.public.entries.listWithFirstPhoto, {});
+  const totalCount = results?.length;
   // Cache results when they're available
   const baseResults = useMemo(() => {
     if (results !== undefined) return results;
