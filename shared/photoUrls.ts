@@ -26,7 +26,8 @@ export function resizedPhotoSrcSet(
 // The entry page carousel. The worker preloads the same srcset and sizes, so
 // the browser picks the same file for the preload and the <img>.
 export const ENTRY_PHOTO = {
-  widths: [480, 780, 1200],
+  // Uploads are at most 1600px, so 1600 is the full-size photo
+  widths: [480, 780, 1200, 1600],
   // Container size="lg" is 71.25em wide
   sizes: "(max-width: 71.25em) 100vw, 1140px",
   fallbackWidth: 780,

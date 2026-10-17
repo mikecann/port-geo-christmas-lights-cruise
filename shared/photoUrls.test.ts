@@ -17,6 +17,7 @@ describe("resized photo URLs", () => {
       `${resizedPhotoUrl(source, 480)} 480w`,
       `${resizedPhotoUrl(source, 780)} 780w`,
       `${resizedPhotoUrl(source, 1200)} 1200w`,
+      `${resizedPhotoUrl(source, 1600)} 1600w`,
     ]);
     expect(srcSet).not.toContain("dpr");
   });

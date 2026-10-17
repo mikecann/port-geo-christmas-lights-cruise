@@ -12,7 +12,7 @@ const SIZE_WIDTHS: Record<ImageSize, number> = {
   xs: 128, // map markers and small thumbnails
   sm: 480,
   md: 780,
-  lg: 1200, // lightbox
+  lg: 1600, // lightbox, the full size of an upload
 };
 
 type Photo = PhotoDoc | PublicPhoto | null | undefined;
