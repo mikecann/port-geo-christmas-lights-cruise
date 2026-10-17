@@ -18,17 +18,31 @@ import { useMe } from "../../../auth/useMeHooks";
 import { Breadcrumbs } from "../../../common/components/Breadcrumbs";
 import { routes } from "../../../routes";
 import VoteCategoryTab from "./VoteCategoryTab";
+import type { VoteCategory } from "../../../../convex/features/votes/schema";
+import {
+  VOTE_CATEGORIES,
+  VOTE_CATEGORY_DETAILS,
+} from "../../../../convex/features/votes/schema";
+import { VOTE_CATEGORY_STYLES } from "../../../voting/voteCategoryStyles";
+
+function CategoryCountBadge({ category }: { category: VoteCategory }) {
+  const count = useQuery(api.admin.competition.votes.countForCategory, {
+    category,
+  });
+  return (
+    <Badge
+      variant="light"
+      color={VOTE_CATEGORY_STYLES[category].color}
+      size="sm"
+    >
+      {count}
+    </Badge>
+  );
+}
 
 export default function VoteManagementPage() {
   const me = useMe();
-  const [activeTab, setActiveTab] = useState<string | null>("best_display");
-
-  const bestCount = useQuery(api.admin.competition.votes.countForCategory, {
-    category: "best_display",
-  });
-  const jollyCount = useQuery(api.admin.competition.votes.countForCategory, {
-    category: "most_jolly",
-  });
+  const [activeTab, setActiveTab] = useState<string | null>(VOTE_CATEGORIES[0]);
   const getAllVotes = useAction(
     api.admin.competition.votes.getAllVotesForExport,
   );
@@ -147,39 +161,24 @@ export default function VoteManagementPage() {
 
             <Tabs value={activeTab} onChange={setActiveTab} pt="md">
               <Tabs.List>
-                <Tabs.Tab
-                  value="best_display"
-                  rightSection={
-                    <Badge variant="light" color="blue" size="sm">
-                      {bestCount}
-                    </Badge>
-                  }
-                >
-                  Best Display
-                </Tabs.Tab>
-                <Tabs.Tab
-                  value="most_jolly"
-                  rightSection={
-                    <Badge variant="light" color="grape" size="sm">
-                      {jollyCount}
-                    </Badge>
-                  }
-                >
-                  Most Jolly
-                </Tabs.Tab>
+                {VOTE_CATEGORIES.map((category) => (
+                  <Tabs.Tab
+                    key={category}
+                    value={category}
+                    rightSection={<CategoryCountBadge category={category} />}
+                  >
+                    {VOTE_CATEGORY_DETAILS[category].title}
+                  </Tabs.Tab>
+                ))}
               </Tabs.List>
 
-              <Tabs.Panel value="best_display" pt="lg">
-                {activeTab === "best_display" && (
-                  <VoteCategoryTab category="best_display" />
-                )}
-              </Tabs.Panel>
-
-              <Tabs.Panel value="most_jolly" pt="lg">
-                {activeTab === "most_jolly" && (
-                  <VoteCategoryTab category="most_jolly" />
-                )}
-              </Tabs.Panel>
+              {VOTE_CATEGORIES.map((category) => (
+                <Tabs.Panel key={category} value={category} pt="lg">
+                  {activeTab === category && (
+                    <VoteCategoryTab category={category} />
+                  )}
+                </Tabs.Panel>
+              ))}
             </Tabs>
           </Stack>
         </Card>

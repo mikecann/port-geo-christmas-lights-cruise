@@ -3,6 +3,7 @@ import { systemAdminMutation } from "../../features/common/auth";
 import { votes } from "../../features/votes/model";
 import { v } from "convex/values";
 import { competitions } from "../../features/competitions/model";
+import { VOTE_CATEGORIES } from "../../features/votes/schema";
 
 // Mutations
 
@@ -50,10 +51,6 @@ export const generateMock = systemAdminMutation
         "No approved entries found. Generate mock entries first.",
       );
 
-    const categories: Array<"best_display" | "most_jolly"> = [
-      "best_display",
-      "most_jolly",
-    ];
     const mockUsers: string[] = [];
     let totalVotesCreated = 0;
 
@@ -103,7 +100,7 @@ export const generateMock = systemAdminMutation
 
       mockUsers.push(userId);
 
-      for (const category of categories) {
+      for (const category of VOTE_CATEGORIES) {
         if (totalVotesCreated >= input.count) break;
 
         const randomEntry =

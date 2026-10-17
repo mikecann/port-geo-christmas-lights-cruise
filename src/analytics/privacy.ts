@@ -1,3 +1,6 @@
+import { VOTE_CATEGORIES } from "../../convex/features/votes/schema";
+import type { VoteCategory } from "../../convex/features/votes/schema";
+
 export const sources = [
   "facebook",
   "twitter",
@@ -36,7 +39,7 @@ export type EventName = (typeof events)[number];
 export type Properties = {
   entry_id?: string;
   competition_id?: string;
-  category?: "best_display" | "most_jolly";
+  category?: VoteCategory;
   source?: ShareSource;
   surface?: "entry" | "map";
   is_entrant?: boolean;
@@ -158,7 +161,7 @@ export function sanitize(
       safe[key] = value;
     if (
       key === "category" &&
-      ["best_display", "most_jolly"].includes(String(value))
+      (VOTE_CATEGORIES as ReadonlyArray<string>).includes(String(value))
     )
       safe[key] = value;
     if (key === "surface" && ["entry", "map"].includes(String(value)))

@@ -3,6 +3,7 @@ import {
   competitionAdminAction,
 } from "../../features/common/auth";
 import { voteCategoryValidator } from "../../features/votes/schema";
+import type { VoteCategory } from "../../features/votes/schema";
 import { v } from "convex/values";
 import { aggregateVotes, voteNamespace } from "../../features/votes/lib";
 import { isNotNullOrUndefined } from "../../../shared/filter";
@@ -162,7 +163,7 @@ export const getAllVotesForExport = competitionAdminAction
       {},
     );
     const allVotes: Array<{
-      voteCategory: "best_display" | "most_jolly";
+      voteCategory: VoteCategory;
       dateTime: number;
       entryNumber: number;
       voterEmail: string;
@@ -175,7 +176,7 @@ export const getAllVotesForExport = competitionAdminAction
     while (!isDone) {
       const result: {
         page: Array<{
-          voteCategory: "best_display" | "most_jolly";
+          voteCategory: VoteCategory;
           dateTime: number;
           entryNumber: number;
           voterEmail: string;
