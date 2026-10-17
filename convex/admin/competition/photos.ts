@@ -1,16 +1,19 @@
 import { v } from "convex/values";
 import { photos } from "../../features/photos/model";
-import { userCompetitionAdminMutation, userCompetitionAdminQuery } from "./lib";
+import {
+  competitionAdminMutation,
+  competitionAdminQuery,
+} from "../../features/common/auth";
 
 /** Photos for admin review, including entries that are not public yet. */
-export const listForEntry = userCompetitionAdminQuery
+export const listForEntry = competitionAdminQuery
   .input({ entryId: v.id("entries") })
   .handler(async (ctx, input) => {
     return await photos.forEntry(input.entryId).list(ctx.db);
   })
   .public();
 
-export const beginUpload = userCompetitionAdminMutation
+export const beginUpload = competitionAdminMutation
   .input({ entryId: v.id("entries") })
   .handler(async (context, input) => {
     const uploadStartedAt = Date.now();
@@ -20,7 +23,7 @@ export const beginUpload = userCompetitionAdminMutation
   })
   .public();
 
-export const save = userCompetitionAdminMutation
+export const save = competitionAdminMutation
   .input({
     storageId: v.id("_storage"),
     photoId: v.id("photos"),
@@ -33,7 +36,7 @@ export const save = userCompetitionAdminMutation
   })
   .public();
 
-export const remove = userCompetitionAdminMutation
+export const remove = competitionAdminMutation
   .input({
     photoId: v.id("photos"),
   })

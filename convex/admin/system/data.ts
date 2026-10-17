@@ -1,16 +1,18 @@
 import {
   areDestructiveWipesAllowed,
   ensureDestructiveWipesAllowed,
-  userSystemAdminMutation,
-  userSystemAdminQuery,
 } from "./lib";
+import {
+  systemAdminMutation,
+  systemAdminQuery,
+} from "../../features/common/auth";
 import { votes } from "../../features/votes/model";
 import { entries } from "../../features/entries/model";
 import { photos } from "../../features/photos/model";
 import { competitions } from "../../features/competitions/model";
 import { v } from "convex/values";
 
-export const wipesAllowed = userSystemAdminQuery
+export const wipesAllowed = systemAdminQuery
   .input({})
   .returns(v.boolean())
   .handler(async () => areDestructiveWipesAllowed())
@@ -18,7 +20,7 @@ export const wipesAllowed = userSystemAdminQuery
 
 // Resets the current competition for testing. Past competitions, the people
 // who took part in them and their photos are always kept.
-export const wipeAllData = userSystemAdminMutation
+export const wipeAllData = systemAdminMutation
   .input({})
   .returns(v.null())
   .handler(async (context) => {

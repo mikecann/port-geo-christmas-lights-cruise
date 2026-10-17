@@ -1,9 +1,7 @@
 import {
-  userCompetitionAdminQuery,
-  userCompetitionAdminAction,
-  userCompetitionAdminQueryMiddleware,
-  userCompetitionAdminActionMiddleware,
-} from "./lib";
+  competitionAdminQuery,
+  competitionAdminAction,
+} from "../../features/common/auth";
 import { voteCategoryValidator } from "../../features/votes/schema";
 import { v } from "convex/values";
 import { aggregateVotes, voteNamespace } from "../../features/votes/lib";
@@ -15,7 +13,7 @@ import { competitions } from "../../features/competitions/model";
 
 // Queries
 
-export const listPageForCategory = userCompetitionAdminQuery
+export const listPageForCategory = competitionAdminQuery
   .input({
     category: voteCategoryValidator,
     offset: v.number(),
@@ -77,7 +75,7 @@ export const listPageForCategory = userCompetitionAdminQuery
   })
   .public();
 
-export const countForCategory = userCompetitionAdminQuery
+export const countForCategory = competitionAdminQuery
   .input({
     category: voteCategoryValidator,
   })
@@ -145,9 +143,8 @@ export const getAllVotesForExportPage = convex
   })
   .internal();
 
-export const getAllVotesForExport = userCompetitionAdminAction
+export const getAllVotesForExport = competitionAdminAction
   .input({})
-  .use(userCompetitionAdminActionMiddleware)
   .returns(
     v.array(
       v.object({

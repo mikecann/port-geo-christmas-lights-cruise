@@ -253,7 +253,7 @@ export const createTestEntry = async (
 export const getTestUser = (t: TestOrAuthenticatedConvexTest) => {
   return t.run(async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
+    if (userId === null) throw new Error("No test user is signed in");
     const user = await ctx.db.get(userId);
     return ensure(user);
   });

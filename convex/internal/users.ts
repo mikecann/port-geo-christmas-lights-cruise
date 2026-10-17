@@ -1,28 +1,16 @@
 import { v } from "convex/values";
 import { convex } from "../schema";
+import { ROLES, users } from "../features/users/model";
 
-export const listAll = convex
+export const hasRole = convex
   .query()
-  .input({})
-  .returns(
-    v.array(
-      v.object({
-        _id: v.id("users"),
-        _creationTime: v.number(),
-        name: v.optional(v.string()),
-        image: v.optional(v.string()),
-        email: v.optional(v.string()),
-        emailVerificationTime: v.optional(v.number()),
-        phone: v.optional(v.string()),
-        phoneVerificationTime: v.optional(v.number()),
-        isAnonymous: v.optional(v.boolean()),
-        isSystemAdmin: v.optional(v.boolean()),
-        isCompetitionAdmin: v.optional(v.boolean()),
-        isTestUser: v.optional(v.boolean()),
-      }),
-    ),
-  )
-  .handler(async (context) => {
-    return await context.db.query("users").collect();
+  .input({
+    userId: v.id("users"),
+    role: v.union(...ROLES.map((role) => v.literal(role))),
+  })
+  .returns(v.boolean())
+  .handler(async (context, input) => {
+    const user = await context.db.get(input.userId);
+    return user !== null && users.hasRole(user, input.role);
   })
   .internal();

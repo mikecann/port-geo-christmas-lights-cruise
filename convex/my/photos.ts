@@ -1,11 +1,11 @@
-import { myMutation, myQuery } from "./lib";
+import { userMutation, userQuery } from "../features/common/auth";
 import { entries } from "../features/entries/model";
 import { photos } from "../features/photos/model";
 import { v } from "convex/values";
 import { competitions } from "../features/competitions/model";
 import { enforceUserRateLimit } from "../features/rateLimits/lib";
 
-export const list = myQuery
+export const list = userQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -17,7 +17,7 @@ export const list = myQuery
   })
   .public();
 
-export const beginUpload = myMutation
+export const beginUpload = userMutation
   .input({})
   .handler(async (context) => {
     await enforceUserRateLimit(context, "beginPhotoUpload", context.userId);
@@ -31,7 +31,7 @@ export const beginUpload = myMutation
   })
   .public();
 
-export const save = myMutation
+export const save = userMutation
   .input({
     storageId: v.id("_storage"),
     photoId: v.id("photos"),
@@ -53,7 +53,7 @@ export const save = myMutation
   })
   .public();
 
-export const remove = myMutation
+export const remove = userMutation
   .input({
     photoId: v.id("photos"),
   })

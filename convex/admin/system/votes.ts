@@ -1,11 +1,12 @@
-import { ensureDestructiveWipesAllowed, userSystemAdminMutation } from "./lib";
+import { ensureDestructiveWipesAllowed } from "./lib";
+import { systemAdminMutation } from "../../features/common/auth";
 import { votes } from "../../features/votes/model";
 import { v } from "convex/values";
 import { competitions } from "../../features/competitions/model";
 
 // Mutations
 
-export const wipeCurrentCompetition = userSystemAdminMutation
+export const wipeCurrentCompetition = systemAdminMutation
   .input({})
   .returns(
     v.object({
@@ -24,7 +25,7 @@ export const wipeCurrentCompetition = userSystemAdminMutation
   })
   .public();
 
-export const generateMock = userSystemAdminMutation
+export const generateMock = systemAdminMutation
   .input({
     count: v.number(),
   })

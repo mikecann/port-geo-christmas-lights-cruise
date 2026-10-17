@@ -1,4 +1,4 @@
-import { myAction, myMutation, myQuery } from "./lib";
+import { userAction, userMutation, userQuery } from "../features/common/auth";
 import { entries } from "../features/entries/model";
 import { ConvexError, v } from "convex/values";
 import type { GeocodedPlace } from "../features/map/lib";
@@ -7,7 +7,7 @@ import { internal } from "../../shared/api";
 import { competitions } from "../features/competitions/model";
 import { enforceUserRateLimit } from "../features/rateLimits/lib";
 
-export const find = myQuery
+export const find = userQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -18,7 +18,7 @@ export const find = myQuery
   })
   .public();
 
-export const listPrevious = myQuery
+export const listPrevious = userQuery
   .input({})
   .handler(async (context) => {
     const currentCompetition = await competitions.query(context).current();
@@ -32,7 +32,7 @@ export const listPrevious = myQuery
   })
   .public();
 
-export const enter = myMutation
+export const enter = userMutation
   .input({})
   .returns(v.null())
   .handler(async (context) => {
@@ -48,7 +48,7 @@ export const enter = myMutation
   })
   .public();
 
-export const updateDraft = myMutation
+export const updateDraft = userMutation
   .input({
     houseAddress: v.optional(
       v.object({ address: v.string(), placeId: v.string() }),
@@ -66,7 +66,7 @@ export const updateDraft = myMutation
   })
   .public();
 
-export const remove = myMutation
+export const remove = userMutation
   .input({})
   .returns(v.null())
   .handler(async (context) => {
@@ -79,7 +79,7 @@ export const remove = myMutation
   })
   .public();
 
-export const updateApproved = myMutation
+export const updateApproved = userMutation
   .input({
     name: v.optional(v.string()),
   })
@@ -94,7 +94,7 @@ export const updateApproved = myMutation
   })
   .public();
 
-export const submit = myAction
+export const submit = userAction
   .input({})
   .returns(v.null())
   .handler(async (context) => {

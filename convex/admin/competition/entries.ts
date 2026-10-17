@@ -1,4 +1,7 @@
-import { userCompetitionAdminMutation, userCompetitionAdminQuery } from "./lib";
+import {
+  competitionAdminMutation,
+  competitionAdminQuery,
+} from "../../features/common/auth";
 import { entries } from "../../features/entries/model";
 import { photos } from "../../features/photos/model";
 import { email } from "../../features/email/model";
@@ -7,7 +10,7 @@ import { competitions } from "../../features/competitions/model";
 
 // Queries
 
-export const listPending = userCompetitionAdminQuery
+export const listPending = competitionAdminQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -29,7 +32,7 @@ export const listPending = userCompetitionAdminQuery
   })
   .public();
 
-export const getStats = userCompetitionAdminQuery
+export const getStats = competitionAdminQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -37,7 +40,7 @@ export const getStats = userCompetitionAdminQuery
   })
   .public();
 
-export const listApproved = userCompetitionAdminQuery
+export const listApproved = competitionAdminQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -59,7 +62,7 @@ export const listApproved = userCompetitionAdminQuery
   })
   .public();
 
-export const listRejected = userCompetitionAdminQuery
+export const listRejected = competitionAdminQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -81,7 +84,7 @@ export const listRejected = userCompetitionAdminQuery
   })
   .public();
 
-export const get = userCompetitionAdminQuery
+export const get = competitionAdminQuery
   .input({ entryId: v.id("entries") })
   .handler(async (context, input) => {
     const entry = await entries.query(context).forEntry(input.entryId).get();
@@ -94,7 +97,7 @@ export const get = userCompetitionAdminQuery
   })
   .public();
 
-export const getUserDetails = userCompetitionAdminQuery
+export const getUserDetails = competitionAdminQuery
   .input({ userId: v.id("users") })
   .handler(async (context, input) => {
     const user = await context.db.get(input.userId);
@@ -113,7 +116,7 @@ export const getUserDetails = userCompetitionAdminQuery
   })
   .public();
 
-export const getEntryValidationStatus = userCompetitionAdminQuery
+export const getEntryValidationStatus = competitionAdminQuery
   .input({ entryId: v.id("entries") })
   .returns(
     v.object({
@@ -169,7 +172,7 @@ export const getEntryValidationStatus = userCompetitionAdminQuery
   })
   .public();
 
-export const getAllEntriesForExport = userCompetitionAdminQuery
+export const getAllEntriesForExport = competitionAdminQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -205,7 +208,7 @@ export const getAllEntriesForExport = userCompetitionAdminQuery
 
 // Mutations
 
-export const approve = userCompetitionAdminMutation
+export const approve = competitionAdminMutation
   .input({
     entryId: v.id("entries"),
   })
@@ -236,7 +239,7 @@ export const approve = userCompetitionAdminMutation
   })
   .public();
 
-export const reject = userCompetitionAdminMutation
+export const reject = competitionAdminMutation
   .input({
     entryId: v.id("entries"),
     rejectedReason: v.string(),

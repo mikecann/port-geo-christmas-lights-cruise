@@ -1,12 +1,13 @@
 import { ConvexError, v } from "convex/values";
-import { ensureDestructiveWipesAllowed, userSystemAdminMutation } from "./lib";
+import { ensureDestructiveWipesAllowed } from "./lib";
+import { systemAdminMutation } from "../../features/common/auth";
 import { entries } from "../../features/entries/model";
 import { createMockEntries } from "../../features/entries/testing";
 import { competitions } from "../../features/competitions/model";
 
 // Mutations
 
-export const generateMock = userSystemAdminMutation
+export const generateMock = systemAdminMutation
   .input({
     count: v.optional(v.number()),
   })
@@ -20,7 +21,7 @@ export const generateMock = userSystemAdminMutation
   })
   .public();
 
-export const wipeCurrentCompetition = userSystemAdminMutation
+export const wipeCurrentCompetition = systemAdminMutation
   .input({})
   .handler(async (context) => {
     ensureDestructiveWipesAllowed();
@@ -33,10 +34,10 @@ export const wipeCurrentCompetition = userSystemAdminMutation
   })
   .public();
 
-export const deleteMine = userSystemAdminMutation
+export const deleteMine = systemAdminMutation
   .input({})
   .handler(async (context) => {
-    const user = await context.getUser();
+    const user = context.user;
     const competition = await competitions.query(context).current();
     const myEntry = await entries
       .query(context)
@@ -49,7 +50,7 @@ export const deleteMine = userSystemAdminMutation
   })
   .public();
 
-export const deleteById = userSystemAdminMutation
+export const deleteById = systemAdminMutation
   .input({ entryId: v.id("entries") })
   .handler(async (context, input) => {
     const entry = await entries.query(context).forEntry(input.entryId).get();

@@ -1,4 +1,4 @@
-import { myMutation, myQuery } from "./lib";
+import { userMutation, userQuery } from "../features/common/auth";
 import { votes } from "../features/votes/model";
 import { photos } from "../features/photos/model";
 import { ConvexError, v } from "convex/values";
@@ -18,7 +18,7 @@ function requireVotingToBeOpen(competition: Doc<"competitions">) {
     throw new ConvexError(votingClosedMessage(competition.year));
 }
 
-export const list = myQuery
+export const list = userQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -28,7 +28,7 @@ export const list = myQuery
   })
   .public();
 
-export const hasVoted = myQuery
+export const hasVoted = userQuery
   .input({
     category: voteCategoryValidator,
   })
@@ -40,7 +40,7 @@ export const hasVoted = myQuery
   })
   .public();
 
-export const getForCategory = myQuery
+export const getForCategory = userQuery
   .input({
     category: voteCategoryValidator,
   })
@@ -72,7 +72,7 @@ export const getForCategory = myQuery
   })
   .public();
 
-export const getStatus = myQuery
+export const getStatus = userQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -93,7 +93,7 @@ export const getStatus = myQuery
   })
   .public();
 
-export const vote = myMutation
+export const vote = userMutation
   .input({
     entryId: v.id("entries"),
     category: voteCategoryValidator,
@@ -121,7 +121,7 @@ export const vote = myMutation
   })
   .public();
 
-export const cancel = myMutation
+export const cancel = userMutation
   .input({
     voteId: v.id("votes"),
   })

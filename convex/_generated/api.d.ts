@@ -9,7 +9,6 @@
  */
 
 import type * as admin_competition_entries from "../admin/competition/entries.js";
-import type * as admin_competition_lib from "../admin/competition/lib.js";
 import type * as admin_competition_photos from "../admin/competition/photos.js";
 import type * as admin_competition_votes from "../admin/competition/votes.js";
 import type * as admin_system_data from "../admin/system/data.js";
@@ -20,6 +19,7 @@ import type * as admin_system_users from "../admin/system/users.js";
 import type * as admin_system_votes from "../admin/system/votes.js";
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
+import type * as features_common_auth from "../features/common/auth.js";
 import type * as features_common_lib from "../features/common/lib.js";
 import type * as features_competitions_model from "../features/competitions/model.js";
 import type * as features_email_model from "../features/email/model.js";
@@ -37,7 +37,6 @@ import type * as internal_competitions from "../internal/competitions.js";
 import type * as internal_entries from "../internal/entries.js";
 import type * as internal_users from "../internal/users.js";
 import type * as my_entries from "../my/entries.js";
-import type * as my_lib from "../my/lib.js";
 import type * as my_photos from "../my/photos.js";
 import type * as my_votes from "../my/votes.js";
 import type * as public_competitions from "../public/competitions.js";
@@ -53,7 +52,6 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "admin/competition/entries": typeof admin_competition_entries;
-  "admin/competition/lib": typeof admin_competition_lib;
   "admin/competition/photos": typeof admin_competition_photos;
   "admin/competition/votes": typeof admin_competition_votes;
   "admin/system/data": typeof admin_system_data;
@@ -64,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   "admin/system/votes": typeof admin_system_votes;
   auth: typeof auth;
   crons: typeof crons;
+  "features/common/auth": typeof features_common_auth;
   "features/common/lib": typeof features_common_lib;
   "features/competitions/model": typeof features_competitions_model;
   "features/email/model": typeof features_email_model;
@@ -81,7 +80,6 @@ declare const fullApi: ApiFromModules<{
   "internal/entries": typeof internal_entries;
   "internal/users": typeof internal_users;
   "my/entries": typeof my_entries;
-  "my/lib": typeof my_lib;
   "my/photos": typeof my_photos;
   "my/votes": typeof my_votes;
   "public/competitions": typeof public_competitions;
