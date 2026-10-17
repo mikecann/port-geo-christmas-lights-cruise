@@ -1,5 +1,5 @@
 import { Text, Stack } from "@mantine/core";
-import { Dropzone } from "@mantine/dropzone";
+import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
 import "@mantine/dropzone/styles.css";
 import { ALLOWED_PHOTO_CONTENT_TYPES } from "../../../shared/constants";
 import DropzoneContent from "./DropzoneContent";
@@ -8,9 +8,15 @@ import { usePhotoUpload } from "./usePhotoUpload";
 
 type PhotoDropzoneProps = Parameters<typeof usePhotoUpload>[0];
 
-// Only types every browser can decode, so the JPEG conversion always works.
-// Leaving HEIC out also makes iPhones hand over a JPEG copy.
-const ACCEPTED_TYPES = ALLOWED_PHOTO_CONTENT_TYPES;
+// Everything is converted to a JPEG before upload. Browsers that can't decode
+// HEIC, AVIF or GIF get a clear message from preparePhotoForUpload instead.
+const ACCEPTED_TYPES = [
+  ...ALLOWED_PHOTO_CONTENT_TYPES,
+  MIME_TYPES.heic,
+  MIME_TYPES.heif,
+  MIME_TYPES.avif,
+  MIME_TYPES.gif,
+];
 
 export default function PhotoDropzone(props: PhotoDropzoneProps) {
   const { currentPhotoCount, maxPhotos } = props;

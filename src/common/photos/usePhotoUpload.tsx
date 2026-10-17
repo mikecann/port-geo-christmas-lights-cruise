@@ -124,7 +124,7 @@ export function usePhotoUpload({
     for (const { file } of rejections)
       showError(
         "Invalid file",
-        `${file.name} isn't a JPEG, PNG or WebP photo under 10MB`,
+        `${file.name} isn't a JPEG, PNG, WebP, HEIC, AVIF or GIF photo under 10MB`,
       );
   };
 

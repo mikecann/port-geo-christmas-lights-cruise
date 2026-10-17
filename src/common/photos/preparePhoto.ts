@@ -8,8 +8,9 @@ export const MAX_ORIGINAL_PHOTO_BYTES = 10 * 1024 * 1024;
 
 export type PreparedPhoto = { file: File } | { error: string };
 
-// Every photo is re-encoded as a JPEG before upload, so only send it if that
-// worked and the result is something the server will keep
+// Every photo is re-encoded as a JPEG before upload. Only send the result if
+// it's something the server will keep, or the original if conversion failed
+// but the server would keep that.
 export async function preparePhotoForUpload(
   original: File,
   compressToJpeg: (file: File) => Promise<File>,
@@ -22,6 +23,12 @@ export async function preparePhotoForUpload(
     file = await compressToJpeg(original);
   } catch (error) {
     console.error("Image compression failed:", error);
+    // The server checks the original again, so it's safe to send as is
+    if (
+      ALLOWED_PHOTO_CONTENT_TYPES.includes(original.type) &&
+      original.size <= MAX_PHOTO_UPLOAD_BYTES
+    )
+      return { file: original };
     return {
       error: `We couldn't read ${original.name}. Please choose a JPEG, PNG or WebP photo.`,
     };

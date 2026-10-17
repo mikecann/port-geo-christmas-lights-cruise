@@ -12,17 +12,46 @@ describe("preparePhotoForUpload", () => {
     ).toEqual({ file: jpeg });
   });
 
-  it("refuses to send anything when compression fails", async () => {
+  const failToCompress = async (): Promise<File> => {
+    throw new Error("decode failed");
+  };
+
+  it("sends a small JPEG, PNG or WebP original when compression fails", async () => {
+    for (const type of ["image/jpeg", "image/png", "image/webp"]) {
+      const original = photo(type, 1000, "house");
+      expect(await preparePhotoForUpload(original, failToCompress)).toEqual({
+        file: original,
+      });
+    }
+  });
+
+  it("refuses an original over 5 MB when compression fails", async () => {
     const result = await preparePhotoForUpload(
-      photo("image/png", 1000, "house.png"),
-      async () => {
-        throw new Error("decode failed");
-      },
+      photo("image/png", 5 * 1024 * 1024 + 1, "house.png"),
+      failToCompress,
     );
     expect(result).toEqual({
       error:
         "We couldn't read house.png. Please choose a JPEG, PNG or WebP photo.",
     });
+  });
+
+  it("refuses a HEIC the browser can't convert", async () => {
+    const result = await preparePhotoForUpload(
+      photo("image/heic", 1000, "house.heic"),
+      failToCompress,
+    );
+    expect(result).toEqual({
+      error:
+        "We couldn't read house.heic. Please choose a JPEG, PNG or WebP photo.",
+    });
+  });
+
+  it("uploads the JPEG converted from a HEIC", async () => {
+    const jpeg = photo("image/jpeg", 500);
+    expect(
+      await preparePhotoForUpload(photo("image/heic"), async () => jpeg),
+    ).toEqual({ file: jpeg });
   });
 
   it("refuses a result the server won't accept", async () => {
