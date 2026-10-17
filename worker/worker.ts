@@ -1,6 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import { maybeInjectOg } from "./og";
+import { withSecurityHeaders } from "./securityHeaders";
 
 export interface Env {
   ASSETS: Fetcher;
@@ -19,6 +20,8 @@ export default {
       : await fetch(request);
 
     // 2) Inject OG tags on relevant routes
-    return maybeInjectOg(request, env, originResponse);
+    const response = await maybeInjectOg(request, env, originResponse);
+
+    return withSecurityHeaders(response);
   },
 } satisfies ExportedHandler<Env>;
