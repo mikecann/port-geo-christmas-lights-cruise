@@ -1,3 +1,5 @@
+// The extra dot in this file name stops Convex from deploying it: the rate
+// limiter's test helper uses import.meta.glob, which the Convex runtime rejects.
 import { convexTest } from "convex-test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "../../../schema";

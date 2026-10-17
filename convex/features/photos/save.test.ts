@@ -6,8 +6,8 @@ import {
   createTestStorageId,
   createTestUser,
   signInAsTestUser,
-} from "../common/tests/testingHelpers";
-import type { ConvexTest } from "../common/tests/testingHelpers";
+} from "../common/tests/testingHelpers.vitest";
+import type { ConvexTest } from "../common/tests/testingHelpers.vitest";
 import { competitions } from "../competitions/model";
 import { MAX_PHOTO_UPLOAD_BYTES } from "../../../shared/constants";
 

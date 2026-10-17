@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { api } from "../../_generated/api";
-import type { AuthenticatedConvexTest } from "../common/tests/testingHelpers";
+import type { AuthenticatedConvexTest } from "../common/tests/testingHelpers.vitest";
 import {
   createConvexTestWithUser,
   createTestEntry,
   getTestUser,
   moveEntryToStatus,
-} from "../common/tests/testingHelpers";
+} from "../common/tests/testingHelpers.vitest";
 import { VOTING_CLOSED_MESSAGE } from "../../../shared/eventStatus";
 import { competitions } from "../competitions/model";
 

@@ -2,14 +2,14 @@ import { describe, it, expect, beforeEach } from "vitest";
 import type {
   ConvexTest,
   AuthenticatedConvexTest,
-} from "../common/tests/testingHelpers";
+} from "../common/tests/testingHelpers.vitest";
 import {
   createConvexTest,
   createTestUser,
   createTestEntry,
   moveEntryToStatus,
   signInAsTestUser,
-} from "../common/tests/testingHelpers";
+} from "../common/tests/testingHelpers.vitest";
 import { entries } from "./model";
 import type { Doc } from "../../_generated/dataModel";
 import { MAX_ENTRY_NUMBER } from "../../../shared/constants";

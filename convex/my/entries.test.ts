@@ -4,7 +4,7 @@ import {
   createConvexTestWithUser,
   createTestEntry,
   getTestUser,
-} from "../features/common/tests/testingHelpers";
+} from "../features/common/tests/testingHelpers.vitest";
 import { competitions } from "../features/competitions/model";
 
 const stubGooglePlace = (placeId: string) =>

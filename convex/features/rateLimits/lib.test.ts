@@ -4,7 +4,7 @@ import {
   createConvexTestWithUser,
   createTestEntry,
   moveEntryToStatus,
-} from "../common/tests/testingHelpers";
+} from "../common/tests/testingHelpers.vitest";
 import { competitions } from "../competitions/model";
 import { RATE_LIMITED_MESSAGE } from "./lib";
 

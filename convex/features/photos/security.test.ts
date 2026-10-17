@@ -4,7 +4,7 @@ import {
   createConvexTest,
   createTestUser,
   signInAsTestUser,
-} from "../common/tests/testingHelpers";
+} from "../common/tests/testingHelpers.vitest";
 import { competitions } from "../competitions/model";
 
 describe("photo access", () => {

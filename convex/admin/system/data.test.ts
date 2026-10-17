@@ -6,8 +6,8 @@ import {
   createTestStorageId,
   createTestUser,
   signInAsTestUser,
-} from "../../features/common/tests/testingHelpers";
-import type { ConvexTest } from "../../features/common/tests/testingHelpers";
+} from "../../features/common/tests/testingHelpers.vitest";
+import type { ConvexTest } from "../../features/common/tests/testingHelpers.vitest";
 import { competitions } from "../../features/competitions/model";
 
 const houseAddress = {

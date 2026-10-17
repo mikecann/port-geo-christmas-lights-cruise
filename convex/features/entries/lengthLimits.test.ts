@@ -8,7 +8,7 @@ import {
   getTheOnlyTestEntry,
   moveEntryToStatus,
   signInAsTestUser,
-} from "../common/tests/testingHelpers";
+} from "../common/tests/testingHelpers.vitest";
 import {
   MAX_ENTRY_ADDRESS_LENGTH,
   MAX_ENTRY_NAME_LENGTH,
