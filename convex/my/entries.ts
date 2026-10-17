@@ -1,8 +1,8 @@
 import { userAction, userMutation, userQuery } from "../features/common/auth";
 import { entries } from "../features/entries/model";
 import { ConvexError, v } from "convex/values";
-import type { GeocodedPlace } from "../features/map/lib";
-import { geocodeAddress } from "../features/map/lib";
+import type { GooglePlace } from "../features/map/lib";
+import { lookUpPlace } from "../features/map/lib";
 import { internal } from "../../shared/api";
 import { competitions } from "../features/competitions/model";
 import { enforceUserRateLimit } from "../features/rateLimits/lib";
@@ -104,11 +104,11 @@ export const submit = userAction
       throw new Error("Entry is not in submitting status");
 
     try {
-      let place: GeocodedPlace;
+      let place: GooglePlace;
       try {
-        place = await geocodeAddress(entry.houseAddress.address);
+        place = await lookUpPlace(entry.houseAddress.placeId);
       } catch (error) {
-        // Revert to draft if geocoding fails
+        // Revert to draft if Google can't find the place the user picked
         await context.runMutation(internal.entries.revertToDraft, {
           userId: context.userId,
         });

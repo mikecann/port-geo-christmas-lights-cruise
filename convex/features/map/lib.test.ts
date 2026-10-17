@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { geocodeAddress } from "./lib";
+import { lookUpPlace } from "./lib";
 
-describe("geocodeAddress", () => {
+describe("lookUpPlace", () => {
   // Mock fetch globally
   const mockFetch = vi.fn();
   const originalFetch = global.fetch;
@@ -20,19 +20,19 @@ describe("geocodeAddress", () => {
 
   describe("input validation", () => {
     it("should throw for empty string", async () => {
-      await expect(geocodeAddress("")).rejects.toThrow("Address is empty");
+      await expect(lookUpPlace("")).rejects.toThrow("Place id is empty");
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it("should throw for whitespace-only string", async () => {
-      await expect(geocodeAddress("   ")).rejects.toThrow("Address is empty");
+      await expect(lookUpPlace("   ")).rejects.toThrow("Place id is empty");
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it("should throw when API key is not configured", async () => {
       delete process.env.GOOGLE_MAPS_API_KEY;
 
-      await expect(geocodeAddress("123 Main St")).rejects.toThrow(
+      await expect(lookUpPlace("ChIJ123")).rejects.toThrow(
         "Google Maps API key not configured",
       );
       expect(mockFetch).not.toHaveBeenCalled();
@@ -40,195 +40,117 @@ describe("geocodeAddress", () => {
   });
 
   describe("API request construction", () => {
-    it("should construct correct Places API request", async () => {
+    it("should ask Place Details for the given place id", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          places: [
-            {
-              id: "google-place-1",
-              location: { latitude: -33.6, longitude: 115.3 },
-              displayName: { text: "123 Main St" },
-              formattedAddress: "123 Main St, Busselton WA, Australia",
-            },
-          ],
+          id: "ChIJ123",
+          location: { latitude: -33.6, longitude: 115.3 },
+          formattedAddress: "35 Keel Retreat, Geographe WA 6280, Australia",
         }),
       });
 
-      await geocodeAddress("123 Main St, Busselton");
+      await lookUpPlace("ChIJ123");
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
-
       const [url, options] = mockFetch.mock.calls[0];
-
-      // Verify the URL
-      expect(url).toBe("https://places.googleapis.com/v1/places:searchText");
-
-      // Verify the request method and headers
-      expect(options.method).toBe("POST");
+      expect(url).toBe("https://places.googleapis.com/v1/places/ChIJ123");
+      expect(options.method).toBe("GET");
       expect(options.headers).toEqual({
-        "Content-Type": "application/json",
         "X-Goog-Api-Key": "test-api-key",
-        "X-Goog-FieldMask":
-          "places.id,places.displayName,places.formattedAddress,places.location",
+        "X-Goog-FieldMask": "id,location,formattedAddress",
+      });
+    });
+
+    it("should encode the place id into the path", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: "a/b",
+          location: { latitude: -33.6, longitude: 115.3 },
+        }),
       });
 
-      // Verify the request body
-      const requestBody = JSON.parse(options.body);
-      expect(requestBody.textQuery).toBe("123 Main St, Busselton");
-      expect(requestBody.regionCode).toBe("AU");
-      expect(requestBody.pageSize).toBe(1);
-      expect(requestBody.locationBias.rectangle.low).toEqual({
-        latitude: -33.9,
-        longitude: 115.1,
-      });
-      expect(requestBody.locationBias.rectangle.high).toEqual({
-        latitude: -33.3,
-        longitude: 115.7,
-      });
+      await lookUpPlace("a/b?x=1");
+
+      expect(mockFetch.mock.calls[0][0]).toBe(
+        "https://places.googleapis.com/v1/places/a%2Fb%3Fx%3D1",
+      );
     });
   });
 
   describe("API response handling", () => {
-    it("should throw when API request fails", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      });
+    it("should throw when Google doesn't know the place", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
 
-      await expect(geocodeAddress("123 Main St")).rejects.toThrow(
-        "Google Places API request failed with status 500",
+      await expect(lookUpPlace("made-up")).rejects.toThrow(
+        'Google Place Details request for "made-up" failed with status 404',
       );
     });
 
-    it("should throw when API returns no places", async () => {
+    it("should throw when the response has no location", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: "ChIJ123" }),
+      });
+
+      await expect(lookUpPlace("ChIJ123")).rejects.toThrow(
+        'No place with a location found for id "ChIJ123"',
+      );
+    });
+
+    it("should throw when the response has no id", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          places: [],
+          location: { latitude: -33.6, longitude: 115.3 },
         }),
       });
 
-      await expect(geocodeAddress("NonexistentAddress123")).rejects.toThrow(
-        'No results found for address: "NonexistentAddress123"',
+      await expect(lookUpPlace("ChIJ123")).rejects.toThrow(
+        'No place with a location found for id "ChIJ123"',
       );
     });
 
-    it("should throw when API returns empty response", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      });
-
-      await expect(geocodeAddress("123 Main St")).rejects.toThrow(
-        'No results found for address: "123 Main St"',
-      );
-    });
-
-    it("should parse and return coordinates from valid response", async () => {
+    it("should return Google's location and id", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          places: [
-            {
-              id: "google-place-1",
-              location: { latitude: -33.6485, longitude: 115.3474 },
-              displayName: { text: "123 Main St" },
-              formattedAddress: "123 Main St, Busselton WA, Australia",
-            },
-          ],
+          id: "ChIJ123",
+          location: { latitude: -33.6485, longitude: 115.3474 },
         }),
       });
 
-      const result = await geocodeAddress("123 Main St, Busselton");
-
-      expect(result).toEqual({
+      expect(await lookUpPlace("ChIJ123")).toEqual({
         lat: -33.6485,
         lng: 115.3474,
-        placeId: "google-place-1",
+        placeId: "ChIJ123",
       });
     });
 
-    it("should use first result when multiple results returned", async () => {
+    it("should return Google's id when it differs from the one asked for", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          places: [
-            {
-              id: "google-place-1",
-              location: { latitude: -33.6485, longitude: 115.3474 },
-              displayName: { text: "123 Main St" },
-              formattedAddress: "123 Main St, Busselton WA, Australia",
-            },
-            {
-              id: "google-place-2",
-              location: { latitude: -33.7, longitude: 115.4 },
-              displayName: { text: "456 Second St" },
-              formattedAddress: "456 Second St, Perth WA, Australia",
-            },
-          ],
+          id: "ChIJ-refreshed",
+          location: { latitude: -33.6485, longitude: 115.3474 },
         }),
       });
 
-      const result = await geocodeAddress("Main St");
+      const result = await lookUpPlace("ChIJ-old");
 
-      expect(result).toEqual({
-        lat: -33.6485,
-        lng: 115.3474,
-        placeId: "google-place-1",
-      });
-    });
-
-    it("should handle coordinates as numbers", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          places: [
-            {
-              id: "google-place-3",
-              location: { latitude: -33.6485, longitude: 115.3474 },
-              displayName: { text: "Test Address" },
-              formattedAddress: "Test Address, Busselton WA, Australia",
-            },
-          ],
-        }),
-      });
-
-      const result = await geocodeAddress("Test Address");
-
-      expect(result).toEqual({
-        lat: -33.6485,
-        lng: 115.3474,
-        placeId: "google-place-3",
-      });
-      expect(typeof result?.lat).toBe("number");
-      expect(typeof result?.lng).toBe("number");
-    });
-
-    it("should throw when the place has no id", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          places: [{ location: { latitude: -33.6, longitude: 115.3 } }],
-        }),
-      });
-
-      await expect(geocodeAddress("123 Main St")).rejects.toThrow(
-        'No place id returned for address: "123 Main St"',
-      );
+      expect(result.placeId).toBe("ChIJ-refreshed");
     });
   });
 
   describe("error handling", () => {
-    it("should handle network errors gracefully", async () => {
+    it("should pass network errors through", async () => {
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-      await expect(geocodeAddress("123 Main St")).rejects.toThrow(
-        "Network error",
-      );
+      await expect(lookUpPlace("ChIJ123")).rejects.toThrow("Network error");
     });
 
-    it("should handle malformed JSON response", async () => {
+    it("should pass malformed JSON errors through", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => {
@@ -236,61 +158,23 @@ describe("geocodeAddress", () => {
         },
       });
 
-      await expect(geocodeAddress("123 Main St")).rejects.toThrow(
-        "Invalid JSON",
-      );
+      await expect(lookUpPlace("ChIJ123")).rejects.toThrow("Invalid JSON");
     });
   });
 });
 
-describe("geocodeAddress - Integration Tests", () => {
-  // These tests make actual API calls - mark as integration tests
-  it.skip("should geocode known Busselton addresses using Places API", async () => {
-    // Skip by default to avoid hitting external API in CI
-    // Run with: vitest --reporter=verbose --run lib.test.ts -t "Integration"
-    // NOTE: Requires GOOGLE_MAPS_API_KEY environment variable to be set
+describe("lookUpPlace - Integration Tests", () => {
+  // These tests make actual API calls and need GOOGLE_MAPS_API_KEY set.
+  // Run with: vitest --run lib.test.ts -t "Integration"
+  it.skip("should look up a Busselton place id", async () => {
+    // Copy a place id for a Busselton address from the entry form's autocomplete
+    const result = await lookUpPlace(process.env.TEST_BUSSELTON_PLACE_ID ?? "");
 
-    const result = await geocodeAddress("Queen Street, Busselton, WA");
-
-    expect(result).not.toBe(null);
-    expect(result?.lat).toBeCloseTo(-33.65, 1); // Roughly Busselton area
-    expect(result?.lng).toBeCloseTo(115.35, 1); // Roughly Busselton area
-  }, 10000); // 10 second timeout for API calls
-
-  it.skip("should throw for completely invalid addresses", async () => {
-    await expect(
-      geocodeAddress("XYZ Invalid Address That Does Not Exist 12345"),
-    ).rejects.toThrow(
-      'No results found for address: "XYZ Invalid Address That Does Not Exist 12345"',
-    );
+    expect(result.lat).toBeCloseTo(-33.6, 0);
+    expect(result.lng).toBeCloseTo(115.3, 0);
   }, 10000);
 
-  it.skip("should geocode partial addresses like 35 keel retreat", async () => {
-    // Test with partial address which should work better with Places API
-    // NOTE: Requires GOOGLE_MAPS_API_KEY environment variable to be set
-    const result = await geocodeAddress("35 keel retreat");
-
-    expect(result).not.toBe(null);
-    expect(typeof result?.lat).toBe("number");
-    expect(typeof result?.lng).toBe("number");
-
-    console.log(
-      `✓ Geocoded "35 keel retreat" to lat: ${result?.lat}, lng: ${result?.lng}`,
-    );
-  }, 10000);
-
-  it.skip("should geocode Busselton addresses", async () => {
-    // Test with Busselton which should definitely work with Google Places API
-    // NOTE: Requires GOOGLE_MAPS_API_KEY environment variable to be set
-    const result = await geocodeAddress("Busselton, WA, Australia");
-
-    expect(result).not.toBe(null);
-    // Busselton coordinates should be approximately:
-    expect(result?.lat).toBeCloseTo(-33.6, 0); // Within 1 degree
-    expect(result?.lng).toBeCloseTo(115.3, 0); // Within 1 degree
-
-    console.log(
-      `✓ Geocoded Busselton to lat: ${result?.lat}, lng: ${result?.lng}`,
-    );
+  it.skip("should throw for a made-up place id", async () => {
+    await expect(lookUpPlace("not-a-real-place-id")).rejects.toThrow();
   }, 10000);
 });
