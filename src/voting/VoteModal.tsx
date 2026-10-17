@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
-import { track } from "../../analytics/client";
+import { track } from "../analytics/client";
 import { Modal, Tabs, Title, Group, Text } from "@mantine/core";
 import { IconStar, IconSparkles } from "@tabler/icons-react";
-import type { Id } from "../../../convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
 import { useConvexAuth, useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from "../../convex/_generated/api";
 import VoteCategories from "./VoteCategories";
 import VoteAuthPrompt from "./VoteAuthPrompt";
 

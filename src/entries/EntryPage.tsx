@@ -14,7 +14,7 @@ import PhotoLightbox from "../authed/myEntries/photos/PhotoLightbox";
 import EntryHeader from "./EntryHeader";
 import SystemAdminSection from "./SystemAdminSection";
 import EntryVoting from "./voting/EntryVoting";
-import VoteModal from "../map/voteModal/VoteModal";
+import VoteModal from "../voting/VoteModal";
 import ShareModal from "./ShareModal";
 import { PhotoSlide } from "./PhotoSlide";
 import { Route } from "type-route";

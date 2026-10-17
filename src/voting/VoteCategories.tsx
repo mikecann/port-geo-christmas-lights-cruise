@@ -1,4 +1,4 @@
-import { measured, track } from "../../analytics/client";
+import { measured, track } from "../analytics/client";
 import {
   Tabs,
   Badge,
@@ -15,12 +15,12 @@ import { IconAward, IconMoodSmile, IconInfoCircle } from "@tabler/icons-react";
 import { useState } from "react";
 import React from "react";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
-import type { VoteCategory } from "../../../convex/features/votes/schema";
-import { VOTE_CATEGORIES } from "../../../convex/features/votes/schema";
-import { useErrorHandler } from "../../common/errors";
-import { routes } from "../../routes";
+import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
+import type { VoteCategory } from "../../convex/features/votes/schema";
+import { VOTE_CATEGORIES } from "../../convex/features/votes/schema";
+import { useErrorHandler } from "../common/errors";
+import { routes } from "../routes";
 import ExistingVoteCard from "./ExistingVoteCard";
 
 interface CategoryConfig {
