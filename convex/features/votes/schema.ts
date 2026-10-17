@@ -17,6 +17,7 @@ export const voteTable = defineTable({
   category: voteCategoryValidator,
 })
   .index("by_competitionId", ["competitionId"])
+  .index("by_entryId", ["entryId"])
   .index("by_votingUserId_and_competitionId_and_category", [
     "votingUserId",
     "competitionId",

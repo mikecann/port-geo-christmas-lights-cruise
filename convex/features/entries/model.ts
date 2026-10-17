@@ -4,6 +4,7 @@ import { type MutationCtx, type QueryCtx } from "../../_generated/server";
 import { ensure } from "../../../shared/ensure";
 import { match } from "ts-pattern";
 import { photos } from "../photos/model";
+import { votes } from "../votes/model";
 import { isStatus } from "../../../shared/filter";
 import { randomIntRange } from "../../../shared/num";
 import * as testing from "./testing";
@@ -321,11 +322,9 @@ export const entries = {
           },
 
           async delete() {
-            const entry = await query.get();
-
-            // Delete all photos for this entry
+            await query.get();
             await photos.forEntry(entryId).deleteAll(context);
-
+            await votes.forEntry(entryId).deleteAll(context.db);
             await context.db.delete(entryId);
           },
 
@@ -426,10 +425,7 @@ export const entries = {
                 `Entry of id '${entry._id}' with status '${entry.status}' is not in the draft status`,
               );
 
-            // Delete all photos for this entry
-            await photos.forEntry(entry._id).deleteAll(ctx);
-
-            await ctx.db.delete(entry._id);
+            await entries.mutate(ctx).forEntry(entry._id).delete();
           },
 
           async startSubmitting(ctx: MutationCtx) {

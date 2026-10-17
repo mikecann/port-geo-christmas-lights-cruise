@@ -45,8 +45,11 @@ export const photos = {
         const photo = await this.find(ctx.db);
         if (!photo) return;
 
-        if (photo.kind === "mock") return;
-        if (photo.uploadState.status == "uploading") return;
+        // Mock and still-uploading photos have no stored file to remove
+        if (photo.kind === "mock" || photo.uploadState.status == "uploading") {
+          await ctx.db.delete(photoId);
+          return;
+        }
 
         if (photo.uploadState.status == "uploaded") {
           const { storageId } = photo.uploadState;

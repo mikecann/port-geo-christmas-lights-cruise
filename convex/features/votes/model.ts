@@ -76,6 +76,19 @@ export const votes = {
     };
   },
 
+  forEntry(entryId: Id<"entries">) {
+    return {
+      // Pass the trigger-wrapped db so the vote aggregate drops them too
+      async deleteAll(db: DatabaseWriter) {
+        const entryVotes = await db
+          .query("votes")
+          .withIndex("by_entryId", (q) => q.eq("entryId", entryId))
+          .collect();
+        for (const vote of entryVotes) await db.delete(vote._id);
+      },
+    };
+  },
+
   forVote(voteId: Id<"votes">) {
     return {
       async cancel(db: DatabaseWriter, { userId }: { userId: Id<"users"> }) {
