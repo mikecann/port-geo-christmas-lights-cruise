@@ -21,7 +21,8 @@ beforeEach(() => {
   vi.stubGlobal("location", {
     href: `https://example.com/entries/${id}?utm_source=qr&utm_medium=qr`,
   });
-  vi.stubGlobal("document", { referrer: "" });
+  vi.stubGlobal("document", { referrer: "", readyState: "complete" });
+  vi.stubGlobal("requestIdleCallback", (callback: () => void) => callback());
 });
 async function enabled() {
   vi.stubEnv("VITE_ANALYTICS_ENABLED", "true");
@@ -54,7 +55,10 @@ describe("analytics lifecycle", () => {
     const first = sdk.init.mock.calls[0][1].bootstrap.distinctID;
     vi.resetModules();
     vi.stubGlobal("location", { href: "https://example.com/?code=secret" });
-    vi.stubGlobal("document", { referrer: "https://accounts.google.com" });
+    vi.stubGlobal("document", {
+      referrer: "https://accounts.google.com",
+      readyState: "complete",
+    });
     const client = await enabled();
     client.track("vote_succeeded", { entry_id: id });
     expect(sdk.init.mock.calls[1][1].bootstrap.distinctID).toBe(first);
@@ -100,6 +104,41 @@ describe("analytics lifecycle", () => {
     ]);
     expect(JSON.stringify(sdk.capture.mock.calls)).not.toContain(
       "private address",
+    );
+  });
+  it("waits for load and idle before loading the SDK, then sends queued events in order", async () => {
+    vi.stubEnv("VITE_ANALYTICS_ENABLED", "true");
+    vi.stubEnv("VITE_POSTHOG_KEY", "phc_test");
+    vi.stubEnv("VITE_POSTHOG_HOST", "https://us.i.posthog.com");
+    vi.stubGlobal("document", { referrer: "", readyState: "loading" });
+    let onLoad: (() => void) | undefined;
+    vi.stubGlobal("addEventListener", (type: string, listener: () => void) => {
+      if (type === "load") onLoad = listener;
+    });
+    let onIdle: (() => void) | undefined;
+    vi.stubGlobal("requestIdleCallback", (callback: () => void) => {
+      onIdle = callback;
+    });
+    const client = await import("./client");
+    const started = client.initAnalytics();
+    client.track("page_viewed", { page: "entry" });
+    client.track("entry_viewed", { entry_id: id });
+    await Promise.resolve();
+    expect(onIdle).toBeUndefined();
+    onLoad?.();
+    expect(sdk.init).not.toHaveBeenCalled();
+    onIdle?.();
+    await started;
+    expect(sdk.init).toHaveBeenCalledTimes(1);
+    expect(sdk.capture.mock.calls.map(([event]) => event)).toEqual([
+      "visit_started",
+      "page_viewed",
+      "entry_viewed",
+    ]);
+    client.track("vote_opened");
+    expect(sdk.capture).toHaveBeenLastCalledWith(
+      "vote_opened",
+      expect.objectContaining({ channel: "qr" }),
     );
   });
   it("fails closed on blocked storage", async () => {

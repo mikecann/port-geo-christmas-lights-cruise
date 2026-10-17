@@ -45,6 +45,9 @@ export async function initAnalytics() {
     enabled = true;
     if (fresh) track("visit_started");
     // Keep the SDK out of the initial bundle and never load it when disabled.
+    // Wait until the page has loaded and gone idle, so on a slow connection it
+    // doesn't compete with the app. Events tracked until then are queued.
+    await afterLoadAndIdle();
     const sdk = (await import("posthog-js/dist/module.no-external")).default;
     sdk.init(env.VITE_POSTHOG_KEY, {
       api_host: env.VITE_POSTHOG_HOST,
@@ -103,6 +106,18 @@ export async function initAnalytics() {
     pending = [];
     /* Analytics and blocked storage must never prevent app startup. */
   }
+}
+
+function afterLoadAndIdle() {
+  return new Promise<void>((resolve) => {
+    const idle = () => {
+      if (typeof requestIdleCallback === "function")
+        requestIdleCallback(() => resolve(), { timeout: 4000 });
+      else setTimeout(resolve, 1000);
+    };
+    if (document.readyState === "complete") idle();
+    else addEventListener("load", idle, { once: true });
+  });
 }
 
 export function track(event: EventName, properties: Properties = {}) {
