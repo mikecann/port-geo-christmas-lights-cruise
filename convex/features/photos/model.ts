@@ -4,9 +4,20 @@ import type {
   DatabaseWriter,
   MutationCtx,
 } from "../../_generated/server";
+import { ConvexError } from "convex/values";
 import { ensure } from "../../../shared/ensure";
-import { MAX_PHOTOS_PER_ENTRY } from "../../../shared/constants";
+import {
+  ALLOWED_PHOTO_CONTENT_TYPES,
+  MAX_PHOTO_UPLOAD_BYTES,
+  MAX_PHOTOS_PER_ENTRY,
+} from "../../../shared/constants";
 import { exhaustiveCheck } from "../../../shared/misc";
+
+// The upload's storage timestamp can land slightly before uploadStartedAt
+const UPLOAD_CLOCK_SKEW_MS = 5_000;
+
+const UPLOAD_NOT_SAVED_MESSAGE =
+  "Sorry, we couldn't save that photo. Please try uploading it again.";
 
 export const photos = {
   forPhoto(photoId: Id<"photos">) {
@@ -28,15 +39,23 @@ export const photos = {
         if (photo.uploadState.status == "uploading") return;
 
         if (photo.uploadState.status == "uploaded") {
-          await ctx.storage.delete(photo.uploadState.storageId);
+          const { storageId } = photo.uploadState;
           await ctx.db.delete(photoId);
+          // Never remove a file that another photo still points at
+          if (!(await photos.isStorageReferenced(ctx.db, storageId)))
+            await ctx.storage.delete(storageId);
           return;
         }
 
         exhaustiveCheck(photo.uploadState);
       },
 
-      async save(ctx: MutationCtx, args: { storageId: Id<"_storage"> }) {
+      // Returns an error message instead of throwing when the file gets
+      // deleted, because throwing would roll the delete back.
+      async save(
+        ctx: MutationCtx,
+        args: { storageId: Id<"_storage"> },
+      ): Promise<{ error: string } | null> {
         const photo = await this.get(ctx.db);
         if (photo.kind != "convex_stored")
           throw new Error(
@@ -47,6 +66,33 @@ export const photos = {
           throw new Error(
             `Photo with id '${photoId}' is not in uploading state`,
           );
+
+        const file = await ctx.db.system.get(args.storageId);
+        if (!file) throw new ConvexError(UPLOAD_NOT_SAVED_MESSAGE);
+
+        // Files that are older than this upload or already in use belong to
+        // someone else, so refuse them and leave them alone.
+        if (await photos.isStorageReferenced(ctx.db, args.storageId))
+          throw new ConvexError(UPLOAD_NOT_SAVED_MESSAGE);
+        if (
+          file._creationTime <
+          photo.uploadState.uploadStartedAt - UPLOAD_CLOCK_SKEW_MS
+        )
+          throw new ConvexError(UPLOAD_NOT_SAVED_MESSAGE);
+
+        const isAllowedType = ALLOWED_PHOTO_CONTENT_TYPES.includes(
+          file.contentType ?? "",
+        );
+        const problem = isAllowedType
+          ? file.size > MAX_PHOTO_UPLOAD_BYTES
+            ? "Photos must be 5 MB or smaller."
+            : null
+          : "Photos must be JPEG, PNG or WebP images.";
+        if (problem) {
+          await ctx.storage.delete(args.storageId);
+          await ctx.db.delete(photoId);
+          return { error: problem };
+        }
 
         // Get the URL for the uploaded file
         const url = await ctx.storage.getUrl(args.storageId);
@@ -64,8 +110,19 @@ export const photos = {
             url: url,
           },
         });
+        return null;
       },
     };
+  },
+
+  async isStorageReferenced(db: DatabaseReader, storageId: Id<"_storage">) {
+    const photo = await db
+      .query("photos")
+      .withIndex("by_uploadState_storageId", (q) =>
+        q.eq("uploadState.storageId", storageId),
+      )
+      .first();
+    return photo !== null;
   },
 
   forEntry(entryId: Id<"entries">) {

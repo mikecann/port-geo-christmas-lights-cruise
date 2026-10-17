@@ -32,4 +32,6 @@ export const photoTable = defineTable(
       ),
     }),
   ),
-).index("by_entryId", ["entryId"]);
+)
+  .index("by_entryId", ["entryId"])
+  .index("by_uploadState_storageId", ["uploadState.storageId"]);

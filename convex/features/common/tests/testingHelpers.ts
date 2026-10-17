@@ -68,11 +68,17 @@ export const getTheOnlyTestEntry = async (t: TestOrAuthenticatedConvexTest) => {
 
 export const createTestStorageId = async (
   t: TestOrAuthenticatedConvexTest,
+  options: { contentType?: string; data?: BlobPart } = {},
 ): Promise<Id<"_storage">> => {
-  // Store a test blob in Convex storage
+  const contentType = options.contentType ?? "image/jpeg";
   return t.run(async (ctx) => {
-    const blob = new Blob(["test image data"], { type: "image/jpeg" });
+    const blob = new Blob([options.data ?? "test image data"], {
+      type: contentType,
+    });
     const storageId = await ctx.storage.store(blob);
+    // convex-test doesn't record the content type like the real backend does
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (ctx.db as any).patch(storageId, { contentType });
     return storageId;
   });
 };

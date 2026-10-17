@@ -97,7 +97,16 @@ export default function PhotoUpload({
       };
 
       // Step 4: Update the photo to "uploaded" state with the storage ID
-      await savePhoto({ photoId, storageId });
+      const saveResult = await savePhoto({ photoId, storageId });
+      if (saveResult) {
+        notifications.show({
+          title: "Photo not saved",
+          message: saveResult.error,
+          color: "red",
+          icon: <IconAlertCircle size={16} />,
+        });
+        return false;
+      }
 
       return true;
     } catch (error) {

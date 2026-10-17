@@ -34,7 +34,7 @@ export const save = myMutation
     storageId: v.id("_storage"),
     photoId: v.id("photos"),
   })
-  .returns(v.null())
+  .returns(v.union(v.null(), v.object({ error: v.string() })))
   .handler(async (context, input) => {
     const competition = await competitions.query(context).current();
     const entry = await entries
@@ -45,11 +45,9 @@ export const save = myMutation
     if (photo.entryId !== entry._id)
       throw new Error("Cannot modify another entry's photo");
 
-    await photos.forPhoto(input.photoId).save(context, {
+    return await photos.forPhoto(input.photoId).save(context, {
       storageId: input.storageId,
     });
-
-    return null;
   })
   .public();
 

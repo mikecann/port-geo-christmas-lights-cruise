@@ -25,12 +25,11 @@ export const save = userCompetitionAdminMutation
     storageId: v.id("_storage"),
     photoId: v.id("photos"),
   })
-  .returns(v.null())
+  .returns(v.union(v.null(), v.object({ error: v.string() })))
   .handler(async (context, input) => {
-    await photos.forPhoto(input.photoId).save(context, {
+    return await photos.forPhoto(input.photoId).save(context, {
       storageId: input.storageId,
     });
-    return null;
   })
   .public();
 
