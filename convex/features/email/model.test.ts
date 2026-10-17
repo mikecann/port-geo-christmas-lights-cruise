@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { escapeHtml } from "./model";
+import type { Doc, Id } from "../../_generated/dataModel";
+import { email, escapeHtml } from "./model";
+
+const entry = {
+  _id: "entry" as Id<"entries">,
+  name: "Twinkle Town",
+  houseAddress: { address: "1 Keel Retreat", placeId: "pid" },
+} as Doc<"entries">;
 
 describe("escapeHtml", () => {
   it("escapes markup in user written text", () => {
@@ -11,5 +18,23 @@ describe("escapeHtml", () => {
   it("turns missing values into an empty string", () => {
     expect(escapeHtml(undefined)).toBe("");
     expect(escapeHtml(42)).toBe("42");
+  });
+});
+
+describe("entry emails", () => {
+  it("link to the my-entries page", () => {
+    expect(email.approvalHtml({ entry, entryNumber: 7 })).toContain(
+      'href="/my-entries"',
+    );
+    expect(
+      email.rejectionHtml({ entry, rejectedReason: "Outside the area" }),
+    ).toContain('href="/my-entries"');
+  });
+
+  it("don't give last year's sign pickup details", () => {
+    const html = email.approvalHtml({ entry, entryNumber: 7 });
+    expect(html).toContain("sign collection details separately");
+    expect(html).not.toContain("35 Keel Retreat");
+    expect(html).not.toContain("Sunday 30th");
   });
 });
