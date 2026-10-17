@@ -1,6 +1,6 @@
 // Only frame-ancestors for CSP: a full policy would need careful allow-listing
 // for Google Maps, PostHog and Convex.
-const SECURITY_HEADERS: Record<string, string> = {
+export const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-Frame-Options": "DENY",

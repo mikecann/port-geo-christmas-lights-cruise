@@ -1,5 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { withSecurityHeaders } from "./securityHeaders";
+import { SECURITY_HEADERS, withSecurityHeaders } from "./securityHeaders";
 
 describe("withSecurityHeaders", () => {
   it("adds the security headers and keeps the response intact", async () => {
@@ -34,5 +35,27 @@ describe("withSecurityHeaders", () => {
     expect(response.status).toBe(304);
     expect(response.headers.get("referrer-policy")).toBe("no-referrer");
     expect(response.headers.get("x-frame-options")).toBe("DENY");
+  });
+});
+
+describe("public/_headers", () => {
+  it("gives pages served straight from assets the same security headers", () => {
+    const file = readFileSync(
+      new URL("../public/_headers", import.meta.url),
+      "utf8",
+    );
+    const allPaths = file.split(/^\/\*$/m)[1]?.split(/^\S/m)[0] ?? "";
+    const headers = Object.fromEntries(
+      allPaths
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const colon = line.indexOf(":");
+          return [line.slice(0, colon), line.slice(colon + 1).trim()];
+        }),
+    );
+
+    expect(headers).toEqual(SECURITY_HEADERS);
   });
 });
