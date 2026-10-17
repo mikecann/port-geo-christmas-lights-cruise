@@ -125,13 +125,13 @@ describe("competition seasons", () => {
       expect(
         await votes
           .forUser(votingUserId)
-          .hasVotedForCategory(ctx.db, legacy._id, "best_display"),
-      ).toBe(true);
+          .findVoteForCategory(ctx.db, legacy._id, "best_display"),
+      ).not.toBeNull();
       expect(
         await votes
           .forUser(votingUserId)
-          .hasVotedForCategory(ctx.db, current._id, "best_display"),
-      ).toBe(true);
+          .findVoteForCategory(ctx.db, current._id, "best_display"),
+      ).not.toBeNull();
     });
   });
 });

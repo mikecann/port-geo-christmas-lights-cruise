@@ -1,6 +1,5 @@
 import { userMutation, userQuery } from "../features/common/auth";
 import { votes } from "../features/votes/model";
-import { photos } from "../features/photos/model";
 import { ConvexError, v } from "convex/values";
 import {
   VOTE_CATEGORIES,
@@ -25,50 +24,6 @@ export const list = userQuery
     return await votes
       .forUser(context.userId)
       .list(context.db, competition._id);
-  })
-  .public();
-
-export const hasVoted = userQuery
-  .input({
-    category: voteCategoryValidator,
-  })
-  .handler(async (context, input) => {
-    const competition = await competitions.query(context).current();
-    return await votes
-      .forUser(context.userId)
-      .hasVotedForCategory(context.db, competition._id, input.category);
-  })
-  .public();
-
-export const getForCategory = userQuery
-  .input({
-    category: voteCategoryValidator,
-  })
-  .handler(async (context, input) => {
-    const competition = await competitions.query(context).current();
-    const vote = await votes
-      .forUser(context.userId)
-      .findVoteForCategory(context.db, competition._id, input.category);
-
-    if (!vote) return null;
-
-    const entry = await context.db.get(vote.entryId);
-    if (!entry || entry.status !== "approved") return null;
-
-    const entryPhotos = await photos
-      .forEntry(vote.entryId)
-      .listPublic(context.db);
-
-    return {
-      vote,
-      entry: {
-        _id: entry._id,
-        name: entry.name,
-        entryNumber: entry.entryNumber,
-        houseAddress: entry.houseAddress,
-        photos: entryPhotos,
-      },
-    };
   })
   .public();
 

@@ -26,7 +26,6 @@ import {
 } from "../../../shared/constants";
 import DraftEntryHeader from "./DraftEntryHeader";
 import EntryNameGuidelinesModal from "./EntryNameGuidelinesModal";
-import { isTestMode } from "../../common/testMode";
 
 interface DraftEntryStateProps {
   entry: Doc<"entries">;
@@ -136,14 +135,12 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
             />
 
             {/* Photo Section */}
-            {isTestMode() ? null : (
-              <PhotoSection
-                photos={photos}
-                canUpload={true}
-                canRemove={true}
-                onUploadStateChange={setIsPhotosUploading}
-              />
-            )}
+            <PhotoSection
+              photos={photos}
+              canUpload={true}
+              canRemove={true}
+              onUploadStateChange={setIsPhotosUploading}
+            />
           </Stack>
 
           <Divider />

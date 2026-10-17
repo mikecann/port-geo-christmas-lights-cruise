@@ -84,19 +84,6 @@ export const listRejected = competitionAdminQuery
   })
   .public();
 
-export const get = competitionAdminQuery
-  .input({ entryId: v.id("entries") })
-  .handler(async (context, input) => {
-    const entry = await entries.query(context).forEntry(input.entryId).get();
-    const entryPhotos = await photos.forEntry(input.entryId).list(context.db);
-
-    return {
-      ...entry,
-      photos: entryPhotos,
-    };
-  })
-  .public();
-
 export const getUserDetails = competitionAdminQuery
   .input({ userId: v.id("users") })
   .handler(async (context, input) => {

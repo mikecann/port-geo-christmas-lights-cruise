@@ -7,7 +7,6 @@ import { photos } from "../photos/model";
 import { votes } from "../votes/model";
 import { isStatus } from "../../../shared/filter";
 import { randomIntRange } from "../../../shared/num";
-import * as testing from "./testing";
 import { exhaustiveCheck } from "../../../shared/misc";
 import {
   COMPETITION_GEOGRAPHIC_BOUNDARY,
@@ -27,8 +26,6 @@ function trimToLimit(value: string, maxLength: number, label: string) {
 }
 
 export const entries = {
-  testing,
-
   toPublic(entry: ApprovedEntryDoc): PublicEntry {
     const { address, lat, lng } = entry.houseAddress;
     return {

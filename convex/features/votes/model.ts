@@ -15,23 +15,6 @@ export const votes = {
           .collect();
       },
 
-      async hasVotedForCategory(
-        db: DatabaseReader,
-        competitionId: Id<"competitions">,
-        category: VoteCategory,
-      ) {
-        const existing = await db
-          .query("votes")
-          .withIndex("by_votingUserId_and_competitionId_and_category", (q) =>
-            q
-              .eq("votingUserId", userId)
-              .eq("competitionId", competitionId)
-              .eq("category", category),
-          )
-          .first();
-        return existing !== null;
-      },
-
       async findVoteForCategory(
         db: DatabaseReader,
         competitionId: Id<"competitions">,

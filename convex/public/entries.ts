@@ -34,20 +34,6 @@ const withFirstPhoto = async (ctx: QueryCtx, entry: ApprovedEntryDoc) => ({
   photo: await photos.forEntry(entry._id).findFirstPublic(ctx.db),
 });
 
-export const list = convex
-  .query()
-  .input(competitionInput)
-  .returns(v.array(publicEntryValidator))
-  .handler(async (context, input) => {
-    const competition = await resolveCompetition(
-      context,
-      input.competitionYear,
-    );
-    const docs = await entries.query(context).listApproved(competition._id);
-    return docs.map(entries.toPublic);
-  })
-  .public();
-
 export const listWithFirstPhoto = convex
   .query()
   .input(competitionInput)
@@ -60,25 +46,6 @@ export const listWithFirstPhoto = convex
     const docs = await entries.query(context).listApproved(competition._id);
     return await Promise.all(
       docs.map((entry) => withFirstPhoto(context, entry)),
-    );
-  })
-  .public();
-
-export const listWithPhotos = convex
-  .query()
-  .input(competitionInput)
-  .returns(v.array(entryWithPhotosValidator))
-  .handler(async (context, input) => {
-    const competition = await resolveCompetition(
-      context,
-      input.competitionYear,
-    );
-    const docs = await entries.query(context).listApproved(competition._id);
-    return await Promise.all(
-      docs.map(async (entry) => ({
-        entry: entries.toPublic(entry),
-        photos: await photos.forEntry(entry._id).listPublic(context.db),
-      })),
     );
   })
   .public();
