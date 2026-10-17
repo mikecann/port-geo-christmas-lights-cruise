@@ -9,6 +9,16 @@ import {
 } from "../common/tests/testingHelpers.vitest";
 import { VOTING_CLOSED_MESSAGE } from "../../../shared/eventStatus";
 import { competitions } from "../competitions/model";
+import { aggregateVotes, voteNamespace } from "./lib";
+import type { VoteCategory } from "./schema";
+
+const countVotes = (t: AuthenticatedConvexTest, category: VoteCategory) =>
+  t.run(async (ctx) => {
+    const competition = await competitions.query(ctx).current();
+    return await aggregateVotes.count(ctx, {
+      namespace: voteNamespace(competition._id, category),
+    });
+  });
 
 describe("voting pause", () => {
   let t: AuthenticatedConvexTest;
@@ -80,6 +90,23 @@ describe("voting while open", () => {
 
     const storedVotes = await t.run((ctx) => ctx.db.query("votes").collect());
     expect(storedVotes).toHaveLength(1);
+  });
+
+  it("keeps the vote counts in step when voting and cancelling", async () => {
+    const entry = await createTestEntry(t);
+    if (!entry) throw new Error("Failed to create entry");
+    await moveEntryToStatus(t, { entryId: entry._id, status: "approved" });
+
+    await t.mutation(api.my.votes.vote, {
+      entryId: entry._id,
+      category: "best_display",
+    });
+    expect(await countVotes(t, "best_display")).toBe(1);
+    expect(await countVotes(t, "most_jolly")).toBe(0);
+
+    const [vote] = await t.run((ctx) => ctx.db.query("votes").collect());
+    await t.mutation(api.my.votes.cancel, { voteId: vote._id });
+    expect(await countVotes(t, "best_display")).toBe(0);
   });
 
   it("rejects votes for entries that aren't approved", async () => {

@@ -1,12 +1,11 @@
 import { v } from "convex/values";
 import { entries } from "../features/entries/model";
 import { email } from "../features/email/model";
-import { convex } from "../schema";
+import { mutation } from "../features/common/lib";
 import { competitions } from "../features/competitions/model";
 import type { MutationCtx } from "../_generated/server";
 
-export const startSubmitting = convex
-  .mutation()
+export const startSubmitting = mutation
   .input({
     userId: v.id("users"),
   })
@@ -21,8 +20,7 @@ export const startSubmitting = convex
   })
   .internal();
 
-export const finalizeSubmission = convex
-  .mutation()
+export const finalizeSubmission = mutation
   .input({
     entryId: v.id("entries"),
     lat: v.number(),
@@ -51,8 +49,7 @@ export const finalizeSubmission = convex
   })
   .internal();
 
-export const revertToDraft = convex
-  .mutation()
+export const revertToDraft = mutation
   .input({
     userId: v.id("users"),
   })
@@ -121,8 +118,7 @@ export async function repairCurrentReturningEntryNumbersForContext(
   return { repairedCount, conflictCount: pendingRepairs.size };
 }
 
-export const repairCurrentReturningEntryNumbers = convex
-  .mutation()
+export const repairCurrentReturningEntryNumbers = mutation
   .input({})
   .returns(
     v.object({

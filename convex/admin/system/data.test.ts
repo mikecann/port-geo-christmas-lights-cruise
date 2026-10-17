@@ -5,6 +5,7 @@ import {
   createConvexTest,
   createTestStorageId,
   createTestUser,
+  insertTestVote,
   signInAsTestUser,
 } from "../../features/common/tests/testingHelpers.vitest";
 import type { ConvexTest } from "../../features/common/tests/testingHelpers.vitest";
@@ -40,7 +41,7 @@ const seedEntryWithPhotoAndVote = async (
       kind: "convex_stored",
       uploadState: { status: "uploaded", storageId, url: "https://x" },
     });
-    const voteId = await ctx.db.insert("votes", {
+    const voteId = await insertTestVote(ctx, {
       competitionId,
       entryId,
       votingUserId: voterId,

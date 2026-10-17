@@ -1,5 +1,6 @@
 import { competitions } from "../features/competitions/model";
 import { convex, vv } from "../schema";
+import { mutation } from "../features/common/lib";
 import { v } from "convex/values";
 
 export const current = convex
@@ -9,8 +10,7 @@ export const current = convex
   .handler(async (ctx) => await competitions.query(ctx).current())
   .internal();
 
-export const setCurrentEntriesOpen = convex
-  .mutation()
+export const setCurrentEntriesOpen = mutation
   .input({ entriesOpen: v.boolean() })
   .returns(v.null())
   .handler(async (ctx, input) => {

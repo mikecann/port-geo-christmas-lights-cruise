@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ensure } from "../../shared/ensure";
-import { triggers } from "../features/common/lib";
+import { mutation } from "../features/common/lib";
 import { convex } from "../schema";
 
 // With middleware
@@ -23,14 +23,13 @@ export const myQueryMiddleware = convex
 
 export const myQuery = convex.query().use(myQueryMiddleware);
 
-export const myMutationMiddleware = convex
-  .mutation()
-  .createMiddleware(async (context, next) => {
+export const myMutationMiddleware = mutation.createMiddleware(
+  async (context, next) => {
     const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
 
     return next({
-      ...triggers.wrapDB(context),
+      ...context,
       userId,
       getUser: async () =>
         ensure(
@@ -38,9 +37,10 @@ export const myMutationMiddleware = convex
           `couldnt find user with id ${userId}`,
         ),
     });
-  });
+  },
+);
 
-export const myMutation = convex.mutation().use(myMutationMiddleware);
+export const myMutation = mutation.use(myMutationMiddleware);
 
 export const myActionMiddleware = convex
   .action()

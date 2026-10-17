@@ -1,17 +1,21 @@
 import type { DataModel } from "../../_generated/dataModel";
 import { Triggers } from "convex-helpers/server/triggers";
 import { aggregateVotes } from "../votes/lib";
-import { typedV } from "convex-helpers/validators";
-import schema from "../../schema";
+import { convex } from "../../schema";
 
 // Using triggers to keep the aggregates up to date automatically for us in our mutations
-export const triggers = new Triggers<DataModel>();
-const isVitest =
-  typeof process !== "undefined" &&
-  !!(process as { env?: { VITEST?: unknown } }).env?.VITEST;
-if (!isVitest) triggers.register("votes", aggregateVotes.trigger());
+const triggers = new Triggers<DataModel>();
+triggers.register("votes", aggregateVotes.trigger());
 
-export const vv = typedV(schema);
+// Every mutation, internal ones included, is built from this so the triggers
+// always run. A plain convex.mutation() would let the vote counts drift.
+// eslint-disable-next-line no-restricted-syntax
+export const mutation = convex.mutation().use(
+  // eslint-disable-next-line no-restricted-syntax
+  convex
+    .mutation()
+    .createMiddleware(async (context, next) => next(triggers.wrapDB(context))),
+);
 
 // Deterministic shuffle using a provided seed string.
 // Uses xmur3 to hash the seed into a number and mulberry32 as the PRNG.

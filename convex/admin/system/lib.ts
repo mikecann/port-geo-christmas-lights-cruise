@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ensure } from "../../../shared/ensure";
-import { triggers } from "../../features/common/lib";
+import { mutation } from "../../features/common/lib";
 import { convex } from "../../schema";
 import { ConvexError } from "convex/values";
 
@@ -39,9 +39,8 @@ export const userSystemAdminQuery = convex
   .query()
   .use(userSystemAdminQueryMiddleware);
 
-export const userSystemAdminMutationMiddleware = convex
-  .mutation()
-  .createMiddleware(async (context, next) => {
+export const userSystemAdminMutationMiddleware = mutation.createMiddleware(
+  async (context, next) => {
     const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
 
@@ -53,12 +52,12 @@ export const userSystemAdminMutationMiddleware = convex
     if (!user.isSystemAdmin) throw new Error("User is not a system admin");
 
     return next({
-      ...triggers.wrapDB(context),
-      storage: context.storage,
+      ...context,
       getUser: async () => user,
     });
-  });
+  },
+);
 
-export const userSystemAdminMutation = convex
-  .mutation()
-  .use(userSystemAdminMutationMiddleware);
+export const userSystemAdminMutation = mutation.use(
+  userSystemAdminMutationMiddleware,
+);

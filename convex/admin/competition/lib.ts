@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ensure } from "../../../shared/ensure";
-import { triggers } from "../../features/common/lib";
+import { mutation } from "../../features/common/lib";
 import { convex } from "../../schema";
 import { v } from "convex/values";
 import { internal } from "../../../convex/_generated/api";
@@ -39,9 +39,8 @@ export const userCompetitionAdminQuery = convex
 //   },
 // });
 
-export const userCompetitionAdminMutationMiddleware = convex
-  .mutation()
-  .createMiddleware(async (context, next) => {
+export const userCompetitionAdminMutationMiddleware = mutation.createMiddleware(
+  async (context, next) => {
     const userId = await getAuthUserId(context);
     if (userId === null) throw new Error(`Couldnt find user with id ${userId}`);
 
@@ -54,14 +53,15 @@ export const userCompetitionAdminMutationMiddleware = convex
       throw new Error("User is not a competition admin or system admin");
 
     return next({
-      ...triggers.wrapDB(context),
+      ...context,
       getUser: async () => user,
     });
-  });
+  },
+);
 
-export const userCompetitionAdminMutation = convex
-  .mutation()
-  .use(userCompetitionAdminMutationMiddleware);
+export const userCompetitionAdminMutation = mutation.use(
+  userCompetitionAdminMutationMiddleware,
+);
 
 // Internal query to check admin status (used by action middleware)
 export const checkAdminStatus = convex

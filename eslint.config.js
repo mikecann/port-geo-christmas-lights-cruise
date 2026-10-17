@@ -78,6 +78,25 @@ export default [
           message:
             "Switch statements are not allowed. Use if-else with early returns instead.",
         },
+        {
+          selector:
+            "CallExpression[callee.object.name='convex'][callee.property.name='mutation']",
+          message:
+            "Build mutations from `mutation` in convex/features/common/lib.ts so the vote aggregate triggers run.",
+        },
+      ],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/_generated/server"],
+              importNames: ["mutation", "internalMutation"],
+              message:
+                "Build mutations from `mutation` in convex/features/common/lib.ts so the vote aggregate triggers run.",
+            },
+          ],
+        },
       ],
 
       // Custom local rules

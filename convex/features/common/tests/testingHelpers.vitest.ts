@@ -1,17 +1,23 @@
 // The extra dot in this file name stops Convex from deploying it: the rate
-// limiter's test helper uses import.meta.glob, which the Convex runtime rejects.
+// limiter and aggregate test helpers use import.meta.glob, which the Convex
+// runtime rejects.
 import { convexTest } from "convex-test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
+import aggregate from "@convex-dev/aggregate/test";
 import schema from "../../../schema";
 import type { Doc, Id } from "../../../_generated/dataModel";
+import type { MutationCtx } from "../../../_generated/server";
+import type { WithoutSystemFields } from "convex/server";
 import { ensure } from "../../../../shared/ensure";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { entries } from "../../entries/model";
 import { competitions } from "../../competitions/model";
+import { aggregateVotes } from "../../votes/lib";
 
 export const createConvexTest = () => {
   const t = convexTest(schema);
   rateLimiter.register(t);
+  aggregate.register(t, "aggregateVotes");
 
   return t;
 };
@@ -234,4 +240,15 @@ export const getTestUser = (t: TestOrAuthenticatedConvexTest) => {
     const user = await ctx.db.get(userId);
     return ensure(user);
   });
+};
+
+// t.run skips the triggers, so the vote goes into the aggregate by hand, the
+// same as it would through a mutation
+export const insertTestVote = async (
+  ctx: MutationCtx,
+  vote: WithoutSystemFields<Doc<"votes">>,
+) => {
+  const voteId = await ctx.db.insert("votes", vote);
+  await aggregateVotes.insert(ctx, ensure(await ctx.db.get(voteId)));
+  return voteId;
 };
