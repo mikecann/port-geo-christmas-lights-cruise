@@ -613,7 +613,7 @@ describe("submission error reversion", () => {
           placeId,
         });
       }),
-    ).rejects.toThrow(/already has an approved entry|already has an entry/);
+    ).rejects.toThrow(/is already used!/);
 
     // Verify entry2 is still in submitting status
     const entryAfterError = await t2.run(async (ctx) => {
@@ -732,7 +732,7 @@ describe("finalizeSubmission", () => {
           placeId: sharedPlaceId,
         });
       }),
-    ).rejects.toThrow(/already has an approved entry/i);
+    ).rejects.toThrow(/is already used!/);
   });
 
   it("should allow finalization if no other approved entry exists with the same placeId", async () => {
@@ -897,7 +897,7 @@ describe("finalizeSubmission", () => {
           placeId: sharedPlaceId,
         });
       }),
-    ).rejects.toThrow(/already has an approved entry/i);
+    ).rejects.toThrow(/is already used!/);
   });
 
   it("should throw an error if a submitted entry exists with the same placeId", async () => {
@@ -949,6 +949,6 @@ describe("finalizeSubmission", () => {
           placeId: sharedPlaceId,
         });
       }),
-    ).rejects.toThrow(/already has an approved entry/i);
+    ).rejects.toThrow(/is already used!/);
   });
 });
