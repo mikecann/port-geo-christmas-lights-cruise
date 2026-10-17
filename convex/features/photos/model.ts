@@ -1,6 +1,7 @@
 import type { Id } from "../../_generated/dataModel";
 import type { DatabaseReader, MutationCtx } from "../../_generated/server";
 import { ensure } from "../../../shared/ensure";
+import { internal } from "../../../shared/api";
 import {
   ALLOWED_PHOTO_CONTENT_TYPES,
   MAX_PHOTO_UPLOAD_BYTES,
@@ -118,6 +119,10 @@ export const photos = {
             storageId: args.storageId,
             url: url,
           },
+        });
+        await ctx.scheduler.runAfter(0, internal.photos.checkUploadedImage, {
+          photoId,
+          storageId: args.storageId,
         });
         return null;
       },

@@ -99,7 +99,10 @@ export const createTestStorageId = async (
 ): Promise<Id<"_storage">> => {
   const contentType = options.contentType ?? "image/jpeg";
   return t.run(async (ctx) => {
-    const blob = new Blob([options.data ?? "test image data"], {
+    // Starts with the JPEG magic number so the uploaded image check keeps it
+    const data =
+      options.data ?? new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
+    const blob = new Blob([data], {
       type: contentType,
     });
     const storageId = await ctx.storage.store(blob);

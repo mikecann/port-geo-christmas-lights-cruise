@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import {
@@ -179,6 +179,42 @@ describe("photo save", () => {
       }),
     ).toEqual({ error: expect.stringContaining("couldn't save that photo") });
     expect(await storageExists(t, victimStorageId)).toBe(true);
+  });
+});
+
+describe("uploaded image check", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const saveAndCheck = async (data: BlobPart) => {
+    vi.useFakeTimers();
+    const t = createConvexTest();
+    const { asUser } = await setupEntrant(t);
+    const { photoId } = await asUser.mutation(api.my.photos.beginUpload, {});
+    // Labelled as a JPEG whatever the bytes are, like a forged upload
+    const storageId = await createTestStorageId(t, { data });
+    expect(
+      await asUser.mutation(api.my.photos.save, { photoId, storageId }),
+    ).toBeNull();
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    return { t, photoId, storageId };
+  };
+
+  it("keeps a real image", async () => {
+    const { t, photoId, storageId } = await saveAndCheck(
+      new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
+
+    expect(await t.run((ctx) => ctx.db.get(photoId))).not.toBeNull();
+    expect(await storageExists(t, storageId)).toBe(true);
+  });
+
+  it("removes a file that only claims to be an image", async () => {
+    const { t, photoId, storageId } = await saveAndCheck("<script></script>");
+
+    expect(await t.run((ctx) => ctx.db.get(photoId))).toBeNull();
+    expect(await storageExists(t, storageId)).toBe(false);
   });
 });
 
