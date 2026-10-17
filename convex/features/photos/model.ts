@@ -63,8 +63,8 @@ export const photos = {
         exhaustiveCheck(photo.uploadState);
       },
 
-      // Returns an error message instead of throwing when the file gets
-      // deleted, because throwing would roll the delete back.
+      // Returns an error message instead of throwing when it deletes the
+      // photo row or file, because throwing would roll the delete back.
       async save(
         ctx: MutationCtx,
         args: { storageId: Id<"_storage"> },
