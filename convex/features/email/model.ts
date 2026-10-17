@@ -5,6 +5,16 @@ import type { Doc, Id } from "../../_generated/dataModel";
 import { entries } from "../entries/model";
 import { users } from "../users/model";
 
+// Entry names, addresses and rejection reasons are user or admin written text
+export function escapeHtml(value: unknown) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export const resend: Resend = new Resend(components.resend, {
   testMode: false,
 });
@@ -53,8 +63,8 @@ export const email = {
       html: `
         <h2>New Entry Submission</h2>
         <p>A new entry has been submitted and is awaiting approval.</p>
-        <p><strong>Address:</strong> ${args.entry.houseAddress?.address}</p>
-        <p><a href="${adminUrl}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Review Entry</a></p>
+        <p><strong>Address:</strong> ${escapeHtml(args.entry.houseAddress?.address)}</p>
+        <p><a href="${escapeHtml(adminUrl)}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Review Entry</a></p>
         <p>Click the button above or visit the admin panel to approve or reject this entry.</p>
       `,
     });
@@ -85,9 +95,9 @@ export const email = {
         <p>We're excited to let you know that your entry for the Port Geographe Christmas Lights Competition has been approved!</p>
         
         <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <p><strong>Entry Number:</strong> ${args.entryNumber}</p>
-          <p><strong>Property Name:</strong> ${args.entry.name}</p>
-          <p><strong>Address:</strong> ${args.entry.houseAddress?.address}</p>
+          <p><strong>Entry Number:</strong> ${escapeHtml(args.entryNumber)}</p>
+          <p><strong>Property Name:</strong> ${escapeHtml(args.entry.name)}</p>
+          <p><strong>Address:</strong> ${escapeHtml(args.entry.houseAddress?.address)}</p>
         </div>
 
         <h3>Next Steps:</h3>
@@ -99,7 +109,7 @@ export const email = {
           <li><strong>Stay Updated:</strong> Keep an eye on your email for important updates about the cruise schedule.</li>
         </ol>
 
-        <p><a href="${myEntriesUrl}" style="display: inline-block; padding: 12px 24px; background-color: #16a34a; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Your Entry</a></p>
+        <p><a href="${escapeHtml(myEntriesUrl)}" style="display: inline-block; padding: 12px 24px; background-color: #16a34a; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Your Entry</a></p>
 
         <p>Thank you for being part of the Port Geographe Christmas Lights Cruise! Your participation helps create a magical experience for our community.</p>
         
@@ -127,15 +137,15 @@ export const email = {
         <p>Unfortunately, we are unable to approve your entry at this time.</p>
 
       <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
-          <p><strong>Property Name:</strong> ${args.entry.name}</p>
-          <p><strong>Address:</strong> ${args.entry.houseAddress?.address}</p>
+          <p><strong>Property Name:</strong> ${escapeHtml(args.entry.name)}</p>
+          <p><strong>Address:</strong> ${escapeHtml(args.entry.houseAddress?.address)}</p>
           <p style="margin-top: 15px;"><strong>Reason:</strong></p>
-          <p style="margin-left: 10px;">${args.rejectedReason}</p>
+          <p style="margin-left: 10px;">${escapeHtml(args.rejectedReason)}</p>
         </div>
 
         <p>If you believe this was a mistake or if you would like to discuss this decision further, please feel free to contact us. We're happy to provide more information or guidance.</p>
 
-        <p><a href="${myEntriesUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Your Entries</a></p>
+        <p><a href="${escapeHtml(myEntriesUrl)}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Your Entries</a></p>
 
         <p>We appreciate your understanding and hope you'll consider participating in future events.</p>
         

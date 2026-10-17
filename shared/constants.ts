@@ -12,6 +12,11 @@ export const ALLOWED_PHOTO_CONTENT_TYPES = [
 ];
 export const MAX_PHOTO_UPLOAD_BYTES = 5 * 1024 * 1024;
 
+// Longest text we accept, measured after trimming
+export const MAX_ENTRY_NAME_LENGTH = 80;
+export const MAX_ENTRY_ADDRESS_LENGTH = 200;
+export const MAX_REJECTED_REASON_LENGTH = 1000;
+
 // Maximum entry number for random assignment (0 to MAX_ENTRY_NUMBER)
 // After all numbers in this range are used, new entries will get MAX_ENTRY_NUMBER + 1, etc.
 export const MAX_ENTRY_NUMBER = 40;

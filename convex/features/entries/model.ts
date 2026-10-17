@@ -10,11 +10,21 @@ import * as testing from "./testing";
 import { exhaustiveCheck } from "../../../shared/misc";
 import {
   COMPETITION_GEOGRAPHIC_BOUNDARY,
+  MAX_ENTRY_ADDRESS_LENGTH,
+  MAX_ENTRY_NAME_LENGTH,
   MAX_ENTRY_NUMBER,
+  MAX_REJECTED_REASON_LENGTH,
   usersWhiteList,
 } from "../../../shared/constants";
 import { competitions } from "../competitions/model";
 import type { ApprovedEntryDoc, PublicEntry } from "./schema";
+
+function trimToLimit(value: string, maxLength: number, label: string) {
+  const trimmed = value.trim();
+  if (trimmed.length > maxLength)
+    throw new ConvexError(`${label} must be ${maxLength} characters or fewer.`);
+  return trimmed;
+}
 
 export const entries = {
   testing,
@@ -281,7 +291,11 @@ export const entries = {
             await db.patch(entryId, {
               status: "rejected",
               rejectedAt: Date.now(),
-              rejectedReason,
+              rejectedReason: trimToLimit(
+                rejectedReason,
+                MAX_REJECTED_REASON_LENGTH,
+                "The rejection reason",
+              ),
             });
           },
 
@@ -345,9 +359,21 @@ export const entries = {
               name?: string;
             } = {};
             if (args.houseAddress !== undefined)
-              updateFields.houseAddress = args.houseAddress;
+              updateFields.houseAddress = {
+                address: trimToLimit(
+                  args.houseAddress.address,
+                  MAX_ENTRY_ADDRESS_LENGTH,
+                  "The address",
+                ),
+                placeId: args.houseAddress.placeId,
+              };
 
-            if (args.name !== undefined) updateFields.name = args.name;
+            if (args.name !== undefined)
+              updateFields.name = trimToLimit(
+                args.name,
+                MAX_ENTRY_NAME_LENGTH,
+                "The entry name",
+              );
 
             await db.patch(entry._id, updateFields);
           },
@@ -361,7 +387,12 @@ export const entries = {
             const updateFields: {
               name?: string;
             } = {};
-            if (args.name !== undefined) updateFields.name = args.name;
+            if (args.name !== undefined)
+              updateFields.name = trimToLimit(
+                args.name,
+                MAX_ENTRY_NAME_LENGTH,
+                "The entry name",
+              );
 
             await db.patch(entry._id, updateFields);
           },

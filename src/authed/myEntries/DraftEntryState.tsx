@@ -23,6 +23,10 @@ import {
 } from "../../common/errors";
 import PhotoSection from "./photos/PhotoSection";
 import AddressAutocomplete from "../../common/components/AddressAutocomplete";
+import {
+  MAX_ENTRY_ADDRESS_LENGTH,
+  MAX_ENTRY_NAME_LENGTH,
+} from "../../../shared/constants";
 import DraftEntryHeader from "./DraftEntryHeader";
 import EntryNameGuidelinesModal from "./EntryNameGuidelinesModal";
 import { isTestMode } from "../../common/testMode";
@@ -108,6 +112,7 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
               required
               value={address}
               onChange={setAddress}
+              maxLength={MAX_ENTRY_ADDRESS_LENGTH}
               onSelect={(val) => setSelectedAddress(val)}
               error={
                 selectedAddress?.placeId
@@ -119,6 +124,7 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
               label="Entry Name"
               placeholder="Give your display a name (optional)"
               value={name}
+              maxLength={MAX_ENTRY_NAME_LENGTH}
               onChange={(e) => setName(e.currentTarget.value)}
               rightSection={
                 <ActionIcon
