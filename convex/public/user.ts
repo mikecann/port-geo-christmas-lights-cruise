@@ -1,15 +1,9 @@
 import type { Doc } from "../_generated/dataModel";
-import { getAuthUserId } from "@convex-dev/auth/server";
-import { convex } from "../schema";
+import { optionalUserQuery } from "../features/common/auth";
 
-export const find = convex
-  .query()
+export const find = optionalUserQuery
   .input({})
-  .handler(async (context): Promise<Me | null> => {
-    const userId = await getAuthUserId(context);
-    if (userId === null) return null;
-    return await context.db.get(userId);
-  })
+  .handler(async (context): Promise<Me | null> => context.user)
   .public();
 
 export type Me = Doc<"users">;

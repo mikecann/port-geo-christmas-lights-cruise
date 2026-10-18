@@ -1,6 +1,7 @@
 import { Carousel } from "@mantine/carousel";
-import { usePhotoUrl } from "../common/hooks/usePhotoUrl";
-import type { PhotoDoc } from "../../convex/features/photos/schema";
+import { usePhotoSrcSet, usePhotoUrl } from "../common/hooks/usePhotoUrl";
+import type { PublicPhoto } from "../../convex/features/photos/schema";
+import { ENTRY_PHOTO } from "../../shared/photoUrls";
 
 export function PhotoSlide({
   photo,
@@ -8,27 +9,26 @@ export function PhotoSlide({
   onImageClick,
   isPriority,
 }: {
-  photo: PhotoDoc;
+  photo: PublicPhoto;
   entry: { name: string };
   onImageClick: (imageUrl: string) => void;
   isPriority?: boolean;
 }) {
-  const imageUrl = usePhotoUrl(photo, { size: "md" }); // Medium size for carousel
-  const lightboxUrl = usePhotoUrl(photo); // Default (md) size for lightbox
+  const image = usePhotoSrcSet(photo, ENTRY_PHOTO);
+  const lightboxUrl = usePhotoUrl(photo, { size: "lg" });
 
-  if (!imageUrl) return null;
+  if (!image) return null;
 
   return (
     <Carousel.Slide>
       <div style={{ width: "100%", height: "100%" }}>
         <img
-          src={imageUrl}
+          {...image}
           alt={`${entry.name} - Christmas lights display`}
           loading={isPriority ? "eager" : "lazy"}
           decoding="async"
           // TS typing prefers camelCase for this attribute
           fetchPriority={isPriority ? "high" : ("low" as const)}
-          sizes="(max-width: 62rem) 100vw, 960px"
           style={{
             width: "100%",
             height: "100%",
@@ -37,7 +37,7 @@ export function PhotoSlide({
             display: "block",
             cursor: "pointer",
           }}
-          onClick={() => onImageClick(lightboxUrl || imageUrl)}
+          onClick={() => onImageClick(lightboxUrl || image.src)}
         />
       </div>
     </Carousel.Slide>

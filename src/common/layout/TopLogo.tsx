@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Text, Box } from "@mantine/core";
+import { Box } from "@mantine/core";
 import { routes } from "../../routes";
 
 export const TopLogo: React.FC = () => {

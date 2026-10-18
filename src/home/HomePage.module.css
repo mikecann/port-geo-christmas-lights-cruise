@@ -1,0 +1,12 @@
+/* Pause the lights, stars, boat and markers while the scene is off-screen,
+   to save battery. !important beats the animation shorthands, which reset
+   the play state. */
+.scene[data-offscreen] :global(*) {
+  animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene :global(*) {
+    animation: none !important;
+  }
+}

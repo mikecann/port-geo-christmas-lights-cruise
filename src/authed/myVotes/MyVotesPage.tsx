@@ -12,60 +12,23 @@ import {
   Alert,
 } from "@mantine/core";
 import { useQuery } from "convex/react";
-import { useMemo } from "react";
-import { IconAward, IconMoodSmile, IconTrophy } from "@tabler/icons-react";
+import { IconTrophy } from "@tabler/icons-react";
 import { api } from "../../../convex/_generated/api";
-import type { Doc } from "../../../convex/_generated/dataModel";
-import { Id } from "../../../convex/_generated/dataModel";
-import type { VoteCategory } from "../../../convex/features/votes/schema";
-import { VOTE_CATEGORIES } from "../../../convex/features/votes/schema";
+import {
+  VOTE_CATEGORIES,
+  VOTE_CATEGORY_DETAILS,
+} from "../../../convex/features/votes/schema";
 import { AuthRequired } from "../../auth/AuthRequired";
-import { useErrorCatchingMutation } from "../../common/errors";
 import MyVoteEntryCard from "./MyVoteEntryCard";
 import { routes } from "../../routes";
-
-interface CategoryConfig {
-  key: VoteCategory;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-}
-
-const VOTE_CATEGORIES_CONFIG: CategoryConfig[] = [
-  {
-    key: "best_display",
-    title: "Best Display",
-    description:
-      "Best Display highlights creativity, visual impact and overall presentation of the lights.",
-    icon: <IconAward size={18} />,
-  },
-  {
-    key: "most_jolly",
-    title: "Most Jolly",
-    description:
-      "Most Jolly celebrates festive spirit, warmth and joy conveyed by the display.",
-    icon: <IconMoodSmile size={18} />,
-  },
-];
+import { votingClosedMessage } from "../../../shared/eventStatus";
+import { VOTE_CATEGORY_STYLES } from "../../voting/voteCategoryStyles";
 
 export default function MyVotesPage() {
   const votes = useQuery(api.my.votes.list, {});
+  const competition = useQuery(api.public.competitions.current, {});
 
-  const votesByCategory = useMemo(() => {
-    const result: Record<VoteCategory, Doc<"votes">[]> = {
-      best_display: [],
-      most_jolly: [],
-    };
-
-    if (votes)
-      votes.forEach((vote) => {
-        result[vote.category].push(vote);
-      });
-
-    return result;
-  }, [votes]);
-
-  if (votes === undefined)
+  if (votes === undefined || competition === undefined)
     return (
       <AuthRequired>
         <Container size="md" py="xl">
@@ -94,40 +57,49 @@ export default function MyVotesPage() {
         </Group>
 
         <Stack gap="md">
-          <Alert color="yellow" variant="light" title="Voting is closed">
-            Your previous votes are preserved here as a read-only record.
-          </Alert>
+          {competition.votingOpen ? (
+            <Alert color="green" variant="light" title="Voting is open">
+              Your votes for the {competition.year} competition are shown below.
+            </Alert>
+          ) : (
+            <Alert color="yellow" variant="light" title="Voting is closed">
+              {votes.length > 0
+                ? "Your previous votes are preserved here as a read-only record."
+                : votingClosedMessage(competition.year)}
+            </Alert>
+          )}
           {VOTE_CATEGORIES.map((category) => {
-            const categoryConfig = VOTE_CATEGORIES_CONFIG.find(
-              (config) => config.key === category,
+            const { title, description } = VOTE_CATEGORY_DETAILS[category];
+            const { Icon } = VOTE_CATEGORY_STYLES[category];
+            const categoryVotes = votes.filter(
+              (vote) => vote.category === category,
             );
-            if (!categoryConfig) return null;
-            const votes = votesByCategory[category];
 
             return (
               <Card key={category} withBorder>
                 <Group justify="space-between" align="center">
                   <Group>
-                    {categoryConfig.icon}
-                    <Text fw={600}>{categoryConfig.title}</Text>
+                    <Icon size={18} />
+                    <Text fw={600}>{title}</Text>
                     <Badge color="blue" variant="light">
-                      {votes.length} vote{votes.length === 1 ? "" : "s"}
+                      {categoryVotes.length} vote
+                      {categoryVotes.length === 1 ? "" : "s"}
                     </Badge>
                   </Group>
                 </Group>
 
                 <Text c="dimmed" size="sm" mt={4}>
-                  {categoryConfig.description}
+                  {description}
                 </Text>
 
                 <Stack gap="sm" mt="sm">
-                  {votes.length === 0 ? (
+                  {categoryVotes.length === 0 ? (
                     <Text c="dimmed" size="sm">
                       You have not voted in this category yet.
                     </Text>
                   ) : (
                     <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-                      {votes.map((vote) => (
+                      {categoryVotes.map((vote) => (
                         <MyVoteEntryCard
                           key={vote._id}
                           entryId={vote.entryId}

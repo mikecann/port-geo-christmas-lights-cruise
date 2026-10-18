@@ -1,28 +1,26 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { entries } from "../features/entries/model";
 import { email } from "../features/email/model";
-import { convex } from "../schema";
+import { mutation } from "../features/common/lib";
 import { competitions } from "../features/competitions/model";
 import type { MutationCtx } from "../_generated/server";
 
-export const startSubmitting = convex
-  .mutation()
+export const startSubmitting = mutation
   .input({
     userId: v.id("users"),
   })
   .handler(async (context, input) => {
     const competition = await competitions.query(context).current();
     if (!competition.entriesOpen)
-      throw new Error("Competition entries are currently closed");
+      throw new ConvexError("Competition entries are currently closed");
     return await entries
       .mutate(context)
       .forUser(competition._id, input.userId)
-      .startSubmitting(context);
+      .startSubmitting();
   })
   .internal();
 
-export const finalizeSubmission = convex
-  .mutation()
+export const finalizeSubmission = mutation
   .input({
     entryId: v.id("entries"),
     lat: v.number(),
@@ -51,8 +49,7 @@ export const finalizeSubmission = convex
   })
   .internal();
 
-export const revertToDraft = convex
-  .mutation()
+export const revertToDraft = mutation
   .input({
     userId: v.id("users"),
   })
@@ -85,8 +82,8 @@ export async function repairCurrentReturningEntryNumbersForContext(
   for (const entry of approvedEntries) {
     const previousEntry = await entries
       .query(context)
-      .forUser(entry.submittedByUserId)
-      .findPreviousCompetitionApproved(competition._id);
+      .forUser(competition._id, entry.submittedByUserId)
+      .findPreviousApproved();
     if (!previousEntry || previousEntry.entryNumber === entry.entryNumber)
       continue;
 
@@ -121,8 +118,7 @@ export async function repairCurrentReturningEntryNumbersForContext(
   return { repairedCount, conflictCount: pendingRepairs.size };
 }
 
-export const repairCurrentReturningEntryNumbers = convex
-  .mutation()
+export const repairCurrentReturningEntryNumbers = mutation
   .input({})
   .returns(
     v.object({

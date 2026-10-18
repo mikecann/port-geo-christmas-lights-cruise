@@ -1,35 +1,55 @@
-import { userCompetitionAdminMutation, userCompetitionAdminQuery } from "./lib";
+import {
+  competitionAdminMutation,
+  competitionAdminQuery,
+} from "../../features/common/auth";
 import { entries } from "../../features/entries/model";
 import { photos } from "../../features/photos/model";
 import { email } from "../../features/email/model";
 import { v } from "convex/values";
+import type { FunctionReturnType } from "convex/server";
+import type { api } from "../../_generated/api";
 import { competitions } from "../../features/competitions/model";
+import { isWithinBoundary } from "../../../shared/geo";
+
+const reviewableStatusValidator = v.union(
+  v.literal("submitted"),
+  v.literal("approved"),
+  v.literal("rejected"),
+);
+
+export type AdminEntry = FunctionReturnType<
+  typeof api.admin.competition.entries.list
+>[number];
 
 // Queries
 
-export const listPending = userCompetitionAdminQuery
-  .input({})
-  .handler(async (context) => {
+// What the admin entry cards and tables show, including the photos and the
+// person who entered, so each card doesn't have to fetch them again
+export const list = competitionAdminQuery
+  .input({ status: reviewableStatusValidator })
+  .handler(async (context, input) => {
     const competition = await competitions.query(context).current();
-    const pendingEntries = await entries
+    const statusEntries = await entries
       .query(context)
-      .listPendingReview(competition._id);
+      .listWithStatus(competition._id, input.status);
 
-    const entriesWithPhotos = await Promise.all(
-      pendingEntries.map(async (entry) => {
-        const entryPhotos = await photos.forEntry(entry._id).list(context.db);
+    return await Promise.all(
+      statusEntries.map(async (entry) => {
+        const submitter = await context.db.get(entry.submittedByUserId);
         return {
           ...entry,
-          photos: entryPhotos,
+          photos: await photos.forEntry(entry._id).list(context.db),
+          submitter: submitter && {
+            name: submitter.name,
+            email: submitter.email,
+          },
         };
       }),
     );
-
-    return entriesWithPhotos;
   })
   .public();
 
-export const getStats = userCompetitionAdminQuery
+export const getStats = competitionAdminQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -37,64 +57,7 @@ export const getStats = userCompetitionAdminQuery
   })
   .public();
 
-export const listApproved = userCompetitionAdminQuery
-  .input({})
-  .handler(async (context) => {
-    const competition = await competitions.query(context).current();
-    const approvedEntries = await entries
-      .query(context)
-      .listApproved(competition._id);
-
-    const entriesWithPhotos = await Promise.all(
-      approvedEntries.map(async (entry) => {
-        const entryPhotos = await photos.forEntry(entry._id).list(context.db);
-        return {
-          ...entry,
-          photos: entryPhotos,
-        };
-      }),
-    );
-
-    return entriesWithPhotos;
-  })
-  .public();
-
-export const listRejected = userCompetitionAdminQuery
-  .input({})
-  .handler(async (context) => {
-    const competition = await competitions.query(context).current();
-    const rejectedEntries = await entries
-      .query(context)
-      .listRejected(competition._id);
-
-    const entriesWithPhotos = await Promise.all(
-      rejectedEntries.map(async (entry) => {
-        const entryPhotos = await photos.forEntry(entry._id).list(context.db);
-        return {
-          ...entry,
-          photos: entryPhotos,
-        };
-      }),
-    );
-
-    return entriesWithPhotos;
-  })
-  .public();
-
-export const get = userCompetitionAdminQuery
-  .input({ entryId: v.id("entries") })
-  .handler(async (context, input) => {
-    const entry = await entries.query(context).forEntry(input.entryId).get();
-    const entryPhotos = await photos.forEntry(input.entryId).list(context.db);
-
-    return {
-      ...entry,
-      photos: entryPhotos,
-    };
-  })
-  .public();
-
-export const getUserDetails = userCompetitionAdminQuery
+export const getUserDetails = competitionAdminQuery
   .input({ userId: v.id("users") })
   .handler(async (context, input) => {
     const user = await context.db.get(input.userId);
@@ -113,64 +76,50 @@ export const getUserDetails = userCompetitionAdminQuery
   })
   .public();
 
-export const getEntryValidationStatus = userCompetitionAdminQuery
+export const getEntryValidationStatus = competitionAdminQuery
   .input({ entryId: v.id("entries") })
   .returns(
     v.object({
       hasConflicts: v.boolean(),
       isWithinBoundary: v.union(v.boolean(), v.null()),
-      isOnWhitelist: v.union(v.boolean(), v.null()),
+      isReturningEntrant: v.boolean(),
     }),
   )
   .handler(async (context, input) => {
     const entry = await entries.query(context).forEntry(input.entryId).get();
-    if (
-      !entry.houseAddress ||
-      typeof entry.houseAddress !== "object" ||
-      !("placeId" in entry.houseAddress)
-    )
+    if (!entry.houseAddress)
       return {
         hasConflicts: false,
         isWithinBoundary: null,
-        isOnWhitelist: null,
+        isReturningEntrant: false,
       };
 
-    const placeId = entry.houseAddress.placeId;
     const hasConflicts = await entries
       .query(context)
       .hasEntryWithPlaceIdAlreadyBeenSubmitted(
         entry.competitionId,
-        placeId,
+        entry.houseAddress.placeId,
         input.entryId,
       );
 
-    // Check if location is within competition boundary
-    const houseAddress = entry.houseAddress;
-    let isWithinBoundary: boolean | null = null;
-    if (
-      "lat" in houseAddress &&
-      "lng" in houseAddress &&
-      typeof houseAddress.lat === "number" &&
-      typeof houseAddress.lng === "number" &&
-      houseAddress.lat !== 0 &&
-      houseAddress.lng !== 0
-    )
-      isWithinBoundary = entries.isLocationWithinCompetitionBoundary(
-        houseAddress.lat,
-        houseAddress.lng,
-      );
+    const isReturningEntrant = await entries
+      .query(context)
+      .forUser(entry.competitionId, entry.submittedByUserId)
+      .hasApprovedEntryBefore();
 
-    // Check if user email is on whitelist
-    const user = await context.db.get(entry.submittedByUserId);
-    const isOnWhitelist = user
-      ? entries.isUserEmailOnWhitelist(user.email)
-      : null;
-
-    return { hasConflicts, isWithinBoundary, isOnWhitelist };
+    return {
+      hasConflicts,
+      // Drafts haven't been geocoded yet, so there's nothing to check
+      isWithinBoundary:
+        "lat" in entry.houseAddress
+          ? isWithinBoundary(entry.houseAddress)
+          : null,
+      isReturningEntrant,
+    };
   })
   .public();
 
-export const getAllEntriesForExport = userCompetitionAdminQuery
+export const getAllEntriesForExport = competitionAdminQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -190,12 +139,7 @@ export const getAllEntriesForExport = userCompetitionAdminQuery
           entryNumber:
             entry.status === "approved" ? entry.entryNumber : undefined,
           entryName: entry.name || "",
-          entryAddress:
-            entry.houseAddress && typeof entry.houseAddress === "object"
-              ? entry.houseAddress.address
-              : typeof entry.houseAddress === "string"
-                ? entry.houseAddress
-                : "",
+          entryAddress: entry.houseAddress?.address ?? "",
         };
       }),
     );
@@ -206,7 +150,7 @@ export const getAllEntriesForExport = userCompetitionAdminQuery
 
 // Mutations
 
-export const approve = userCompetitionAdminMutation
+export const approve = competitionAdminMutation
   .input({
     entryId: v.id("entries"),
   })
@@ -237,7 +181,7 @@ export const approve = userCompetitionAdminMutation
   })
   .public();
 
-export const reject = userCompetitionAdminMutation
+export const reject = competitionAdminMutation
   .input({
     entryId: v.id("entries"),
     rejectedReason: v.string(),

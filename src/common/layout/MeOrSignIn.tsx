@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Text, Loader, Button } from "@mantine/core";
+import { Loader, Button } from "@mantine/core";
 import { routes } from "../../routes";
 import { UserAvatarDropdown } from "./UserAvatarDropdown";
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";

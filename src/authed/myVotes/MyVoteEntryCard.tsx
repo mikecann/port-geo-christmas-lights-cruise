@@ -14,7 +14,6 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { routes } from "../../routes";
-import { getAddressString } from "../../../shared/misc";
 import { usePhotoUrl } from "../../common/hooks/usePhotoUrl";
 
 type Props = {
@@ -35,7 +34,6 @@ export default function MyVoteEntryCard({ entryId }: Props) {
   if (!entryWithPhotos) return null;
 
   const { entry, photos } = entryWithPhotos;
-  if (entry.status !== "approved") return null;
 
   return (
     <Card withBorder radius="md" padding="sm">
@@ -95,7 +93,7 @@ export default function MyVoteEntryCard({ entryId }: Props) {
                   style={{ marginTop: 2 }}
                 />
                 <Text size="xs" c="dimmed" lineClamp={2}>
-                  {getAddressString(entry.houseAddress)}
+                  {entry.houseAddress.address}
                 </Text>
               </Group>
             </Stack>

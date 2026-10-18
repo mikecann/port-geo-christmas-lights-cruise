@@ -1,5 +1,6 @@
 import { Container, Stack, Card, Grid } from "@mantine/core";
 import { AspectRatio, Group, Skeleton } from "@mantine/core";
+import { ENTRY_PHOTO } from "../../shared/photoUrls";
 
 export default function EntryPageSkeleton() {
   return (
@@ -7,7 +8,7 @@ export default function EntryPageSkeleton() {
       <Stack gap="xl">
         {/* Image Carousel Skeleton */}
         <Card withBorder p={0} radius="md">
-          <AspectRatio ratio={16 / 10}>
+          <AspectRatio ratio={ENTRY_PHOTO.aspectRatio}>
             <Skeleton height="100%" radius="md" />
           </AspectRatio>
         </Card>

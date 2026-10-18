@@ -7,7 +7,6 @@ import { routeGroups, useRoute } from "./routes";
 import type { Id } from "../convex/_generated/dataModel";
 import { LazyLoadWrapper } from "./common/components/LazyLoadWrapper";
 import * as LazyPages from "./common/lazy/LazyPages";
-import HomePage from "./home/HomePage";
 
 export default function App() {
   return (
@@ -23,7 +22,7 @@ export default function App() {
 export function AppRoutes() {
   const route = useRoute();
 
-  if (route.name === "home") return <HomePage />;
+  if (route.name === "home") return <LazyPages.HomePage />;
 
   if (route.name === "entries") return <LazyPages.EntriesGalleryPage />;
 

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useDisclosure, useWindowScroll } from "@mantine/hooks";
+import { useDisclosure } from "@mantine/hooks";
 import { AppShell, Group, Burger, Container, Box } from "@mantine/core";
 import { routes, routeGroups } from "../../routes";
 import { useRoute } from "../../routes";
@@ -7,6 +7,7 @@ import { MeOrSignIn } from "./MeOrSignIn";
 import { TopLogo } from "./TopLogo";
 import { MenuItem } from "../components/MenuItem";
 import Footer from "../footer/Footer";
+import { useScrolledPast } from "../hooks/useScrolledPast";
 
 interface MobileNavbarProps {
   children: React.ReactNode;
@@ -15,7 +16,6 @@ interface MobileNavbarProps {
 export function MainAppShell({ children }: MobileNavbarProps) {
   const [opened, { toggle, close }] = useDisclosure();
   const route = useRoute();
-  const [{ y }] = useWindowScroll();
 
   // Close navbar when route changes
   useEffect(() => {
@@ -23,7 +23,8 @@ export function MainAppShell({ children }: MobileNavbarProps) {
   }, [route, close]);
 
   const isHome = route.name === "home";
-  const isScrolled = y > 30;
+  // Only the homepage's header changes on scroll
+  const isScrolled = useScrolledPast(30, isHome);
   const isTransparent = isHome && !isScrolled && !opened;
   const isMapPage = routeGroups.map.has(route);
 

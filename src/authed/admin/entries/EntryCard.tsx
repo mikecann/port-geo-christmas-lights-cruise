@@ -22,15 +22,14 @@ import {
 import React from "react";
 import { useDisclosure } from "@mantine/hooks";
 import { api } from "../../../../convex/_generated/api";
-import type { Doc } from "../../../../convex/_generated/dataModel";
+import type { AdminEntry } from "../../../../convex/admin/competition/entries";
 import { useErrorCatchingMutation } from "../../../common/errors";
 import PhotoLightbox from "../../myEntries/photos/PhotoLightbox";
-import { getAddressString } from "../../../../shared/misc";
 import { PhotoImage } from "./PhotoImage";
 import { useQuery } from "convex/react";
 import RejectEntryModal from "./RejectEntryModal";
 
-export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
+export default function EntryCard({ entry }: { entry: AdminEntry }) {
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
   const [
@@ -38,13 +37,7 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
     { open: openRejectModal, close: closeRejectModal },
   ] = useDisclosure(false);
   const [selectedImageUrl, setSelectedImageUrl] = React.useState<string>("");
-  const photos =
-    useQuery(api.admin.competition.photos.listForEntry, {
-      entryId: entry._id,
-    }) ?? [];
-  const user = useQuery(api.admin.competition.entries.getUserDetails, {
-    userId: entry.submittedByUserId,
-  });
+  const { photos, submitter: user } = entry;
   const validationStatus = useQuery(
     api.admin.competition.entries.getEntryValidationStatus,
     {
@@ -82,7 +75,7 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
             <Group gap="xs" mt="xs">
               <IconMapPin size={14} color="gray" />
               <Text size="sm" c="dimmed" lineClamp={1}>
-                {getAddressString(entry.houseAddress)}
+                {entry.houseAddress.address}
               </Text>
             </Group>
 
@@ -114,12 +107,11 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
                 Photos ({photos.length})
               </Text>
               <SimpleGrid cols={4} spacing="xs">
-                {photos.map((photo, i) => {
+                {photos.map((photo) => {
                   return (
                     <PhotoImage
                       key={photo._id}
                       photo={photo}
-                      index={i}
                       onImageClick={(imageUrl) => {
                         setSelectedImageUrl(imageUrl);
                         openModal();
@@ -169,29 +161,23 @@ export default function EntryCard({ entry }: { entry: Doc<"entries"> }) {
                   )}
                 </Group>
               )}
-              {validationStatus.isOnWhitelist !== undefined &&
-                validationStatus.isOnWhitelist !== null && (
-                  <Group gap="xs">
-                    {validationStatus.isOnWhitelist ? (
-                      <>
-                        <IconShieldCheck size={14} color="green" />
-                        <Text size="sm" c="dimmed">
-                          User is known from past competitions
-                        </Text>
-                      </>
-                    ) : (
-                      <>
-                        <IconAlertTriangle
-                          size={14}
-                          style={{ color: "#FFB800" }}
-                        />
-                        <Text size="sm" c="dimmed">
-                          User is not known from past competitions
-                        </Text>
-                      </>
-                    )}
-                  </Group>
+              <Group gap="xs">
+                {validationStatus.isReturningEntrant ? (
+                  <>
+                    <IconShieldCheck size={14} color="green" />
+                    <Text size="sm" c="dimmed">
+                      Returning entrant: approved in an earlier year
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <IconAlertTriangle size={14} style={{ color: "#FFB800" }} />
+                    <Text size="sm" c="dimmed">
+                      New entrant: no approved entry in earlier years
+                    </Text>
+                  </>
                 )}
+              </Group>
             </>
           )}
 

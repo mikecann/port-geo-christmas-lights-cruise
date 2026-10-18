@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const sdk = vi.hoisted(() => ({ init: vi.fn(), capture: vi.fn() }));
 vi.mock("posthog-js/dist/module.no-external", () => ({ default: sdk }));
 const id = "j970pq0asyav77fekdj08grwan6npmh1";
@@ -21,8 +21,19 @@ beforeEach(() => {
   vi.stubGlobal("location", {
     href: `https://example.com/entries/${id}?utm_source=qr&utm_medium=qr`,
   });
-  vi.stubGlobal("document", { referrer: "" });
+  vi.stubGlobal("document", { referrer: "", readyState: "complete" });
+  vi.stubGlobal("requestIdleCallback", (callback: () => void) => callback());
 });
+afterEach(() => {
+  vi.useRealTimers();
+});
+const pendingKey = "pg-analytics-pending-v1";
+const sentEvents = () => sdk.capture.mock.calls.map(([event]) => event);
+// A page that's still loading, so the SDK waits and events stay queued
+function stillLoading() {
+  vi.stubGlobal("document", { referrer: "", readyState: "loading" });
+  vi.stubGlobal("addEventListener", () => {});
+}
 async function enabled() {
   vi.stubEnv("VITE_ANALYTICS_ENABLED", "true");
   vi.stubEnv("VITE_POSTHOG_KEY", "phc_test");
@@ -54,7 +65,10 @@ describe("analytics lifecycle", () => {
     const first = sdk.init.mock.calls[0][1].bootstrap.distinctID;
     vi.resetModules();
     vi.stubGlobal("location", { href: "https://example.com/?code=secret" });
-    vi.stubGlobal("document", { referrer: "https://accounts.google.com" });
+    vi.stubGlobal("document", {
+      referrer: "https://accounts.google.com",
+      readyState: "complete",
+    });
     const client = await enabled();
     client.track("vote_succeeded", { entry_id: id });
     expect(sdk.init.mock.calls[1][1].bootstrap.distinctID).toBe(first);
@@ -64,6 +78,7 @@ describe("analytics lifecycle", () => {
     expect(sdk.capture).toHaveBeenLastCalledWith(
       "vote_succeeded",
       expect.objectContaining({ channel: "qr", referral_entry_id: id }),
+      expect.anything(),
     );
   });
   it("counts success only after resolution, and propagates failure without sending error text", async () => {
@@ -101,6 +116,136 @@ describe("analytics lifecycle", () => {
     expect(JSON.stringify(sdk.capture.mock.calls)).not.toContain(
       "private address",
     );
+  });
+  it("waits for load and idle before loading the SDK, then sends queued events in order", async () => {
+    vi.stubEnv("VITE_ANALYTICS_ENABLED", "true");
+    vi.stubEnv("VITE_POSTHOG_KEY", "phc_test");
+    vi.stubEnv("VITE_POSTHOG_HOST", "https://us.i.posthog.com");
+    vi.stubGlobal("document", { referrer: "", readyState: "loading" });
+    let onLoad: (() => void) | undefined;
+    vi.stubGlobal("addEventListener", (type: string, listener: () => void) => {
+      if (type === "load") onLoad = listener;
+    });
+    let onIdle: (() => void) | undefined;
+    vi.stubGlobal("requestIdleCallback", (callback: () => void) => {
+      onIdle = callback;
+    });
+    const client = await import("./client");
+    const started = client.initAnalytics();
+    client.track("page_viewed", { page: "entry" });
+    client.track("entry_viewed", { entry_id: id });
+    await Promise.resolve();
+    expect(onIdle).toBeUndefined();
+    onLoad?.();
+    expect(sdk.init).not.toHaveBeenCalled();
+    onIdle?.();
+    await started;
+    expect(sdk.init).toHaveBeenCalledTimes(1);
+    expect(sdk.capture.mock.calls.map(([event]) => event)).toEqual([
+      "visit_started",
+      "page_viewed",
+      "entry_viewed",
+    ]);
+    client.track("vote_opened");
+    expect(sdk.capture).toHaveBeenLastCalledWith(
+      "vote_opened",
+      expect.objectContaining({ channel: "qr" }),
+      expect.anything(),
+    );
+  });
+  it("keeps queued events through the sign-in redirect and sends them once on return", async () => {
+    vi.useFakeTimers();
+    stillLoading();
+    vi.stubEnv("VITE_ANALYTICS_ENABLED", "true");
+    vi.stubEnv("VITE_POSTHOG_KEY", "phc_test");
+    vi.stubEnv("VITE_POSTHOG_HOST", "https://us.i.posthog.com");
+    const before = await import("./client");
+    void before.initAnalytics();
+    before.track("page_viewed", { page: "entry" });
+    before.track("entry_viewed", { entry_id: id });
+    // The page goes to Google before the SDK arrives
+    expect(sdk.init).not.toHaveBeenCalled();
+    expect(JSON.parse(storage.get(pendingKey) ?? "[]")).toHaveLength(3);
+
+    // Dropping the fake timers also drops the old page's pending wait
+    vi.useRealTimers();
+    vi.resetModules();
+    vi.stubGlobal("location", { href: "https://example.com/?code=secret" });
+    vi.stubGlobal("document", {
+      referrer: "https://accounts.google.com",
+      readyState: "complete",
+    });
+    await enabled();
+
+    expect(sentEvents()).toEqual([
+      "visit_started",
+      "page_viewed",
+      "entry_viewed",
+    ]);
+    expect(sdk.capture.mock.calls[1]).toEqual([
+      "page_viewed",
+      expect.objectContaining({ page: "entry", channel: "qr" }),
+      { timestamp: expect.any(Date), uuid: expect.any(String) },
+    ]);
+    expect(storage.has(pendingKey)).toBe(false);
+
+    // Another reload in the same tab doesn't send them again
+    vi.resetModules();
+    sdk.capture.mockClear();
+    await enabled();
+    expect(sentEvents()).toEqual([]);
+  });
+  it("starts loading the SDK as soon as sign-in starts", async () => {
+    stillLoading();
+    vi.stubEnv("VITE_ANALYTICS_ENABLED", "true");
+    vi.stubEnv("VITE_POSTHOG_KEY", "phc_test");
+    vi.stubEnv("VITE_POSTHOG_HOST", "https://us.i.posthog.com");
+    const client = await import("./client");
+    const started = client.initAnalytics();
+    expect(sdk.init).not.toHaveBeenCalled();
+    client.authStarted();
+    await started;
+    expect(sdk.init).toHaveBeenCalledTimes(1);
+    expect(sentEvents()).toEqual(["visit_started", "auth_started"]);
+  });
+  it("loads the SDK after 3 seconds even if the page never finishes loading", async () => {
+    vi.useFakeTimers();
+    stillLoading();
+    vi.stubEnv("VITE_ANALYTICS_ENABLED", "true");
+    vi.stubEnv("VITE_POSTHOG_KEY", "phc_test");
+    vi.stubEnv("VITE_POSTHOG_HOST", "https://us.i.posthog.com");
+    const client = await import("./client");
+    const started = client.initAnalytics();
+    await vi.advanceTimersByTimeAsync(2900);
+    expect(sdk.init).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(100);
+    await started;
+    expect(sdk.init).toHaveBeenCalledTimes(1);
+  });
+  it("never stores or replays queued events when analytics is off", async () => {
+    storage.set(
+      pendingKey,
+      JSON.stringify([
+        {
+          event: "page_viewed",
+          properties: {},
+          timestamp: Date.now(),
+          uuid: "00000000-0000-4000-8000-000000000000",
+        },
+      ]),
+    );
+    vi.stubGlobal("navigator", { doNotTrack: "1" });
+    const client = await enabled();
+    client.track("page_viewed");
+    client.authStarted();
+    expect(sdk.capture).not.toHaveBeenCalled();
+    expect(storage.has(pendingKey)).toBe(false);
+  });
+  it("drops a corrupt stored queue without turning analytics off", async () => {
+    storage.set(pendingKey, "{not json");
+    await enabled();
+    expect(sdk.init).toHaveBeenCalledTimes(1);
+    expect(sentEvents()).toEqual(["visit_started"]);
   });
   it("fails closed on blocked storage", async () => {
     vi.stubGlobal("sessionStorage", {

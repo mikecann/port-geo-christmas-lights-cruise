@@ -1,12 +1,4 @@
-import {
-  Container,
-  Stack,
-  Center,
-  Loader,
-  Group,
-  Text,
-  Box,
-} from "@mantine/core";
+import { Container, Stack, Box } from "@mantine/core";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { EntryWithFirstPhoto } from "../../../convex/public/entries";
@@ -26,13 +18,9 @@ export default function EntriesGalleryPage() {
     Array<EntryWithFirstPhoto>
   >([]);
   const [cachedSearchQuery, setCachedSearchQuery] = useState("");
-  const competitionArgs = {};
-  const totalCount = useQuery(api.public.entries.count, competitionArgs);
-
-  const results = useQuery(
-    api.public.entries.listWithFirstPhoto,
-    competitionArgs,
-  );
+  // Every approved entry, filtered on the client, so its length is the total
+  const results = useQuery(api.public.entries.listWithFirstPhoto, {});
+  const totalCount = results?.length;
   // Cache results when they're available
   const baseResults = useMemo(() => {
     if (results !== undefined) return results;
@@ -59,12 +47,8 @@ export default function EntriesGalleryPage() {
       ? list.filter(
           (item) =>
             (item.entry.name ?? "").toLowerCase().includes(q) ||
-            (item.entry.houseAddress?.address ?? "")
-              .toLowerCase()
-              .includes(q) ||
-            (item.entry.status === "approved"
-              ? `${item.entry.entryNumber}`.includes(q)
-              : false),
+            item.entry.houseAddress.address.toLowerCase().includes(q) ||
+            `${item.entry.entryNumber}`.includes(q),
         )
       : list;
     return shuffleDeterministic(filtered, dailySeed);

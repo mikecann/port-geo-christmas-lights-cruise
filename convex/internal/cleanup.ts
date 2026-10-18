@@ -1,12 +1,12 @@
-import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
+import { mutation } from "../features/common/lib";
 
 // Photos stuck uploading for more than 5 minutes are considered abandoned
 const UPLOAD_TIMEOUT_MS = 5 * 60 * 1000;
 
-export const cleanupOrphanedPhotos = internalMutation({
-  args: {},
-  handler: async (ctx) => {
+export const cleanupOrphanedPhotos = mutation
+  .input({})
+  .handler(async (ctx) => {
     const allPhotos = await ctx.db.query("photos").collect();
     let totalPhotos = 0;
     let orphanedPhotos = 0;
@@ -51,14 +51,14 @@ export const cleanupOrphanedPhotos = internalMutation({
       orphanedPhotos,
       deletedPhotos,
     };
-  },
-});
+  })
+  .internal();
 
-export const cleanupStuckUploads = internalMutation({
-  args: {
+export const cleanupStuckUploads = mutation
+  .input({
     timeoutMs: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
+  })
+  .handler(async (ctx, args) => {
     const timeoutMs = args.timeoutMs ?? UPLOAD_TIMEOUT_MS;
     const now = Date.now();
     const allPhotos = await ctx.db.query("photos").collect();
@@ -104,5 +104,5 @@ export const cleanupStuckUploads = internalMutation({
       deletedPhotos,
       timeoutMs,
     };
-  },
-});
+  })
+  .internal();

@@ -1,22 +1,24 @@
 import { useEntryView } from "../analytics/useEntryView";
 import { Container, Text, Stack, Card, Center, Grid } from "@mantine/core";
 import { Carousel } from "@mantine/carousel";
+import "@mantine/carousel/styles.css";
 import { IconPhoto } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { useRoute, routes, routeGroups } from "../routes";
-import { useState, useRef, useEffect } from "react";
+import { routes, routeGroups } from "../routes";
+import { useState } from "react";
 import { AspectRatio } from "@mantine/core";
 import EntryPageSkeleton from "./EntryPageSkeleton";
-import Autoplay from "embla-carousel-autoplay";
 import PhotoLightbox from "../authed/myEntries/photos/PhotoLightbox";
 import EntryHeader from "./EntryHeader";
 import SystemAdminSection from "./SystemAdminSection";
 import EntryVoting from "./voting/EntryVoting";
-import VoteModal from "../map/voteModal/VoteModal";
+import VoteModal from "../voting/VoteModal";
 import ShareModal from "./ShareModal";
 import { PhotoSlide } from "./PhotoSlide";
+import { NotFoundPage } from "../common/NotFoundPage";
+import { ENTRY_PHOTO } from "../../shared/photoUrls";
 import { Route } from "type-route";
 
 export default function EntryPage({
@@ -36,25 +38,21 @@ export default function EntryPage({
   const competition = useQuery(api.public.competitions.current, {});
 
   useEntryView(
-    entryWithPhotos?.entry.status === "approved" ? entryId : undefined,
+    entryWithPhotos ? entryId : undefined,
     entryWithPhotos?.entry.competitionId,
     "entry",
   );
 
-  if (!entryWithPhotos) return <EntryPageSkeleton />;
+  if (entryWithPhotos === undefined) return <EntryPageSkeleton />;
+  if (entryWithPhotos === null)
+    return (
+      <NotFoundPage
+        title="Entry Not Found"
+        message="Sorry, that entry isn't available. It may have been removed from the competition."
+      />
+    );
 
   const { entry, photos } = entryWithPhotos;
-
-  if (entry.status !== "approved")
-    return (
-      <Container size="lg" py="xl">
-        <Center>
-          <Text size="lg" c="dimmed">
-            This entry is not available for viewing.
-          </Text>
-        </Center>
-      </Container>
-    );
 
   return (
     <Container size="lg" py="xl">
@@ -62,41 +60,43 @@ export default function EntryPage({
         {/* Image Carousel */}
         <Card withBorder p={0} radius="md">
           {photos.length > 0 ? (
-            <Carousel
-              withIndicators={photos.length > 1}
-              withControls={photos.length > 1}
-              height={500}
-              emblaOptions={{
-                loop: photos.length > 1,
-                dragFree: false,
-                align: "center",
-              }}
-              controlSize={40}
-              style={{
-                "--carousel-control-bg": "rgba(0, 0, 0, 0.6)",
-                "--carousel-control-color": "white",
-                "--carousel-indicator-size": "10px",
-                "--carousel-indicator-bg": "rgba(255, 255, 255, 0.4)",
-                "--carousel-indicator-bg-active": "white",
-              }}
-            >
-              {photos.map((photo, i) => {
-                return (
-                  <PhotoSlide
-                    key={photo._id}
-                    photo={photo}
-                    entry={entry}
-                    isPriority={i === 0}
-                    onImageClick={(imageUrl) => {
-                      setSelectedImageUrl(imageUrl);
-                      setLightboxOpened(true);
-                    }}
-                  />
-                );
-              })}
-            </Carousel>
+            <AspectRatio ratio={ENTRY_PHOTO.aspectRatio}>
+              <Carousel
+                withIndicators={photos.length > 1}
+                withControls={photos.length > 1}
+                height="100%"
+                emblaOptions={{
+                  loop: photos.length > 1,
+                  dragFree: false,
+                  align: "center",
+                }}
+                controlSize={40}
+                style={{
+                  "--carousel-control-bg": "rgba(0, 0, 0, 0.6)",
+                  "--carousel-control-color": "white",
+                  "--carousel-indicator-size": "10px",
+                  "--carousel-indicator-bg": "rgba(255, 255, 255, 0.4)",
+                  "--carousel-indicator-bg-active": "white",
+                }}
+              >
+                {photos.map((photo, i) => {
+                  return (
+                    <PhotoSlide
+                      key={photo._id}
+                      photo={photo}
+                      entry={entry}
+                      isPriority={i === 0}
+                      onImageClick={(imageUrl) => {
+                        setSelectedImageUrl(imageUrl);
+                        setLightboxOpened(true);
+                      }}
+                    />
+                  );
+                })}
+              </Carousel>
+            </AspectRatio>
           ) : (
-            <AspectRatio ratio={16 / 10}>
+            <AspectRatio ratio={ENTRY_PHOTO.aspectRatio}>
               <Center
                 bg="var(--mantine-color-gray-9)"
                 style={{ borderRadius: "var(--mantine-radius-md)" }}
@@ -122,7 +122,10 @@ export default function EntryPage({
             />
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 4 }}>
-            <EntryVoting entryId={entryId} />
+            <EntryVoting
+              entryId={entryId}
+              competitionId={entry.competitionId}
+            />
           </Grid.Col>
         </Grid>
 
@@ -140,7 +143,9 @@ export default function EntryPage({
       />
 
       {/* Vote Modal */}
-      {competition?.votingOpen && route.name == "entryVote" ? (
+      {competition?.votingOpen &&
+      competition._id === entry.competitionId &&
+      route.name == "entryVote" ? (
         <VoteModal
           entryId={entryId}
           opened={true}

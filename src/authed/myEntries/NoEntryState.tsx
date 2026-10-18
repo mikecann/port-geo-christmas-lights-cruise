@@ -2,14 +2,14 @@ import { useState } from "react";
 import { measured } from "../../analytics/client";
 import { Card, Stack, Text, Button } from "@mantine/core";
 import { api } from "../../../convex/_generated/api";
-import { useApiErrorHandler } from "../../common/errors";
+import { useErrorHandler } from "../../common/errors";
 import { useMutation, useQuery } from "convex/react";
 import EntrySignupUnavailableButton from "../../competition/EntrySignupUnavailableButton";
 
 export default function NoEntryState() {
   const enterCompetition = useMutation(api.my.entries.enter);
   const [isEntering, setIsEntering] = useState(false);
-  const onApiError = useApiErrorHandler();
+  const onApiError = useErrorHandler();
   const competition = useQuery(api.public.competitions.current, {});
   const entriesOpen = competition?.entriesOpen === true;
 

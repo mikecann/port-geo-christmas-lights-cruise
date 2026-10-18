@@ -3,7 +3,6 @@ import { useQuery } from "convex/react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import PhotoGallery from "./photos/PhotoGallery";
-import { getAddressString } from "../../../shared/misc";
 
 interface SubmittedEntryStateProps {
   entry: Doc<"entries">;
@@ -43,7 +42,7 @@ export default function SubmittedEntryState({
             House Address:
           </Text>
           <Text size="sm" c="dimmed">
-            {getAddressString(entry.houseAddress)}
+            {entry.houseAddress?.address}
           </Text>
         </div>
 

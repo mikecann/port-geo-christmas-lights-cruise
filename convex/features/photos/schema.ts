@@ -8,6 +8,24 @@ const commonPhotoFields = {
 
 export type PhotoDoc = Doc<"photos">;
 
+// What anonymous visitors see: no storage ids and no upload URLs
+export const publicPhotoValidator = v.union(
+  v.object({
+    _id: v.id("photos"),
+    entryId: v.id("entries"),
+    kind: v.literal("mock"),
+    mockPath: v.string(),
+  }),
+  v.object({
+    _id: v.id("photos"),
+    entryId: v.id("entries"),
+    kind: v.literal("convex_stored"),
+    url: v.string(),
+  }),
+);
+
+export type PublicPhoto = typeof publicPhotoValidator.type;
+
 export const photoTable = defineTable(
   v.union(
     v.object({
@@ -32,4 +50,6 @@ export const photoTable = defineTable(
       ),
     }),
   ),
-).index("by_entryId", ["entryId"]);
+)
+  .index("by_entryId", ["entryId"])
+  .index("by_uploadState_storageId", ["uploadState.storageId"]);

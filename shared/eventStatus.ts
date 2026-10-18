@@ -1,2 +1,2 @@
-export const VOTING_CLOSED_MESSAGE =
-  "Voting is currently closed. Voting details for the 2026 competition will be announced later.";
+export const votingClosedMessage = (year: number) =>
+  `Voting is currently closed. Voting details for the ${year} competition will be announced later.`;

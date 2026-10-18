@@ -15,17 +15,16 @@ import { useMutation, useAction, useQuery } from "convex/react";
 import { useDebounce } from "use-debounce";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
-import { getAddressString } from "../../../shared/misc";
 import { useConfirmation } from "../../common/components/confirmation/useConfirmation";
-import {
-  useApiErrorHandler,
-  useErrorCatchingMutation,
-} from "../../common/errors";
+import { useErrorHandler, useErrorCatchingMutation } from "../../common/errors";
 import PhotoSection from "./photos/PhotoSection";
 import AddressAutocomplete from "../../common/components/AddressAutocomplete";
+import {
+  MAX_ENTRY_ADDRESS_LENGTH,
+  MAX_ENTRY_NAME_LENGTH,
+} from "../../../shared/constants";
 import DraftEntryHeader from "./DraftEntryHeader";
 import EntryNameGuidelinesModal from "./EntryNameGuidelinesModal";
-import { isTestMode } from "../../common/testMode";
 
 interface DraftEntryStateProps {
   entry: Doc<"entries">;
@@ -42,22 +41,18 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPhotosUploading, setIsPhotosUploading] = useState(false);
   const { confirm } = useConfirmation();
-  const onApiError = useApiErrorHandler();
+  const onApiError = useErrorHandler();
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
 
   // Form state
   const [name, setName] = useState(() => entry.name || "");
-  const [address, setAddress] = useState(() =>
-    getAddressString(entry.houseAddress),
+  const [address, setAddress] = useState(
+    () => entry.houseAddress?.address ?? "",
   );
   const [selectedAddress, setSelectedAddress] = useState<
     { address: string; placeId: string } | undefined
-  >(() =>
-    typeof entry.houseAddress === "object" && entry.status === "draft"
-      ? entry.houseAddress
-      : undefined,
-  );
+  >(() => (entry.status === "draft" ? entry.houseAddress : undefined));
 
   // Debounce form values for auto-save
   const [debouncedName] = useDebounce(name, 500);
@@ -108,6 +103,7 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
               required
               value={address}
               onChange={setAddress}
+              maxLength={MAX_ENTRY_ADDRESS_LENGTH}
               onSelect={(val) => setSelectedAddress(val)}
               error={
                 selectedAddress?.placeId
@@ -119,6 +115,7 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
               label="Entry Name"
               placeholder="Give your display a name (optional)"
               value={name}
+              maxLength={MAX_ENTRY_NAME_LENGTH}
               onChange={(e) => setName(e.currentTarget.value)}
               rightSection={
                 <ActionIcon
@@ -133,14 +130,12 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
             />
 
             {/* Photo Section */}
-            {isTestMode() ? null : (
-              <PhotoSection
-                photos={photos}
-                canUpload={true}
-                canRemove={true}
-                onUploadStateChange={setIsPhotosUploading}
-              />
-            )}
+            <PhotoSection
+              photos={photos}
+              canUpload={true}
+              canRemove={true}
+              onUploadStateChange={setIsPhotosUploading}
+            />
           </Stack>
 
           <Divider />

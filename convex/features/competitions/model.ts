@@ -2,9 +2,6 @@ import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../../_generated/server";
 import { ensure } from "../../../shared/ensure";
 
-export const CURRENT_COMPETITION_YEAR = 2026;
-export const LEGACY_COMPETITION_YEAR = 2025;
-
 export const competitions = {
   query(ctx: QueryCtx) {
     return {
@@ -37,8 +34,11 @@ export const competitions = {
         };
       },
 
-      current() {
-        return this.forYear(CURRENT_COMPETITION_YEAR).get();
+      // The newest year is the current competition, so adding next year's
+      // row is what moves the site on
+      async current() {
+        const [newest] = await this.listNewestFirst(1);
+        return ensure(newest, "No competition has been configured");
       },
 
       listNewestFirst(limit = 100) {
@@ -67,36 +67,6 @@ export const competitions = {
       ) {
         await competitions.query(ctx).forCompetition(competitionId).get();
         await ctx.db.patch(competitionId, { entriesOpen });
-      },
-
-      async ensureYear(args: {
-        year: number;
-        entriesOpen: boolean;
-        votingOpen: boolean;
-      }) {
-        const existing = await competitions
-          .query(ctx)
-          .forYear(args.year)
-          .find();
-        if (existing) return existing;
-        const competitionId = await ctx.db.insert("competitions", args);
-        return ensure(await ctx.db.get(competitionId));
-      },
-
-      ensureCurrent() {
-        return this.ensureYear({
-          year: CURRENT_COMPETITION_YEAR,
-          entriesOpen: true,
-          votingOpen: false,
-        });
-      },
-
-      ensureLegacy() {
-        return this.ensureYear({
-          year: LEGACY_COMPETITION_YEAR,
-          entriesOpen: false,
-          votingOpen: false,
-        });
       },
     };
   },

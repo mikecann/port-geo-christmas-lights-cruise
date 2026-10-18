@@ -7,12 +7,28 @@ import CompetitionSection from "./CompetitionSection";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { HomeEntryMarker } from "./HomeEntryMarker";
+import { useEffect, useRef, useState } from "react";
+import styles from "./HomePage.module.css";
 
 export default function HomePage() {
   const randomEntries = useQuery(api.public.entries.getRandomThree, {});
+  const housesRef = useRef<HTMLDivElement>(null);
+  const [isOffscreen, setIsOffscreen] = useState(false);
+
+  useEffect(() => {
+    const houses = housesRef.current;
+    if (!houses) return;
+    const observer = new IntersectionObserver(([entry]) =>
+      setIsOffscreen(!entry.isIntersecting),
+    );
+    observer.observe(houses);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <Box
+      className={styles.scene}
+      data-offscreen={isOffscreen || undefined}
       pt={40}
       style={{
         position: "relative",
@@ -23,7 +39,7 @@ export default function HomePage() {
     >
       <Stars />
       <Title />
-      <Box style={{ position: "relative" }}>
+      <Box ref={housesRef} style={{ position: "relative" }}>
         <Houses />
         {randomEntries && randomEntries.length >= 3 && (
           <>

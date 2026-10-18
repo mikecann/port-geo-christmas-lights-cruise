@@ -1,18 +1,16 @@
 import { Button, Text } from "@mantine/core";
 import { IconTrash, IconCheck } from "@tabler/icons-react";
-import { useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { useConfirmation } from "../../../common/components/confirmation/useConfirmation";
-import {
-  useErrorCatchingMutation,
-  useApiErrorHandler,
-} from "../../../common/errors";
-import { useMutation } from "convex/react";
+import { useErrorCatchingMutation } from "../../../common/errors";
 import { api } from "../../../../convex/_generated/api";
 
-export function WipeEntriesButton() {
-  const [isWiping, setIsWiping] = useState(false);
-  const [wipeAllEntries] = useErrorCatchingMutation(
+type WipeButtonProps = {
+  disabled: boolean;
+};
+
+export function WipeEntriesButton({ disabled }: WipeButtonProps) {
+  const [wipeAllEntries, isWiping] = useErrorCatchingMutation(
     api.admin.system.entries.wipeCurrentCompetition,
   );
   const { confirm } = useConfirmation();
@@ -44,31 +42,24 @@ export function WipeEntriesButton() {
         });
         if (!confirmed) return;
 
-        setIsWiping(true);
-        try {
-          await wipeAllEntries({});
-          notifications.show({
-            title: "Success!",
-            message: "Current competition entries wiped successfully",
-            color: "green",
-            icon: <IconCheck size={16} />,
-          });
-        } catch (error) {
-          // Error already handled by useErrorCatchingMutation
-        } finally {
-          setIsWiping(false);
-        }
+        if (!(await wipeAllEntries({}))) return;
+        notifications.show({
+          title: "Success!",
+          message: "Current competition entries wiped successfully",
+          color: "green",
+          icon: <IconCheck size={16} />,
+        });
       }}
       loading={isWiping}
+      disabled={disabled}
     >
       Wipe Current Entries
     </Button>
   );
 }
 
-export function WipeVotesButton() {
-  const [isWipingVotes, setIsWipingVotes] = useState(false);
-  const [wipeAllVotes] = useErrorCatchingMutation(
+export function WipeVotesButton({ disabled }: WipeButtonProps) {
+  const [wipeAllVotes, isWipingVotes] = useErrorCatchingMutation(
     api.admin.system.votes.wipeCurrentCompetition,
   );
   const { confirm } = useConfirmation();
@@ -98,32 +89,26 @@ export function WipeVotesButton() {
         });
         if (!confirmed) return;
 
-        setIsWipingVotes(true);
-        try {
-          await wipeAllVotes({});
-          notifications.show({
-            title: "Success!",
-            message: "Current competition votes wiped successfully",
-            color: "green",
-            icon: <IconCheck size={16} />,
-          });
-        } catch (error) {
-          // Error already handled by useErrorCatchingMutation
-        } finally {
-          setIsWipingVotes(false);
-        }
+        if (!(await wipeAllVotes({}))) return;
+        notifications.show({
+          title: "Success!",
+          message: "Current competition votes wiped successfully",
+          color: "green",
+          icon: <IconCheck size={16} />,
+        });
       }}
       loading={isWipingVotes}
+      disabled={disabled}
     >
       Wipe Current Votes
     </Button>
   );
 }
 
-export function WipeAllDataButton() {
-  const [isWipingAllData, setIsWipingAllData] = useState(false);
-  const wipeAllData = useMutation(api.admin.system.data.wipeAllData);
-  const onApiError = useApiErrorHandler();
+export function WipeAllDataButton({ disabled }: WipeButtonProps) {
+  const [wipeAllData, isWipingAllData] = useErrorCatchingMutation(
+    api.admin.system.data.wipeAllData,
+  );
   const { confirm } = useConfirmation();
 
   return (
@@ -133,33 +118,38 @@ export function WipeAllDataButton() {
       leftSection={<IconTrash size={16} />}
       onClick={async () => {
         const confirmed = await confirm({
-          title: "Wipe All Data",
+          title: "Reset Current Competition",
           content: (
             <>
               <Text size="sm" mb="md">
-                <strong>DANGER:</strong> This action will permanently delete ALL
-                entries, votes, and users (except system and competition admins)
-                from the database. This action cannot be undone.
+                <strong>DANGER:</strong> This action will permanently delete
+                every entry, photo and vote in the current competition, plus
+                users who have nothing left in any competition. This action
+                cannot be undone.
               </Text>
               <Text size="sm" c="dimmed">
-                This will completely reset the competition database, removing
-                all entries (draft, submitted, approved, rejected), all public
-                votes, and all non-admin users. System and competition admins
-                will be preserved. Use this only for complete system resets
-                during testing.
+                Past competitions, the people who took part in them and their
+                photos are kept, as are system and competition admins. Use this
+                only to reset a dev deployment during testing.
               </Text>
             </>
           ),
-          confirmButton: "Wipe All Data",
+          confirmButton: "Reset Current Competition",
           confirmButtonColor: "red",
         });
         if (!confirmed) return;
-        setIsWipingAllData(true);
-        await wipeAllData({});
+        if (!(await wipeAllData({}))) return;
+        notifications.show({
+          title: "Success!",
+          message: "Current competition reset successfully",
+          color: "green",
+          icon: <IconCheck size={16} />,
+        });
       }}
       loading={isWipingAllData}
+      disabled={disabled}
     >
-      Wipe All Data
+      Reset Current Competition
     </Button>
   );
 }

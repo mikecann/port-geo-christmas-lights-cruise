@@ -2,18 +2,22 @@ import { describe, it, expect, beforeEach } from "vitest";
 import type {
   ConvexTest,
   AuthenticatedConvexTest,
-} from "../common/tests/testingHelpers";
+} from "../common/tests/testingHelpers.vitest";
 import {
   createConvexTest,
   createTestUser,
   createTestEntry,
   moveEntryToStatus,
   signInAsTestUser,
-} from "../common/tests/testingHelpers";
+} from "../common/tests/testingHelpers.vitest";
 import { entries } from "./model";
 import type { Doc } from "../../_generated/dataModel";
 import { MAX_ENTRY_NUMBER } from "../../../shared/constants";
 import { competitions } from "../competitions/model";
+import type { QueryCtx } from "../../_generated/server";
+
+const currentCompetitionId = async (ctx: QueryCtx) =>
+  (await competitions.query(ctx).current())._id;
 
 describe("getNextAvailableEntryNumber", () => {
   let rawTest: ConvexTest;
@@ -411,7 +415,10 @@ describe("revertToDraft", () => {
 
     // Act
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user._id).revertToDraft();
+      await entries
+        .mutate(ctx)
+        .forUser(await currentCompetitionId(ctx), user._id)
+        .revertToDraft();
     });
 
     // Assert
@@ -443,7 +450,10 @@ describe("revertToDraft", () => {
 
     // Act
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user._id).revertToDraft();
+      await entries
+        .mutate(ctx)
+        .forUser(await currentCompetitionId(ctx), user._id)
+        .revertToDraft();
     });
 
     // Assert
@@ -479,7 +489,10 @@ describe("revertToDraft", () => {
     // Act & Assert
     await expect(
       t.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user._id).revertToDraft();
+        await entries
+          .mutate(ctx)
+          .forUser(await currentCompetitionId(ctx), user._id)
+          .revertToDraft();
       }),
     ).rejects.toThrow(/not in submitting status, cannot revert/);
   });
@@ -503,7 +516,10 @@ describe("revertToDraft", () => {
 
     // Act
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user._id).revertToDraft();
+      await entries
+        .mutate(ctx)
+        .forUser(await currentCompetitionId(ctx), user._id)
+        .revertToDraft();
     });
 
     // Assert
@@ -551,7 +567,7 @@ describe("submission error reversion", () => {
       t.run(async (ctx) => {
         await entries
           .mutate(ctx)
-          .forUser(user1._id)
+          .forUser(await currentCompetitionId(ctx), user1._id)
           .finalizeSubmission({
             lat: outsideBoundaryLat,
             lng: outsideBoundaryLng,
@@ -607,13 +623,16 @@ describe("submission error reversion", () => {
     // Act & Assert - should fail due to conflict
     await expect(
       t2.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user2._id).finalizeSubmission({
-          lat: -33.63,
-          lng: 115.39,
-          placeId,
-        });
+        await entries
+          .mutate(ctx)
+          .forUser(await currentCompetitionId(ctx), user2._id)
+          .finalizeSubmission({
+            lat: -33.63,
+            lng: 115.39,
+            placeId,
+          });
       }),
-    ).rejects.toThrow(/already has an approved entry|already has an entry/);
+    ).rejects.toThrow(/is already used!/);
 
     // Verify entry2 is still in submitting status
     const entryAfterError = await t2.run(async (ctx) => {
@@ -644,7 +663,7 @@ describe("submission error reversion", () => {
     await t.run(async (ctx) => {
       await entries
         .mutate(ctx)
-        .forUser(user1._id)
+        .forUser(await currentCompetitionId(ctx), user1._id)
         .finalizeSubmission({
           lat: withinBoundaryLat,
           lng: withinBoundaryLng,
@@ -726,13 +745,16 @@ describe("finalizeSubmission", () => {
     // Try to finalize entry2 - should throw an error
     await expect(
       t.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user2._id).finalizeSubmission({
-          lat: -33.63,
-          lng: 115.39,
-          placeId: sharedPlaceId,
-        });
+        await entries
+          .mutate(ctx)
+          .forUser(await currentCompetitionId(ctx), user2._id)
+          .finalizeSubmission({
+            lat: -33.63,
+            lng: 115.39,
+            placeId: sharedPlaceId,
+          });
       }),
-    ).rejects.toThrow(/already has an approved entry/i);
+    ).rejects.toThrow(/is already used!/);
   });
 
   it("should allow finalization if no other approved entry exists with the same placeId", async () => {
@@ -757,11 +779,14 @@ describe("finalizeSubmission", () => {
 
     // Finalize should succeed - use coordinates within the competition boundary
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user1._id).finalizeSubmission({
-        lat: -33.63,
-        lng: 115.39,
-        placeId: uniquePlaceId,
-      });
+      await entries
+        .mutate(ctx)
+        .forUser(await currentCompetitionId(ctx), user1._id)
+        .finalizeSubmission({
+          lat: -33.63,
+          lng: 115.39,
+          placeId: uniquePlaceId,
+        });
     });
 
     // Verify the entry was finalized successfully
@@ -782,7 +807,7 @@ describe("finalizeSubmission", () => {
     const user4 = await createTestUser(rawTest, {});
 
     // Create a draft entry with the shared placeId
-    const draftEntry = await createTestEntry(t, {
+    await createTestEntry(t, {
       submittedByUserId: user3._id,
       houseAddress: {
         address: "789 Pine St",
@@ -835,11 +860,14 @@ describe("finalizeSubmission", () => {
     // Finalize should succeed since only draft and rejected entries exist with this placeId
     // Use coordinates within the competition boundary
     await t.run(async (ctx) => {
-      await entries.mutate(ctx).forUser(user1._id).finalizeSubmission({
-        lat: -33.63,
-        lng: 115.39,
-        placeId: sharedPlaceId,
-      });
+      await entries
+        .mutate(ctx)
+        .forUser(await currentCompetitionId(ctx), user1._id)
+        .finalizeSubmission({
+          lat: -33.63,
+          lng: 115.39,
+          placeId: sharedPlaceId,
+        });
     });
 
     // Verify the entry was finalized successfully
@@ -891,13 +919,16 @@ describe("finalizeSubmission", () => {
     // Try to finalize entry2 - should throw an error because entry1 is already submitting
     await expect(
       t.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user2._id).finalizeSubmission({
-          lat: 10,
-          lng: 20,
-          placeId: sharedPlaceId,
-        });
+        await entries
+          .mutate(ctx)
+          .forUser(await currentCompetitionId(ctx), user2._id)
+          .finalizeSubmission({
+            lat: 10,
+            lng: 20,
+            placeId: sharedPlaceId,
+          });
       }),
-    ).rejects.toThrow(/already has an approved entry/i);
+    ).rejects.toThrow(/is already used!/);
   });
 
   it("should throw an error if a submitted entry exists with the same placeId", async () => {
@@ -943,12 +974,15 @@ describe("finalizeSubmission", () => {
     // Try to finalize entry2 - should throw an error because entry1 is already submitted
     await expect(
       t.run(async (ctx) => {
-        await entries.mutate(ctx).forUser(user2._id).finalizeSubmission({
-          lat: 15,
-          lng: 25,
-          placeId: sharedPlaceId,
-        });
+        await entries
+          .mutate(ctx)
+          .forUser(await currentCompetitionId(ctx), user2._id)
+          .finalizeSubmission({
+            lat: 15,
+            lng: 25,
+            placeId: sharedPlaceId,
+          });
       }),
-    ).rejects.toThrow(/already has an approved entry/i);
+    ).rejects.toThrow(/is already used!/);
   });
 });

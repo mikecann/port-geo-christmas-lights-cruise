@@ -18,6 +18,7 @@ interface AddressAutocompleteProps {
   required?: boolean;
   error?: string | null;
   disabled?: boolean;
+  maxLength?: number;
 }
 
 // Helper function to load Google Maps API
@@ -115,6 +116,7 @@ export default function AddressAutocomplete({
   required = false,
   error = null,
   disabled = false,
+  maxLength,
 }: AddressAutocompleteProps) {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
@@ -194,6 +196,7 @@ export default function AddressAutocomplete({
         onChange={(e) => onChange(e.currentTarget.value)}
         error={error}
         disabled={disabled}
+        maxLength={maxLength}
       />
     );
 
@@ -229,6 +232,7 @@ export default function AddressAutocomplete({
           onBlur={() => combobox.closeDropdown()}
           error={error}
           disabled={disabled}
+          maxLength={maxLength}
           rightSection={
             isLoading && (
               <div

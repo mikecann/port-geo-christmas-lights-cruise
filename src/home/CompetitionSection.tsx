@@ -1,7 +1,10 @@
 import { Box, Container, Stack, Text, Title, Button } from "@mantine/core";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { routes } from "../routes";
 
 export default function CompetitionSection() {
+  const competition = useQuery(api.public.competitions.current, {});
   return (
     <Box bg="#040826" py={40}>
       <Container size="sm">
@@ -13,8 +16,8 @@ export default function CompetitionSection() {
             Prize pool: $20,000
           </Text>
           <Text c="gray.0" size="md" ta="center" mb="md">
-            The 2026 prize categories and allocations are being finalised. Full
-            details will be announced soon.
+            The {competition?.year} prize categories and allocations are being
+            finalised. Full details will be announced soon.
           </Text>
           <Button
             component="a"

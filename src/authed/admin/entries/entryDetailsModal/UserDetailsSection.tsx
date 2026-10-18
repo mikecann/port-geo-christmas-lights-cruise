@@ -1,9 +1,8 @@
-import { Text, Stack, Group, Card, Avatar, SimpleGrid } from "@mantine/core";
+import { Text, Group, Card, Avatar, SimpleGrid } from "@mantine/core";
 import {
   IconMail,
   IconPhone,
   IconCalendar,
-  IconUser,
   IconShieldCheck,
 } from "@tabler/icons-react";
 import { useQuery } from "convex/react";

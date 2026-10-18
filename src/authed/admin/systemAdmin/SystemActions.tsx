@@ -1,5 +1,7 @@
 import { Group, Button, Text } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import SendTestEmailButton from "./SendTestEmailButton";
 import { GenerateMockVotesButton } from "./GenerateMockButtons";
 import {
@@ -18,6 +20,9 @@ export default function SystemActions({
   voteCount,
   onOpenMockEntriesModal,
 }: SystemActionsProps) {
+  const wipesAllowed = useQuery(api.admin.system.data.wipesAllowed, {});
+  const wipesDisabled = wipesAllowed !== true;
+
   return (
     <div>
       <Text size="md" fw={500} mb="md">
@@ -33,11 +38,17 @@ export default function SystemActions({
           Generate Mock Entries
         </Button>
         <GenerateMockVotesButton voteCount={voteCount} />
-        <WipeEntriesButton />
-        <WipeVotesButton />
+        <WipeEntriesButton disabled={wipesDisabled} />
+        <WipeVotesButton disabled={wipesDisabled} />
         <DeleteMyEntryButton />
-        <WipeAllDataButton />
+        <WipeAllDataButton disabled={wipesDisabled} />
       </Group>
+      {wipesAllowed === false && (
+        <Text size="sm" c="dimmed" mt="sm">
+          Wipes are turned off on this deployment. Set
+          ALLOW_DESTRUCTIVE_WIPES=true on a dev deployment to use them.
+        </Text>
+      )}
     </div>
   );
 }

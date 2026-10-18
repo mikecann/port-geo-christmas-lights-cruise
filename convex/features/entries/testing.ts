@@ -1,8 +1,4 @@
-import type {
-  DatabaseReader,
-  DatabaseWriter,
-  MutationCtx,
-} from "../../_generated/server";
+import type { DatabaseWriter, MutationCtx } from "../../_generated/server";
 import { entries } from "./model";
 import type { Id } from "../../_generated/dataModel";
 

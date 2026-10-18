@@ -1,12 +1,13 @@
-import { myAction, myMutation, myQuery } from "./lib";
+import { userAction, userMutation, userQuery } from "../features/common/auth";
 import { entries } from "../features/entries/model";
-import { v } from "convex/values";
-import type { LatLng } from "../features/map/lib";
-import { geocodeAddress } from "../features/map/lib";
+import { ConvexError, v } from "convex/values";
+import type { GooglePlace } from "../features/map/lib";
+import { lookUpPlace } from "../features/map/lib";
 import { internal } from "../../shared/api";
 import { competitions } from "../features/competitions/model";
+import { enforceUserRateLimit } from "../features/rateLimits/lib";
 
-export const find = myQuery
+export const find = userQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -17,27 +18,25 @@ export const find = myQuery
   })
   .public();
 
-export const listPrevious = myQuery
+export const listPrevious = userQuery
   .input({})
   .handler(async (context) => {
-    const currentCompetition = await competitions.query(context).current();
-    const rows = await entries
+    const competition = await competitions.query(context).current();
+    return await entries
       .query(context)
-      .forUser(context.userId)
-      .listAcrossCompetitions();
-    return rows.filter(
-      ({ competition }) => competition.year < currentCompetition.year,
-    );
+      .forUser(competition._id, context.userId)
+      .listPrevious();
   })
   .public();
 
-export const enter = myMutation
+export const enter = userMutation
   .input({})
   .returns(v.null())
   .handler(async (context) => {
+    await enforceUserRateLimit(context, "enterCompetition", context.userId);
     const competition = await competitions.query(context).current();
     if (!competition.entriesOpen)
-      throw new Error("Competition entries are currently closed");
+      throw new ConvexError("Competition entries are currently closed");
     await entries
       .mutate(context)
       .forUser(competition._id, context.userId)
@@ -46,7 +45,7 @@ export const enter = myMutation
   })
   .public();
 
-export const updateDraft = myMutation
+export const updateDraft = userMutation
   .input({
     houseAddress: v.optional(
       v.object({ address: v.string(), placeId: v.string() }),
@@ -64,7 +63,7 @@ export const updateDraft = myMutation
   })
   .public();
 
-export const remove = myMutation
+export const remove = userMutation
   .input({})
   .returns(v.null())
   .handler(async (context) => {
@@ -72,12 +71,12 @@ export const remove = myMutation
     await entries
       .mutate(context)
       .forUser(competition._id, context.userId)
-      .remove(context);
+      .remove();
     return null;
   })
   .public();
 
-export const updateApproved = myMutation
+export const updateApproved = userMutation
   .input({
     name: v.optional(v.string()),
   })
@@ -92,10 +91,11 @@ export const updateApproved = myMutation
   })
   .public();
 
-export const submit = myAction
+export const submit = userAction
   .input({})
   .returns(v.null())
   .handler(async (context) => {
+    await enforceUserRateLimit(context, "submitEntry", context.userId);
     const entry = await context.runMutation(internal.entries.startSubmitting, {
       userId: context.userId,
     });
@@ -104,16 +104,16 @@ export const submit = myAction
       throw new Error("Entry is not in submitting status");
 
     try {
-      let latLng: LatLng = { lat: 0, lng: 0 };
+      let place: GooglePlace;
       try {
-        latLng = await geocodeAddress(entry.houseAddress.address);
+        place = await lookUpPlace(entry.houseAddress.placeId);
       } catch (error) {
-        // Revert to draft if geocoding fails
+        // Revert to draft if Google can't find the place the user picked
         await context.runMutation(internal.entries.revertToDraft, {
           userId: context.userId,
         });
         throw Object.assign(
-          new Error(
+          new ConvexError(
             `Unable to find your address "${entry.houseAddress.address}". Please check the address and try again, or contact support if you believe this is an error.`,
           ),
           { cause: error },
@@ -122,9 +122,9 @@ export const submit = myAction
 
       await context.runMutation(internal.entries.finalizeSubmission, {
         entryId: entry._id,
-        lat: latLng.lat,
-        lng: latLng.lng,
-        placeId: entry.houseAddress.placeId,
+        lat: place.lat,
+        lng: place.lng,
+        placeId: place.placeId,
       });
 
       return null;

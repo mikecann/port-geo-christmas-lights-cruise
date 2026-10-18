@@ -1,11 +1,13 @@
-import { userSystemAdminMutation } from "./lib";
+import { ensureDestructiveWipesAllowed } from "./lib";
+import { systemAdminMutation } from "../../features/common/auth";
 import { votes } from "../../features/votes/model";
 import { v } from "convex/values";
 import { competitions } from "../../features/competitions/model";
+import { VOTE_CATEGORIES } from "../../features/votes/schema";
 
 // Mutations
 
-export const wipeCurrentCompetition = userSystemAdminMutation
+export const wipeCurrentCompetition = systemAdminMutation
   .input({})
   .returns(
     v.object({
@@ -14,8 +16,9 @@ export const wipeCurrentCompetition = userSystemAdminMutation
     }),
   )
   .handler(async (context) => {
+    ensureDestructiveWipesAllowed();
     const competition = await competitions.query(context).current();
-    const result = await votes.wipeAll(context.db, competition._id);
+    const result = await votes.wipeForCompetition(context.db, competition._id);
     return {
       message: `Successfully deleted ${result.deleted} current competition votes`,
       deleted: result.deleted,
@@ -23,7 +26,7 @@ export const wipeCurrentCompetition = userSystemAdminMutation
   })
   .public();
 
-export const generateMock = userSystemAdminMutation
+export const generateMock = systemAdminMutation
   .input({
     count: v.number(),
   })
@@ -48,10 +51,6 @@ export const generateMock = userSystemAdminMutation
         "No approved entries found. Generate mock entries first.",
       );
 
-    const categories: Array<"best_display" | "most_jolly"> = [
-      "best_display",
-      "most_jolly",
-    ];
     const mockUsers: string[] = [];
     let totalVotesCreated = 0;
 
@@ -101,7 +100,7 @@ export const generateMock = userSystemAdminMutation
 
       mockUsers.push(userId);
 
-      for (const category of categories) {
+      for (const category of VOTE_CATEGORIES) {
         if (totalVotesCreated >= input.count) break;
 
         const randomEntry =

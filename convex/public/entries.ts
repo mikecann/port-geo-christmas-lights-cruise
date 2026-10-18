@@ -4,37 +4,40 @@ import type { FunctionReturnType } from "convex/server";
 import type { api } from "../_generated/api";
 import { photos } from "../features/photos/model";
 import { convex } from "../schema";
-import {
-  competitions,
-  CURRENT_COMPETITION_YEAR,
-} from "../features/competitions/model";
+import { competitions } from "../features/competitions/model";
 import type { QueryCtx } from "../_generated/server";
+import type { ApprovedEntryDoc } from "../features/entries/schema";
+import { publicEntryValidator } from "../features/entries/schema";
+import { publicPhotoValidator } from "../features/photos/schema";
 
 const competitionInput = {
   competitionYear: v.optional(v.number()),
 };
 
-const resolveCompetition = (ctx: QueryCtx, competitionYear?: number) =>
-  competitions
-    .query(ctx)
-    .forYear(competitionYear ?? CURRENT_COMPETITION_YEAR)
-    .get();
+const entryWithFirstPhotoValidator = v.object({
+  entry: publicEntryValidator,
+  photo: v.union(publicPhotoValidator, v.null()),
+});
 
-export const list = convex
-  .query()
-  .input(competitionInput)
-  .handler(async (context, input) => {
-    const competition = await resolveCompetition(
-      context,
-      input.competitionYear,
-    );
-    return await entries.query(context).listApproved(competition._id);
-  })
-  .public();
+const entryWithPhotosValidator = v.object({
+  entry: publicEntryValidator,
+  photos: v.array(publicPhotoValidator),
+});
+
+const resolveCompetition = (ctx: QueryCtx, competitionYear?: number) =>
+  competitionYear === undefined
+    ? competitions.query(ctx).current()
+    : competitions.query(ctx).forYear(competitionYear).get();
+
+const withFirstPhoto = async (ctx: QueryCtx, entry: ApprovedEntryDoc) => ({
+  entry: entries.toPublic(entry),
+  photo: await photos.forEntry(entry._id).findFirstPublic(ctx.db),
+});
 
 export const listWithFirstPhoto = convex
   .query()
   .input(competitionInput)
+  .returns(v.array(entryWithFirstPhotoValidator))
   .handler(async (context, input) => {
     const competition = await resolveCompetition(
       context,
@@ -42,28 +45,7 @@ export const listWithFirstPhoto = convex
     );
     const docs = await entries.query(context).listApproved(competition._id);
     return await Promise.all(
-      docs.map(async (entry) => ({
-        entry,
-        photo: await photos.forEntry(entry._id).findFirst(context.db),
-      })),
-    );
-  })
-  .public();
-
-export const listWithPhotos = convex
-  .query()
-  .input(competitionInput)
-  .handler(async (context, input) => {
-    const competition = await resolveCompetition(
-      context,
-      input.competitionYear,
-    );
-    const docs = await entries.query(context).listApproved(competition._id);
-    return await Promise.all(
-      docs.map(async (entry) => ({
-        entry,
-        photos: await photos.forEntry(entry._id).list(context.db),
-      })),
+      docs.map((entry) => withFirstPhoto(context, entry)),
     );
   })
   .public();
@@ -83,6 +65,7 @@ export const count = convex
 export const getRandomThree = convex
   .query()
   .input(competitionInput)
+  .returns(v.array(entryWithFirstPhotoValidator))
   .handler(async (context, input) => {
     const competition = await resolveCompetition(
       context,
@@ -96,10 +79,7 @@ export const getRandomThree = convex
 
     if (allApproved.length <= 3)
       return await Promise.all(
-        allApproved.map(async (entry) => ({
-          entry,
-          photo: await photos.forEntry(entry._id).findFirst(context.db),
-        })),
+        allApproved.map((entry) => withFirstPhoto(context, entry)),
       );
 
     // Fisher-Yates shuffle and take first 3
@@ -111,10 +91,7 @@ export const getRandomThree = convex
 
     const selectedThree = shuffled.slice(0, 3);
     return await Promise.all(
-      selectedThree.map(async (entry) => ({
-        entry,
-        photo: await photos.forEntry(entry._id).findFirst(context.db),
-      })),
+      selectedThree.map((entry) => withFirstPhoto(context, entry)),
     );
   })
   .public();
@@ -122,37 +99,43 @@ export const getRandomThree = convex
 export const get = convex
   .query()
   .input({ entryId: v.id("entries") })
+  .returns(publicEntryValidator)
   .handler(async (context, input) => {
     const entry = await entries
       .query(context)
       .forEntry(input.entryId)
       .getApproved();
-    return entry;
+    return entries.toPublic(entry);
   })
   .public();
 
+// Entry links get typed in and shared, so an id that isn't an entry, or an
+// entry that isn't approved, comes back as null rather than an error
+const findApproved = (ctx: QueryCtx, entryId: string) => {
+  const id = ctx.db.normalizeId("entries", entryId);
+  return id ? entries.query(ctx).forEntry(id).findApproved() : null;
+};
+
 export const find = convex
   .query()
-  .input({ entryId: v.id("entries") })
+  .input({ entryId: v.string() })
+  .returns(v.union(publicEntryValidator, v.null()))
   .handler(async (context, input) => {
-    const entry = await entries.query(context).forEntry(input.entryId).find();
-    if (!entry) return null;
-    if (entry.status !== "approved") throw new Error("Entry is not approved");
-    return entry;
+    const entry = await findApproved(context, input.entryId);
+    return entry ? entries.toPublic(entry) : null;
   })
   .public();
 
 export const getWithPhotos = convex
   .query()
-  .input({ entryId: v.id("entries") })
+  .input({ entryId: v.string() })
+  .returns(v.union(entryWithPhotosValidator, v.null()))
   .handler(async (context, input) => {
-    const entry = await entries
-      .query(context)
-      .forEntry(input.entryId)
-      .getApproved();
+    const entry = await findApproved(context, input.entryId);
+    if (!entry) return null;
     return {
-      entry,
-      photos: await photos.forEntry(input.entryId).list(context.db),
+      entry: entries.toPublic(entry),
+      photos: await photos.forEntry(entry._id).listPublic(context.db),
     };
   })
   .public();

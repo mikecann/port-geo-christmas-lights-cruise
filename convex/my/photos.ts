@@ -1,10 +1,11 @@
-import { myMutation, myQuery } from "./lib";
+import { userMutation, userQuery } from "../features/common/auth";
 import { entries } from "../features/entries/model";
 import { photos } from "../features/photos/model";
 import { v } from "convex/values";
 import { competitions } from "../features/competitions/model";
+import { enforceUserRateLimit } from "../features/rateLimits/lib";
 
-export const list = myQuery
+export const list = userQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -16,9 +17,10 @@ export const list = myQuery
   })
   .public();
 
-export const beginUpload = myMutation
+export const beginUpload = userMutation
   .input({})
   .handler(async (context) => {
+    await enforceUserRateLimit(context, "beginPhotoUpload", context.userId);
     const competition = await competitions.query(context).current();
     const entry = await entries
       .query(context)
@@ -29,12 +31,12 @@ export const beginUpload = myMutation
   })
   .public();
 
-export const save = myMutation
+export const save = userMutation
   .input({
     storageId: v.id("_storage"),
     photoId: v.id("photos"),
   })
-  .returns(v.null())
+  .returns(v.union(v.null(), v.object({ error: v.string() })))
   .handler(async (context, input) => {
     const competition = await competitions.query(context).current();
     const entry = await entries
@@ -45,15 +47,13 @@ export const save = myMutation
     if (photo.entryId !== entry._id)
       throw new Error("Cannot modify another entry's photo");
 
-    await photos.forPhoto(input.photoId).save(context, {
+    return await photos.forPhoto(input.photoId).save(context, {
       storageId: input.storageId,
     });
-
-    return null;
   })
   .public();
 
-export const remove = myMutation
+export const remove = userMutation
   .input({
     photoId: v.id("photos"),
   })

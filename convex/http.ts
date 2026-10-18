@@ -2,9 +2,7 @@ import { httpRouter } from "convex/server";
 import { auth } from "./auth";
 import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { httpApiOgEntryReturnValidator } from "../shared/validators";
-import { find } from "./public/entries";
 import { iife } from "../shared/misc";
 
 const http = httpRouter();
@@ -25,9 +23,7 @@ http.route({
       );
 
     // Load entry
-    const entry = await ctx.runQuery(api.public.entries.find, {
-      entryId: entryId as Id<"entries">,
-    });
+    const entry = await ctx.runQuery(api.public.entries.find, { entryId });
 
     if (!entry)
       return new Response(JSON.stringify({ error: "Entry not found" }), {
@@ -36,7 +32,7 @@ http.route({
       });
 
     const firstPhoto = await ctx.runQuery(api.public.photos.findFirstForEntry, {
-      entryId: entryId as Id<"entries">,
+      entryId: entry._id,
     });
 
     // Determine first photo URL if available
@@ -44,15 +40,13 @@ http.route({
       if (!firstPhoto) return null;
       if (firstPhoto.kind === "mock")
         return `/mockPhotos/${firstPhoto.mockPath}`;
-      if (firstPhoto.uploadState.status === "uploaded")
-        return firstPhoto.uploadState.url;
-      return null;
+      return firstPhoto.url;
     });
 
-    const title = entry.name ?? "Christmas Lights Entry";
-    const description = entry.houseAddress?.address
-      ? entry.houseAddress.address
-      : "Check out this Port Geographe Christmas Lights entry!";
+    const title = entry.name || "Christmas Lights Entry";
+    const description =
+      entry.houseAddress.address ||
+      "Check out this Port Geographe Christmas Lights entry!";
 
     return new Response(
       JSON.stringify(

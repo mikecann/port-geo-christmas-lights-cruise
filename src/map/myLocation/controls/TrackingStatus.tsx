@@ -53,8 +53,6 @@ export const TrackingStatus: React.FC = () => {
   if (!map) return null;
   if (!position) return null;
 
-  const { accuracy, latitude, longitude } = position;
-
   return (
     <Paper
       withBorder

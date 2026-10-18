@@ -4,26 +4,47 @@ import { type MutationCtx, type QueryCtx } from "../../_generated/server";
 import { ensure } from "../../../shared/ensure";
 import { match } from "ts-pattern";
 import { photos } from "../photos/model";
+import { votes } from "../votes/model";
 import { isStatus } from "../../../shared/filter";
 import { randomIntRange } from "../../../shared/num";
-import * as testing from "./testing";
-import { exhaustiveCheck } from "../../../shared/misc";
+import { isWithinBoundary } from "../../../shared/geo";
 import {
-  COMPETITION_GEOGRAPHIC_BOUNDARY,
+  MAX_ENTRY_ADDRESS_LENGTH,
+  MAX_ENTRY_NAME_LENGTH,
   MAX_ENTRY_NUMBER,
-  usersWhiteList,
+  MAX_REJECTED_REASON_LENGTH,
 } from "../../../shared/constants";
 import { competitions } from "../competitions/model";
+import type { ApprovedEntryDoc, EntryStatusKinds, PublicEntry } from "./schema";
+
+function trimToLimit(value: string, maxLength: number, label: string) {
+  const trimmed = value.trim();
+  if (trimmed.length > maxLength)
+    throw new ConvexError(`${label} must be ${maxLength} characters or fewer.`);
+  return trimmed;
+}
+
+export const ENTRY_UNAVAILABLE_MESSAGE =
+  "Sorry, that entry isn't available. It may have been removed from the competition.";
 
 export const entries = {
-  testing,
+  toPublic(entry: ApprovedEntryDoc): PublicEntry {
+    const { address, lat, lng } = entry.houseAddress;
+    return {
+      _id: entry._id,
+      competitionId: entry.competitionId,
+      name: entry.name,
+      entryNumber: entry.entryNumber,
+      houseAddress: { address, lat, lng },
+    };
+  },
 
   doc(entry: Doc<"entries">) {
     return {
       ensureIsModifiable() {
         if (entry.status !== "draft" && entry.status !== "approved")
-          throw new Error(
-            `Entry of id '${entry._id}' with status '${entry.status}' is not in draft or approved status and cannot be modified. Current status: ${entry.status}`,
+          throw new ConvexError(
+            "Your entry can only be changed while it's a draft or once it's been approved.",
           );
         return entry;
       },
@@ -31,7 +52,7 @@ export const entries = {
   },
 
   query(context: QueryCtx) {
-    const { auth, db, storage } = context;
+    const { db } = context;
     return {
       forEntry(entryId: Id<"entries">) {
         return {
@@ -44,87 +65,50 @@ export const entries = {
             return ensure(entry, `Entry with id '${entryId}' not found`);
           },
 
+          async findApproved() {
+            const entry = await this.find();
+            return entry?.status === "approved" ? entry : null;
+          },
+
           async getApproved() {
-            const entry = await this.get();
-            if (entry.status !== "approved")
-              throw new Error("Entry is not approved");
+            const entry = await this.findApproved();
+            if (!entry) throw new ConvexError(ENTRY_UNAVAILABLE_MESSAGE);
             return entry;
           },
         };
       },
 
-      forUser(
-        competitionIdOrUserId: Id<"competitions"> | Id<"users">,
-        maybeUserId?: Id<"users">,
-      ) {
-        const userId = maybeUserId ?? (competitionIdOrUserId as Id<"users">);
-        const resolveCompetitionId = async () =>
-          maybeUserId
-            ? (competitionIdOrUserId as Id<"competitions">)
-            : (await competitions.query(context).current())._id;
+      forUser(competitionId: Id<"competitions">, userId: Id<"users">) {
+        const findInCompetition = (id: Id<"competitions">) =>
+          db
+            .query("entries")
+            .withIndex("by_competitionId_and_submittedByUserId", (q) =>
+              q.eq("competitionId", id).eq("submittedByUserId", userId),
+            )
+            .unique();
+
+        const listEarlierCompetitions = async (limit?: number) => {
+          const competition = await competitions
+            .query(context)
+            .forCompetition(competitionId)
+            .get();
+          return await competitions
+            .query(context)
+            .listBeforeYear(competition.year, limit);
+        };
+
         return {
-          async find() {
-            const competitionId = await resolveCompetitionId();
-            return db
-              .query("entries")
-              .withIndex("by_competitionId_and_submittedByUserId", (q) =>
-                q
-                  .eq("competitionId", competitionId)
-                  .eq("submittedByUserId", userId),
-              )
-              .unique();
-          },
-
-          async listAcrossCompetitions() {
-            const competitionDocs = await competitions
-              .query(context)
-              .listNewestFirst();
-            const rows = await Promise.all(
-              competitionDocs.map(async (competition) => ({
-                competition,
-                entry: await db
-                  .query("entries")
-                  .withIndex("by_competitionId_and_submittedByUserId", (q) =>
-                    q
-                      .eq("competitionId", competition._id)
-                      .eq("submittedByUserId", userId),
-                  )
-                  .unique(),
-              })),
-            );
-            return rows.filter(
-              (row): row is typeof row & { entry: Doc<"entries"> } =>
-                row.entry !== null,
-            );
-          },
-
-          async findPreviousCompetitionApproved(
-            competitionId: Id<"competitions">,
-          ) {
-            const competition = await competitions
-              .query(context)
-              .forCompetition(competitionId)
-              .get();
-            const [previousCompetition] = await competitions
-              .query(context)
-              .listBeforeYear(competition.year, 1);
-            if (!previousCompetition) return null;
-
-            const previousEntry = await db
-              .query("entries")
-              .withIndex("by_competitionId_and_submittedByUserId", (q) =>
-                q
-                  .eq("competitionId", previousCompetition._id)
-                  .eq("submittedByUserId", userId),
-              )
-              .unique();
-
-            return previousEntry?.status === "approved" ? previousEntry : null;
+          find() {
+            return findInCompetition(competitionId);
           },
 
           async get() {
             const entry = await this.find();
-            return ensure(entry, `User '${userId}' has no entry`);
+            if (!entry)
+              throw new ConvexError(
+                "We couldn't find your entry. Please refresh the page and try again.",
+              );
+            return entry;
           },
 
           async getForModification() {
@@ -133,9 +117,36 @@ export const entries = {
             return entry;
           },
 
-          async ensureIsModifiable() {
-            const entry = await this.get();
-            entries.doc(entry).ensureIsModifiable();
+          // Newest first, from competitions before this one
+          async listPrevious() {
+            const earlierCompetitions = await listEarlierCompetitions();
+            const rows = await Promise.all(
+              earlierCompetitions.map(async (competition) => ({
+                competition,
+                entry: await findInCompetition(competition._id),
+              })),
+            );
+            return rows.filter(
+              (row): row is typeof row & { entry: Doc<"entries"> } =>
+                row.entry !== null,
+            );
+          },
+
+          async findPreviousApproved() {
+            const [previousCompetition] = await listEarlierCompetitions(1);
+            if (!previousCompetition) return null;
+            const previousEntry = await findInCompetition(
+              previousCompetition._id,
+            );
+            return previousEntry?.status === "approved" ? previousEntry : null;
+          },
+
+          async hasApprovedEntryBefore() {
+            for (const earlier of await listEarlierCompetitions()) {
+              const entry = await findInCompetition(earlier._id);
+              if (entry?.status === "approved") return true;
+            }
+            return false;
           },
         };
       },
@@ -143,37 +154,29 @@ export const entries = {
       async listApproved(competitionId?: Id<"competitions">) {
         const resolvedCompetitionId =
           competitionId ?? (await competitions.query(context).current())._id;
-        const approved = await db
+        // The index only returns approved entries
+        return (await db
           .query("entries")
           .withIndex("by_competitionId_and_status", (q) =>
             q
               .eq("competitionId", resolvedCompetitionId)
               .eq("status", "approved"),
           )
-          .collect()
-          .then((a) => a.filter((e) => e.status == "approved"));
-
-        return approved;
+          .collect()) as ApprovedEntryDoc[];
       },
 
       async countApproved(competitionId: Id<"competitions">) {
         return (await this.listApproved(competitionId)).length;
       },
 
-      async listPendingReview(competitionId: Id<"competitions">) {
+      async listWithStatus(
+        competitionId: Id<"competitions">,
+        status: EntryStatusKinds,
+      ) {
         return await db
           .query("entries")
           .withIndex("by_competitionId_and_status", (q) =>
-            q.eq("competitionId", competitionId).eq("status", "submitted"),
-          )
-          .collect();
-      },
-
-      async listRejected(competitionId: Id<"competitions">) {
-        return await db
-          .query("entries")
-          .withIndex("by_competitionId_and_status", (q) =>
-            q.eq("competitionId", competitionId).eq("status", "rejected"),
+            q.eq("competitionId", competitionId).eq("status", status),
           )
           .collect();
       },
@@ -237,7 +240,7 @@ export const entries = {
   },
 
   mutate(context: MutationCtx) {
-    const { auth, db, storage } = context;
+    const { db } = context;
     const query = entries.query(context);
     return {
       forEntry(entryId: Id<"entries">) {
@@ -269,45 +272,36 @@ export const entries = {
             await db.patch(entryId, {
               status: "rejected",
               rejectedAt: Date.now(),
-              rejectedReason,
+              rejectedReason: trimToLimit(
+                rejectedReason,
+                MAX_REJECTED_REASON_LENGTH,
+                "The rejection reason",
+              ),
             });
           },
 
           async delete() {
-            const entry = await query.get();
-
-            // Delete all photos for this entry
+            await query.get();
             await photos.forEntry(entryId).deleteAll(context);
-
+            await votes.forEntry(entryId).deleteAll(context.db);
             await context.db.delete(entryId);
           },
 
           async setEntryNumber({ entryNumber }: { entryNumber: number }) {
-            const entry = await query.get();
+            await query.get();
             await db.patch(entryId, { entryNumber });
           },
         };
       },
 
-      forUser(
-        competitionIdOrUserId: Id<"competitions"> | Id<"users">,
-        maybeUserId?: Id<"users">,
-      ) {
-        const userId = maybeUserId ?? (competitionIdOrUserId as Id<"users">);
-        const resolveCompetitionId = async () =>
-          maybeUserId
-            ? (competitionIdOrUserId as Id<"competitions">)
-            : (await competitions.query(context).current())._id;
-        const query = entries
-          .query(context)
-          .forUser(competitionIdOrUserId, maybeUserId);
+      forUser(competitionId: Id<"competitions">, userId: Id<"users">) {
+        const query = entries.query(context).forUser(competitionId, userId);
         return {
           async create() {
-            const competitionId = await resolveCompetitionId();
             const existing = await query.find();
             if (existing)
-              throw new Error(
-                `Cannot enter competition, user '${userId}' already has an entry`,
+              throw new ConvexError(
+                "You've already entered this year's competition.",
               );
 
             return await db.insert("entries", {
@@ -324,8 +318,8 @@ export const entries = {
             const entry = await query.get();
 
             if (entry.status != "draft")
-              throw new Error(
-                `Entry '${entry._id}' is not in the draft status`,
+              throw new ConvexError(
+                "Your entry has already been submitted, so it can't be changed here.",
               );
 
             const updateFields: {
@@ -333,9 +327,21 @@ export const entries = {
               name?: string;
             } = {};
             if (args.houseAddress !== undefined)
-              updateFields.houseAddress = args.houseAddress;
+              updateFields.houseAddress = {
+                address: trimToLimit(
+                  args.houseAddress.address,
+                  MAX_ENTRY_ADDRESS_LENGTH,
+                  "The address",
+                ),
+                placeId: args.houseAddress.placeId,
+              };
 
-            if (args.name !== undefined) updateFields.name = args.name;
+            if (args.name !== undefined)
+              updateFields.name = trimToLimit(
+                args.name,
+                MAX_ENTRY_NAME_LENGTH,
+                "The entry name",
+              );
 
             await db.patch(entry._id, updateFields);
           },
@@ -344,71 +350,66 @@ export const entries = {
             const entry = await query.get();
 
             if (entry.status !== "approved")
-              throw new Error(`Entry '${entry._id}' is not in approved status`);
+              throw new ConvexError(
+                "Your entry can only be renamed once it's been approved.",
+              );
 
             const updateFields: {
               name?: string;
             } = {};
-            if (args.name !== undefined) updateFields.name = args.name;
+            if (args.name !== undefined)
+              updateFields.name = trimToLimit(
+                args.name,
+                MAX_ENTRY_NAME_LENGTH,
+                "The entry name",
+              );
 
             await db.patch(entry._id, updateFields);
           },
 
-          async remove(ctx: MutationCtx) {
+          async remove() {
             const entry = await query.get();
 
             if (entry.status != "draft")
-              throw new Error(
-                `Entry of id '${entry._id}' with status '${entry.status}' is not in the draft status`,
+              throw new ConvexError(
+                "Your entry can only be deleted while it's a draft.",
               );
 
-            // Delete all photos for this entry
-            await photos.forEntry(entry._id).deleteAll(ctx);
-
-            await ctx.db.delete(entry._id);
+            await entries.mutate(context).forEntry(entry._id).delete();
           },
 
-          async startSubmitting(ctx: MutationCtx) {
-            const competitionId = await resolveCompetitionId();
+          async startSubmitting() {
             const entry = await query.get();
 
             if (entry.status != "draft")
-              throw new Error(
-                `Entry '${entry._id}' is not in the draft status`,
-              );
+              throw new ConvexError("Your entry has already been submitted.");
 
-            if (!entry.houseAddress)
-              throw new Error(
-                `Entry '${entry._id}' is missing required house address`,
+            const { houseAddress, name } = entry;
+            if (!houseAddress?.address.trim() || !houseAddress.placeId.trim())
+              throw new ConvexError(
+                "Please choose your house address from the suggestions before submitting.",
               );
-
-            const { address, placeId } = entry.houseAddress;
-            if (
-              typeof address !== "string" ||
-              address.trim().length === 0 ||
-              typeof placeId !== "string" ||
-              placeId.trim().length === 0
-            )
-              throw new Error(
-                `Invalid house address: address '${address}' and placeId '${placeId}' must be provided`,
+            if (!name?.trim())
+              throw new ConvexError(
+                "Please give your entry a name before submitting.",
               );
 
             if (
               await entries
                 .query(context)
-                .hasEntryWithPlaceIdAlreadyBeenSubmitted(competitionId, placeId)
+                .hasEntryWithPlaceIdAlreadyBeenSubmitted(
+                  competitionId,
+                  houseAddress.placeId,
+                )
             )
               throw new ConvexError(
-                `Address ${entry.houseAddress.address} is already used!`,
+                `Address ${houseAddress.address} is already used!`,
               );
 
             await db.patch(entry._id, {
               status: "submitting" as const,
-              name: ensure(
-                entry.name,
-                `Entry '${entry._id}' is missing required name`,
-              ),
-              houseAddress: entry.houseAddress,
+              name,
+              houseAddress,
             });
 
             return await query.get();
@@ -419,7 +420,6 @@ export const entries = {
             lng: number;
             placeId: string;
           }) {
-            const competitionId = await resolveCompetitionId();
             const entry = await query.get();
 
             if (entry.status != "submitting")
@@ -436,13 +436,11 @@ export const entries = {
                   entry._id,
                 )
             )
-              throw new Error(
-                `Cannot finalize submission: Place ID '${args.placeId}' already has an approved entry`,
+              throw new ConvexError(
+                `Address ${entry.houseAddress.address} is already used!`,
               );
 
-            if (
-              !entries.isLocationWithinCompetitionBoundary(args.lat, args.lng)
-            )
+            if (!isWithinBoundary({ lat: args.lat, lng: args.lng }))
               throw new ConvexError(
                 `Address "${entry.houseAddress.address}" is outside the competition area. Entries must be within the Port Geographe/Busselton region.`,
               );
@@ -467,34 +465,20 @@ export const entries = {
                 `Entry '${entry._id}' is not in submitting status, cannot revert`,
               );
 
-            // Revert back to draft, preserving the address data as optional draft format
-            const draftAddress =
-              typeof entry.houseAddress === "object" &&
-              "address" in entry.houseAddress &&
-              "placeId" in entry.houseAddress
-                ? {
-                    address: entry.houseAddress.address,
-                    placeId: entry.houseAddress.placeId,
-                  }
-                : undefined;
-
-            await db.patch(entry._id, {
-              status: "draft" as const,
-              houseAddress: draftAddress,
-            });
+            await db.patch(entry._id, { status: "draft" as const });
           },
         };
       },
 
-      async wipeAll(competitionId?: Id<"competitions">) {
-        const allEntries = competitionId
-          ? await context.db
-              .query("entries")
-              .withIndex("by_competitionId_and_status", (q) =>
-                q.eq("competitionId", competitionId),
-              )
-              .collect()
-          : await context.db.query("entries").collect();
+      // Only ever the current competition, so past seasons can't be wiped
+      async wipeCurrentCompetition() {
+        const competition = await competitions.query(context).current();
+        const allEntries = await context.db
+          .query("entries")
+          .withIndex("by_competitionId_and_status", (q) =>
+            q.eq("competitionId", competition._id),
+          )
+          .collect();
         let deletedCount = 0;
         for (const entry of allEntries) {
           // Use the proper delete method to clean up photos
@@ -519,8 +503,8 @@ export const entries = {
         if (userId) {
           const previousEntry = await entries
             .query(context)
-            .forUser(userId)
-            .findPreviousCompetitionApproved(resolvedCompetitionId);
+            .forUser(resolvedCompetitionId, userId)
+            .findPreviousApproved();
           if (previousEntry && !usedNumbers.has(previousEntry.entryNumber))
             return previousEntry.entryNumber;
 
@@ -557,37 +541,5 @@ export const entries = {
         return Math.max(...unavailableNumbers) + 1;
       },
     };
-  },
-
-  /**
-   * Checks if the given latitude and longitude coordinates are within
-   * the allowed geographic boundary for competition entries.
-   * @param lat - Latitude coordinate
-   * @param lng - Longitude coordinate
-   * @returns true if coordinates are within the boundary, false otherwise
-   */
-  isLocationWithinCompetitionBoundary(lat: number, lng: number): boolean {
-    const { southWest, northEast } = COMPETITION_GEOGRAPHIC_BOUNDARY;
-
-    return (
-      lat >= southWest.lat &&
-      lat <= northEast.lat &&
-      lng >= southWest.lng &&
-      lng <= northEast.lng
-    );
-  },
-
-  /**
-   * Checks if a user's email is on the whitelist.
-   * Comparison is case-insensitive.
-   * @param email - User's email address
-   * @returns true if email is on the whitelist, false otherwise
-   */
-  isUserEmailOnWhitelist(email: string | undefined): boolean {
-    if (!email) return false;
-    const emailLower = email.toLowerCase().trim();
-    return usersWhiteList.some(
-      (user) => user.email.toLowerCase().trim() === emailLower,
-    );
   },
 };

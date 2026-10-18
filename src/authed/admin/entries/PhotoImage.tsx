@@ -5,11 +5,9 @@ import type { PhotoDoc } from "../../../../convex/features/photos/schema";
 
 export function PhotoImage({
   photo,
-  index,
   onImageClick,
 }: {
   photo: PhotoDoc;
-  index: number;
   onImageClick: (imageUrl: string) => void;
 }) {
   const imageUrl = usePhotoUrl(photo, { size: "xs" }); // Small thumbnails for admin cards

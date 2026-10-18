@@ -1,5 +1,6 @@
 import { Modal, Stack, Textarea, Group, Button } from "@mantine/core";
 import { useState } from "react";
+import { MAX_REJECTED_REASON_LENGTH } from "../../../../shared/constants";
 
 interface RejectEntryModalProps {
   opened: boolean;
@@ -34,6 +35,7 @@ export default function RejectEntryModal({
           description={`Please provide a reason for rejecting "${entryName}"`}
           placeholder="e.g., Address is outside the cruise route area, photos do not show adequate lighting display, etc."
           value={reason}
+          maxLength={MAX_REJECTED_REASON_LENGTH}
           onChange={(e) => setReason(e.currentTarget.value)}
           minRows={4}
           required

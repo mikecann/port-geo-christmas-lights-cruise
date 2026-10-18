@@ -1,7 +1,10 @@
-import { userSystemAdminQuery, userSystemAdminMutation } from "./lib";
+import {
+  systemAdminMutation,
+  systemAdminQuery,
+} from "../../features/common/auth";
 import { v } from "convex/values";
 
-export const listPage = userSystemAdminQuery
+export const listPage = systemAdminQuery
   .input({
     offset: v.number(),
     numItems: v.number(),
@@ -15,7 +18,7 @@ export const listPage = userSystemAdminQuery
   })
   .public();
 
-export const count = userSystemAdminQuery
+export const count = systemAdminQuery
   .input({})
   .returns(v.number())
   .handler(async (context) => {
@@ -24,7 +27,7 @@ export const count = userSystemAdminQuery
   })
   .public();
 
-export const toggleSystemAdmin = userSystemAdminMutation
+export const toggleSystemAdmin = systemAdminMutation
   .input({
     userId: v.id("users"),
     enabled: v.boolean(),
@@ -38,7 +41,7 @@ export const toggleSystemAdmin = userSystemAdminMutation
   })
   .public();
 
-export const toggleCompetitionAdmin = userSystemAdminMutation
+export const toggleCompetitionAdmin = systemAdminMutation
   .input({
     userId: v.id("users"),
     enabled: v.boolean(),

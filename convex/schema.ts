@@ -4,7 +4,7 @@ import { entryTable } from "./features/entries/schema";
 import { voteTable } from "./features/votes/schema";
 import { usersTable } from "./features/users/schema";
 import { photoTable } from "./features/photos/schema";
-import { doc, typedV, partial } from "convex-helpers/validators";
+import { typedV } from "convex-helpers/validators";
 import { createBuilder } from "fluent-convex";
 import type { DataModel } from "./_generated/dataModel";
 import { competitionTable } from "./features/competitions/schema";

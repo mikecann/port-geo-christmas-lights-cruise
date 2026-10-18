@@ -2,7 +2,6 @@ import {
   Card,
   Image,
   Text,
-  Badge,
   Stack,
   Group,
   Box,
@@ -10,23 +9,28 @@ import {
   Center,
 } from "@mantine/core";
 import { IconMapPin, IconPhoto } from "@tabler/icons-react";
-import type { Doc } from "../../../convex/_generated/dataModel";
+import type { PublicEntry } from "../../../convex/features/entries/schema";
+import type { PublicPhoto } from "../../../convex/features/photos/schema";
 import { routes } from "../../routes";
-import { getAddressString } from "../../../shared/misc";
-import { usePhotoUrl } from "../../common/hooks/usePhotoUrl";
+import { usePhotoSrcSet } from "../../common/hooks/usePhotoUrl";
+
+// One column on phones, two from sm and three from lg, in a size="xl" container
+const CARD_PHOTO = {
+  widths: [400, 700],
+  sizes: "(max-width: 48em) 100vw, (max-width: 75em) 50vw, 440px",
+  fallbackWidth: 700,
+} as const;
 
 interface EntryGalleryCardProps {
-  entry: Doc<"entries">;
-  photo: Doc<"photos"> | null;
+  entry: PublicEntry;
+  photo: PublicPhoto | null;
 }
 
 export default function EntryGalleryCard({
   entry,
   photo,
 }: EntryGalleryCardProps) {
-  const firstPhotoUrl = usePhotoUrl(photo, { size: "sm" });
-
-  if (entry.status !== "approved") return null;
+  const firstPhoto = usePhotoSrcSet(photo, CARD_PHOTO);
 
   return (
     <Card
@@ -59,10 +63,10 @@ export default function EntryGalleryCard({
       <Stack gap={0}>
         {/* First Photo with Entry Number Overlay */}
         <Box style={{ position: "relative" }}>
-          {firstPhotoUrl ? (
+          {firstPhoto ? (
             <AspectRatio ratio={16 / 12}>
               <Image
-                src={firstPhotoUrl}
+                {...firstPhoto}
                 alt={`${entry.name} - Christmas lights display`}
                 radius={0}
                 fit="cover"
@@ -114,7 +118,7 @@ export default function EntryGalleryCard({
               style={{ marginTop: 2, flexShrink: 0 }}
             />
             <Text size="md" c="dimmed" lineClamp={2} style={{ flex: 1 }}>
-              {getAddressString(entry.houseAddress)}
+              {entry.houseAddress.address}
             </Text>
           </Group>
         </Stack>

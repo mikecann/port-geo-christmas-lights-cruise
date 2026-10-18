@@ -21,7 +21,8 @@ export const { RouteProvider, useRoute, routes } = createRouter({
   ),
   signin: defineRoute(
     {
-      returnTo: param.query.string,
+      // Optional so a plain /signin works; the page falls back to the map
+      returnTo: param.query.optional.string,
       // While sign-ups are closed, ?unlock=true shows the sign-in button so
       // admins can get in. It isn't a secret: the server only lets existing
       // accounts sign in then (IS_SIGNUP_DISABLED in convex/auth.ts).

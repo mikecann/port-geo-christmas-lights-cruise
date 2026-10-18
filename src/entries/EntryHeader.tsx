@@ -1,26 +1,11 @@
-import {
-  Badge,
-  Button,
-  Group,
-  Stack,
-  Text,
-  Title,
-  Card,
-  Box,
-} from "@mantine/core";
-import { IconMap, IconMapPin, IconShare } from "@tabler/icons-react";
+import { Badge, Button, Group, Stack, Title, Card, Box } from "@mantine/core";
+import { IconMap, IconShare } from "@tabler/icons-react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { routes } from "../routes";
-import { getAddressString } from "../../shared/misc";
 
 type EntryHeaderProps = {
   entry: {
     name: string;
-    houseAddress:
-      | string
-      | { address: string; lat: number; lng: number }
-      | { address: string; placeId: string }
-      | undefined;
     entryNumber: number;
   };
   entryId: Id<"entries">;

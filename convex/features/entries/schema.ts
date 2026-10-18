@@ -69,6 +69,21 @@ export type EntryWithKind<T extends EntryStatusKinds> = EntryDoc & {
 };
 export type ApprovedEntryDoc = EntryWithKind<"approved">;
 
+// What anonymous visitors see of an approved entry: nothing about who entered
+export const publicEntryValidator = v.object({
+  _id: v.id("entries"),
+  competitionId: v.id("competitions"),
+  name: v.string(),
+  entryNumber: v.number(),
+  houseAddress: v.object({
+    address: v.string(),
+    lat: v.number(),
+    lng: v.number(),
+  }),
+});
+
+export type PublicEntry = typeof publicEntryValidator.type;
+
 export const entryTable = defineTable(entrySchema)
   .index("by_competitionId_and_status", ["competitionId", "status"])
   .index("by_competitionId_and_submittedByUserId", [

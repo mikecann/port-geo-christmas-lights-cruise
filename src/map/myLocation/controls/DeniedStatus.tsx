@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Paper, Button } from "@mantine/core";
+import { Paper } from "@mantine/core";
 
 export const DeniedStatus: React.FC = () => {
   return (

@@ -53,7 +53,7 @@ export default [
       curly: ["error", "multi"],
       "@typescript-eslint/no-empty-object-type": "warn",
       "@typescript-eslint/no-unused-vars": [
-        "off",
+        "error",
         {
           argsIgnorePattern: "^_",
           varsIgnorePattern: "^_",
@@ -77,6 +77,25 @@ export default [
           selector: "SwitchStatement",
           message:
             "Switch statements are not allowed. Use if-else with early returns instead.",
+        },
+        {
+          selector:
+            "CallExpression[callee.object.name='convex'][callee.property.name='mutation']",
+          message:
+            "Build mutations from `mutation` in convex/features/common/lib.ts so the vote aggregate triggers run.",
+        },
+      ],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/_generated/server"],
+              importNames: ["mutation", "internalMutation"],
+              message:
+                "Build mutations from `mutation` in convex/features/common/lib.ts so the vote aggregate triggers run.",
+            },
+          ],
         },
       ],
 

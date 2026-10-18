@@ -15,18 +15,3 @@ export function wait(ms: number) {
 }
 
 export const iife = <T>(fn: () => T): T => fn();
-
-/**
- * Gets the address string from a houseAddress, whether it's a string or object
- */
-export function getAddressString(
-  houseAddress:
-    | string
-    | { address: string; lat: number; lng: number }
-    | { address: string; placeId: string }
-    | undefined,
-): string {
-  if (!houseAddress) return "";
-  if (typeof houseAddress === "string") return houseAddress;
-  return houseAddress.address;
-}

@@ -1,7 +1,6 @@
-import { myMutation, myQuery } from "./lib";
+import { userMutation, userQuery } from "../features/common/auth";
 import { votes } from "../features/votes/model";
-import { photos } from "../features/photos/model";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   VOTE_CATEGORIES,
   voteCategoryValidator,
@@ -9,63 +8,27 @@ import {
 import type { VoteCategory } from "../features/votes/schema";
 import { entries } from "../features/entries/model";
 import type { Doc } from "../_generated/dataModel";
-import { VOTING_CLOSED_MESSAGE } from "../../shared/eventStatus";
+import { votingClosedMessage } from "../../shared/eventStatus";
 import { competitions } from "../features/competitions/model";
+import { enforceUserRateLimit } from "../features/rateLimits/lib";
+import { VOTE_ALREADY_REMOVED_MESSAGE } from "../features/votes/model";
 
-function requireVotingToBeOpen(votingOpen: boolean) {
-  if (!votingOpen) throw new Error(VOTING_CLOSED_MESSAGE);
+function requireVotingToBeOpen(competition: Doc<"competitions">) {
+  if (!competition.votingOpen)
+    throw new ConvexError(votingClosedMessage(competition.year));
 }
 
-export const list = myQuery
+export const list = userQuery
   .input({})
   .handler(async (context) => {
-    return await votes.forUser(context.userId).list(context.db);
-  })
-  .public();
-
-export const hasVoted = myQuery
-  .input({
-    category: voteCategoryValidator,
-  })
-  .handler(async (context, input) => {
     const competition = await competitions.query(context).current();
     return await votes
       .forUser(context.userId)
-      .hasVotedForCategory(context.db, competition._id, input.category);
+      .list(context.db, competition._id);
   })
   .public();
 
-export const getForCategory = myQuery
-  .input({
-    category: voteCategoryValidator,
-  })
-  .handler(async (context, input) => {
-    const competition = await competitions.query(context).current();
-    const vote = await votes
-      .forUser(context.userId)
-      .findVoteForCategory(context.db, competition._id, input.category);
-
-    if (!vote) return null;
-
-    const entry = await context.db.get(vote.entryId);
-    if (!entry || entry.status !== "approved") return null;
-
-    const entryPhotos = await photos.forEntry(vote.entryId).list(context.db);
-
-    return {
-      vote,
-      entry: {
-        _id: entry._id,
-        name: entry.name,
-        entryNumber: entry.entryNumber,
-        houseAddress: entry.houseAddress,
-        photos: entryPhotos,
-      },
-    };
-  })
-  .public();
-
-export const getStatus = myQuery
+export const getStatus = userQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
@@ -86,20 +49,25 @@ export const getStatus = myQuery
   })
   .public();
 
-export const vote = myMutation
+export const vote = userMutation
   .input({
     entryId: v.id("entries"),
     category: voteCategoryValidator,
   })
   .returns(v.null())
   .handler(async (context, input) => {
+    await enforceUserRateLimit(context, "changeVote", context.userId);
     const competition = await competitions.query(context).current();
-    requireVotingToBeOpen(competition.votingOpen);
+    requireVotingToBeOpen(competition);
 
-    // Validate entry exists
-    const entry = await entries.query(context).forEntry(input.entryId).get();
+    const entry = await entries
+      .query(context)
+      .forEntry(input.entryId)
+      .getApproved();
     if (entry.competitionId !== competition._id)
-      throw new Error("Entry does not belong to the current competition");
+      throw new ConvexError(
+        "Sorry, that entry is from a past competition, so it can't be voted for.",
+      );
 
     await votes.forUser(context.userId).voteForEntry(context.db, {
       competitionId: competition._id,
@@ -111,19 +79,20 @@ export const vote = myMutation
   })
   .public();
 
-export const cancel = myMutation
+export const cancel = userMutation
   .input({
     voteId: v.id("votes"),
   })
   .returns(v.null())
   .handler(async (context, input) => {
+    await enforceUserRateLimit(context, "changeVote", context.userId);
     const vote = await context.db.get(input.voteId);
-    if (!vote) throw new Error(`Vote '${input.voteId}' not found`);
+    if (!vote) throw new ConvexError(VOTE_ALREADY_REMOVED_MESSAGE);
     const competition = await competitions
       .query(context)
       .forCompetition(vote.competitionId)
       .get();
-    requireVotingToBeOpen(competition.votingOpen);
+    requireVotingToBeOpen(competition);
 
     await votes
       .forVote(input.voteId)

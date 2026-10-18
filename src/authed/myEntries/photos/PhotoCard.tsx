@@ -35,7 +35,7 @@ export default function PhotoCard({
     useDisclosure(false);
 
   const imageUrl = usePhotoUrl(photo, { size: "md" }); // Medium size for user photo management
-  const lightboxUrl = usePhotoUrl(photo); // Default (md) size for lightbox
+  const lightboxUrl = usePhotoUrl(photo, { size: "lg" });
 
   const isUploading =
     photo.kind === "convex_stored" && photo.uploadState.status === "uploading";

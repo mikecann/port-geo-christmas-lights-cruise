@@ -1,15 +1,16 @@
 import { AspectRatio, Center, Loader, Stack, Text } from "@mantine/core";
 import { Carousel } from "@mantine/carousel";
+import "@mantine/carousel/styles.css";
 import { IconPhoto } from "@tabler/icons-react";
 import { useState } from "react";
 import Autoplay from "embla-carousel-autoplay";
-import type { ApprovedEntryDoc } from "../../convex/features/entries/schema";
+import type { PublicEntry } from "../../convex/features/entries/schema";
 import { usePhotoUrl } from "../common/hooks/usePhotoUrl";
 import { api } from "../../convex/_generated/api";
 import { useQuery } from "convex/react";
-import type { PhotoDoc } from "../../convex/features/photos/schema";
+import type { PublicPhoto } from "../../convex/features/photos/schema";
 
-function PhotoSlide({ photo }: { photo: PhotoDoc }) {
+function PhotoSlide({ photo }: { photo: PublicPhoto }) {
   const imageUrl = usePhotoUrl(photo, { size: "sm" }); // Small size for map carousel
   if (!imageUrl) return null;
 
@@ -32,11 +33,7 @@ function PhotoSlide({ photo }: { photo: PhotoDoc }) {
   );
 }
 
-export default function EntryMarkerCarousel({
-  entry,
-}: {
-  entry: ApprovedEntryDoc;
-}) {
+export default function EntryMarkerCarousel({ entry }: { entry: PublicEntry }) {
   const photos = useQuery(api.public.photos.listForEntry, {
     entryId: entry._id,
   });

@@ -8,8 +8,7 @@ import { RouteProvider } from "./routes.ts";
 import "@mantine/core/styles.css";
 import "@mantine/nprogress/styles.css";
 import "@mantine/notifications/styles.css";
-import "@mantine/dropzone/styles.css";
-import "@mantine/carousel/styles.css";
+// Carousel and dropzone styles load with the pages that use them
 import "./index.css";
 import App from "./App.tsx";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";

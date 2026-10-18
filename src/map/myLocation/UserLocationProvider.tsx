@@ -10,18 +10,12 @@ type UserLocationProviderProps = {
 export function UserLocationProvider({ children }: UserLocationProviderProps) {
   const onError = useErrorHandler();
   const [shouldTrack, setShouldTrack] = useState(false);
-  const [watchId, setWatchId] = useState<number | null>(null);
   const [status, setStatus] = useState<Status>({ kind: "prompt" });
   const supportsGeolocation = "geolocation" in navigator;
 
+  // One watch for as long as we're tracking, cleared when tracking stops
   useEffect(() => {
     if (!shouldTrack) return;
-    if (status.kind !== "requested")
-      queueMicrotask(() =>
-        setStatus({
-          kind: "requested",
-        }),
-      );
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -54,13 +48,9 @@ export function UserLocationProvider({ children }: UserLocationProviderProps) {
         timeout: 10_000,
       },
     );
-    queueMicrotask(() => setWatchId(watchId));
-  }, [shouldTrack, status.kind, onError]);
 
-  useEffect(() => {
-    if (!watchId) return;
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [watchId]);
+  }, [shouldTrack, onError]);
 
   return (
     <UserLocationContext.Provider
@@ -69,7 +59,9 @@ export function UserLocationProvider({ children }: UserLocationProviderProps) {
         startTracking: () => {
           if (!supportsGeolocation)
             return onError(`Geolocation is not supported by this browser`);
+          if (shouldTrack) return;
 
+          setStatus({ kind: "requested" });
           setShouldTrack(true);
         },
         stopTracking: () => setShouldTrack(false),
