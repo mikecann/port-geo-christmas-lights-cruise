@@ -166,6 +166,8 @@ describe("email sign-in codes", () => {
   it.each([
     "https://portgeochristmascruise.com.au",
     "https://www.portgeochristmascruise.com.au/",
+    "https://port-geo-xmas.pages.dev",
+    "https://localhost.example.com",
     "",
     "not a url",
   ])(
@@ -181,6 +183,14 @@ describe("email sign-in codes", () => {
       const t = createConvexTest();
       expect(await requestCode(t, "resident@example.com")).toBeUndefined();
       expect(send).toHaveBeenCalledOnce();
+    },
+  );
+
+  it.each(["http://localhost:5173", "http://127.0.0.1:5173"])(
+    "logs codes when SITE_URL is %j",
+    (siteUrl) => {
+      process.env.SITE_URL = siteUrl;
+      expect(signInAccess.shouldLogSignInCodes()).toBe(true);
     },
   );
 

@@ -66,7 +66,7 @@ bunx convex run internal/users:normalizeEmails
 
 #### Seeing codes on dev
 
-Resend won't send from dev, so set `AUTH_LOG_SIGNIN_CODES=true` on the dev deployment and the codes appear in the Convex logs (`bunx convex logs`) instead of being emailed. Never set it on production. It's ignored anyway when `SITE_URL` is missing or is portgeochristmascruise.com.au, and the code is emailed as usual.
+Resend won't send from dev, so set `AUTH_LOG_SIGNIN_CODES=true` on the dev deployment and the codes appear in the Convex logs (`bunx convex logs`) instead of being emailed. Never set it on production. It only works when `SITE_URL` is `localhost` or `127.0.0.1`; anywhere else it's ignored and the code is emailed as usual.
 
 #### Off-season sign-up lock
 

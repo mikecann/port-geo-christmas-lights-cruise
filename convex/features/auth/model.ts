@@ -27,8 +27,6 @@ export const SIGNUPS_CLOSED_MESSAGE =
 
 export const INVALID_EMAIL_MESSAGE = "Please check your email address.";
 
-const PRODUCTION_HOSTNAME = "portgeochristmascruise.com.au";
-
 // Case and surrounding spaces are ignored, and "1" works too, so a slightly
 // off value in the dashboard still does what it says
 const isEnvFlagOn = (name: string) => {
@@ -46,16 +44,13 @@ const emailList = (name: string) =>
 const looksLikeEmail = (address: string) =>
   address.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address);
 
-const isProductionSiteUrl = (siteUrl: string | undefined) => {
-  if (!siteUrl) return true;
+const isLocalSiteUrl = (siteUrl: string | undefined) => {
+  if (!siteUrl) return false;
   try {
     const { hostname } = new URL(siteUrl);
-    return (
-      hostname === PRODUCTION_HOSTNAME ||
-      hostname.endsWith(`.${PRODUCTION_HOSTNAME}`)
-    );
+    return hostname === "localhost" || hostname === "127.0.0.1";
   } catch {
-    return true;
+    return false;
   }
 };
 
@@ -82,12 +77,12 @@ export const signInAccess = {
   },
 
   // The email service won't send from dev, so AUTH_LOG_SIGNIN_CODES=true on
-  // the dev deployment puts codes in the Convex logs instead. It's ignored
-  // when SITE_URL is missing or is the live site, so setting it on production
-  // by mistake can't hand codes to anyone reading the logs.
+  // the dev deployment puts codes in the Convex logs instead. It only works
+  // when SITE_URL is localhost, so setting it anywhere else by mistake can't
+  // hand codes to anyone reading the logs.
   shouldLogSignInCodes: () =>
     isEnvFlagOn("AUTH_LOG_SIGNIN_CODES") &&
-    !isProductionSiteUrl(process.env.SITE_URL),
+    isLocalSiteUrl(process.env.SITE_URL),
 };
 
 // Rejection sampling, so every code is equally likely
@@ -116,7 +111,7 @@ export const emailCodeProvider = Email({
     }
     if (isEnvFlagOn("AUTH_LOG_SIGNIN_CODES"))
       console.warn(
-        "AUTH_LOG_SIGNIN_CODES is ignored on the live site, so the code was emailed",
+        "AUTH_LOG_SIGNIN_CODES only works when SITE_URL is localhost, so the code was emailed",
       );
     await email.sendSignInCode(ensure(ctx), { to: identifier, code: token });
   },
