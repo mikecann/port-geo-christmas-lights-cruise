@@ -4,6 +4,7 @@ import {
   CastVoteButton,
   ChangeVoteOptions,
   InPersonTick,
+  LocationCheckingNotice,
   OwnEntryNotice,
   PeoplesChoiceOnlyNotice,
   SignInToVote,
@@ -46,7 +47,13 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
           onChange={flow.setSawInPerson}
         />
       )}
-      {state.reason && <PeoplesChoiceOnlyNotice reason={state.reason} />}
+      {state.inPersonAllowed === null && <LocationCheckingNotice />}
+      {state.reason && (
+        <PeoplesChoiceOnlyNotice
+          reason={state.reason}
+          onRetry={state.canRetryLocation ? flow.retryLocation : undefined}
+        />
+      )}
       <CastVoteButton
         entryNumber={entry.entryNumber}
         label={

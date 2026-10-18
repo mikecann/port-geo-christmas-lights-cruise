@@ -32,11 +32,16 @@ export type VoteFlowStep =
       otherVote: MyVote | null;
       // Set when they're changing their vote for this entry
       currentVote: MyVote | null;
-      // null while the location check runs
+      // null while the location check runs, retries included
       inPersonAllowed: boolean | null;
       // Why it can only count for People's Choice, when it can't be in person
       reason: string | null;
+      // Every try at the location check failed, so they can have another go
+      canRetryLocation: boolean;
     };
+
+const LOCATION_FAILED_REASON =
+  "We couldn't check where you're voting from, which can happen on a patchy connection. Try again, or vote now and it will count for People's Choice only.";
 
 export function useVoteFlow(entry: VoteFlowEntry) {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
@@ -48,7 +53,7 @@ export function useVoteFlow(entry: VoteFlowEntry) {
   const geo = useGeoToken();
   const check = useQuery(
     api.public.votes.inPersonCheck,
-    geo.token === undefined ? "skip" : { geoToken: geo.token ?? undefined },
+    geo.status === "checking" ? "skip" : { geoToken: geo.token ?? undefined },
   );
   const voteMutation = useMutation(api.my.votes.vote);
   const cancelMutation = useMutation(api.my.votes.cancel);
@@ -76,7 +81,8 @@ export function useVoteFlow(entry: VoteFlowEntry) {
   }, [isAuthLoading, isAuthenticated, competition, entry]);
 
   const area = check?.area ?? DEFAULT_IN_PERSON_AREA;
-  const inPersonAllowed = check ? check.locationCheck === "ok" : null;
+  const inPersonAllowed =
+    geo.status === "checking" || !check ? null : check.locationCheck === "ok";
 
   const state = ((): VoteFlowStep => {
     if (competition === undefined || isAuthLoading) return { step: "loading" };
@@ -103,7 +109,13 @@ export function useVoteFlow(entry: VoteFlowEntry) {
       otherVote: vote && !isForThisEntry ? vote : null,
       currentVote: isForThisEntry ? vote : null,
       inPersonAllowed,
-      reason: check ? peoplesChoiceOnlyReason(check.locationCheck, area) : null,
+      reason:
+        inPersonAllowed === null || !check
+          ? null
+          : geo.status === "failed" && check.locationCheck === "no_location"
+            ? LOCATION_FAILED_REASON
+            : peoplesChoiceOnlyReason(check.locationCheck, area),
+      canRetryLocation: geo.status === "failed",
     };
   })();
 
@@ -113,8 +125,10 @@ export function useVoteFlow(entry: VoteFlowEntry) {
       async () =>
         await voteMutation({
           entryId: entry._id,
+          // Only once the tick has been shown, so a tick from before can't
+          // carry over
           sawInPerson: inPersonAllowed === true && sawInPerson,
-          geoToken: (await geo.fresh()) ?? undefined,
+          geoToken: (await geo.forVote()) ?? undefined,
         }),
       "vote",
       analytics,
@@ -142,6 +156,7 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     isBusy,
     vote,
     remove,
+    retryLocation: geo.retry,
     startChanging: () => setIsChanging(true),
     stopChanging: () => setIsChanging(false),
   };

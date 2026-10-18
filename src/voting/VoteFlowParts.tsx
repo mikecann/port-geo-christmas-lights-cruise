@@ -7,6 +7,7 @@ import {
   Card,
   Checkbox,
   Group,
+  Loader,
   Stack,
   Text,
 } from "@mantine/core";
@@ -62,11 +63,35 @@ export function VotedForAnotherEntry({ vote }: { vote: MyVote }) {
   );
 }
 
-export function PeoplesChoiceOnlyNotice({ reason }: { reason: string }) {
+export function LocationCheckingNotice() {
   return (
-    <Text size="sm" c="dimmed" ta="center">
-      {reason}
-    </Text>
+    <Group gap="xs" justify="center">
+      <Loader size="xs" />
+      <Text size="sm" c="dimmed">
+        Checking where you're voting from…
+      </Text>
+    </Group>
+  );
+}
+
+export function PeoplesChoiceOnlyNotice({
+  reason,
+  onRetry,
+}: {
+  reason: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <Stack gap={4} align="center">
+      <Text size="sm" c="dimmed" ta="center">
+        {reason}
+      </Text>
+      {onRetry && (
+        <Button variant="subtle" size="xs" onClick={onRetry}>
+          Try again
+        </Button>
+      )}
+    </Stack>
   );
 }
 

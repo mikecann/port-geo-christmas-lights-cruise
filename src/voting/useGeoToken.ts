@@ -1,63 +1,51 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createVoteTokens,
+  fetchGeoToken,
+  fetchGeoTokenWithRetries,
+} from "./geoTokens";
 
-// Comfortably inside the server's 15 minute limit
-const MAX_AGE_MS = 10 * 60_000;
-const TIMEOUT_MS = 8_000;
-// Phones on the boat drop out, so a failed fetch tries again a few times
-const RETRY_MS = 15_000;
+const RETRY_MS = 3_000;
 const MAX_RETRIES = 3;
 
-async function fetchGeoToken(): Promise<string | null> {
-  try {
-    const response = await fetch("/api/geo", {
-      cache: "no-store",
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    // Plain `vite` without the worker serves the app's HTML here
-    if (!response.ok) return null;
-    const body = (await response.json()) as { token?: unknown };
-    return typeof body.token === "string" ? body.token : null;
-  } catch {
-    return null;
-  }
-}
+export type GeoTokenStatus = "checking" | "ready" | "failed";
 
-// The worker's signed IP location for in-person votes. token is undefined
-// while the first fetch is out, and null when there isn't one.
+// The worker's signed IP location for in-person votes. It stays "checking"
+// until a fetch works or every retry has failed, so one dropout doesn't count
+// as "not in person".
 export function useGeoToken() {
-  const [token, setToken] = useState<string | null | undefined>(undefined);
-  const fetchedAt = useRef(0);
-
-  const load = useCallback(async () => {
-    const next = await fetchGeoToken();
-    if (next) fetchedAt.current = Date.now();
-    setToken(next);
-    return next;
-  }, []);
+  const [token, setToken] = useState<string | null>(null);
+  const [status, setStatus] = useState<GeoTokenStatus>("checking");
+  const [attempt, setAttempt] = useState(0);
+  const voteTokens = useRef(createVoteTokens(fetchGeoToken));
 
   useEffect(() => {
-    let retries = 0;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const attempt = async () => {
-      const next = await load();
-      if (next === null && !stopped && retries < MAX_RETRIES) {
-        retries++;
-        timer = setTimeout(attempt, RETRY_MS);
-      }
-    };
-    void attempt();
+    void fetchGeoTokenWithRetries(fetchGeoToken, {
+      retries: MAX_RETRIES,
+      wait: () =>
+        new Promise((resolve) => {
+          timer = setTimeout(resolve, RETRY_MS);
+        }),
+      isStopped: () => stopped,
+    }).then((next) => {
+      if (next === undefined) return;
+      if (next !== null) voteTokens.current.keepSpare(next);
+      setToken(next);
+      setStatus(next === null ? "failed" : "ready");
+    });
     return () => {
       stopped = true;
       clearTimeout(timer);
     };
-  }, [load]);
+  }, [attempt]);
 
-  // A phone can sleep with the page open, so check the age right before voting
-  const fresh = useCallback(async () => {
-    if (token && Date.now() - fetchedAt.current < MAX_AGE_MS) return token;
-    return await load();
-  }, [token, load]);
+  const retry = useCallback(() => {
+    setStatus("checking");
+    setAttempt((count) => count + 1);
+  }, []);
+  const forVote = useCallback(() => voteTokens.current.forVote(), []);
 
-  return { token, fresh };
+  return { token, status, retry, forVote };
 }
