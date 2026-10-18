@@ -22,6 +22,9 @@ export async function lookUpPlace(placeId: string): Promise<GooglePlace> {
       headers: {
         "X-Goog-Api-Key": apiKey,
         "X-Goog-FieldMask": "id,location,formattedAddress",
+        // The key is shared with the browser and limited to our websites, so
+        // say which site the lookup is for
+        Referer: `${(process.env.SITE_URL ?? "https://portgeochristmascruise.com.au").replace(/\/+$/, "")}/`,
       },
     },
   );
