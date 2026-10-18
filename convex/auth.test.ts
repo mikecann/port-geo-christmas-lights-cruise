@@ -45,7 +45,7 @@ const requestCode = async (t: ConvexTest, address: string) => {
     const line = log.mock.calls
       .map((call) => String(call[0]))
       .find((message) => message.startsWith("Sign-in code for "));
-    return line?.split(": ").at(-1);
+    return line?.split(": ").pop();
   } finally {
     log.mockRestore();
   }
@@ -65,7 +65,8 @@ const enterCode = (t: ConvexTest, address: string, code: string | undefined) =>
 
 const signInWithCode = async (t: ConvexTest, address: string) => {
   const result = await enterCode(t, address, await requestCode(t, address));
-  if (!result) throw new Error("Code sign-in failed");
+  if (result === null || typeof result !== "object" || !("userId" in result))
+    throw new Error("Code sign-in failed");
   return result.userId;
 };
 
