@@ -1,10 +1,14 @@
 import { Box, Container, Stack, Text, Title, Button } from "@mantine/core";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import { routes } from "../routes";
+import { event, formatDate, formatMoney } from "../../shared/event";
+
+const [topPrize, ...otherPrizes] = event.prizes;
+const otherPrizeNames = otherPrizes
+  .map((prize) => prize.name)
+  .join(", ")
+  .replace(/, ([^,]*)$/, " and $1");
 
 export default function CompetitionSection() {
-  const competition = useQuery(api.public.competitions.current, {});
   return (
     <Box bg="#040826" py={40}>
       <Container size="sm">
@@ -13,18 +17,24 @@ export default function CompetitionSection() {
             Lights Competition
           </Title>
           <Text c="gray.0" size="lg" fw={600} ta="center">
-            Prize pool: $20,000
+            Prize pool: {formatMoney(event.prizePool)}
           </Text>
-          <Text c="gray.0" size="md" ta="center" mb="md">
-            The {competition?.year} prize categories and allocations are being
-            finalised. Full details will be announced soon.
+          <Text c="gray.0" size="md" ta="center">
+            The top prize is {formatMoney(topPrize.awards[0].amount)} for 1st in{" "}
+            {topPrize.name}. There are prizes for {otherPrizeNames} too.
           </Text>
+          {event.entriesClose && (
+            <Text c="gray.0" size="md" ta="center">
+              Entries close {formatDate(event.entriesClose)}.
+            </Text>
+          )}
           <Button
             component="a"
             {...routes.competitionDetails().link}
             variant="outline"
             color="#FBAF5D"
             radius="md"
+            mt="md"
             styles={{
               root: {
                 borderColor: "#FBAF5D",
