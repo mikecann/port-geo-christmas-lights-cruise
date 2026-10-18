@@ -1,14 +1,9 @@
 import { describe, expect, it } from "vitest";
-import {
-  ENTRY_PHOTO,
-  PHOTO_RESIZING_ENABLED,
-  resizedPhotoSrcSet,
-  resizedPhotoUrl,
-} from "./photoUrls";
+import { ENTRY_PHOTO, resizedPhotoSrcSet, resizedPhotoUrl } from "./photoUrls";
 
 const source = "https://files.example/photo.jpg";
 
-describe.skipIf(!PHOTO_RESIZING_ENABLED)("resized photo URLs", () => {
+describe("resized photo URLs", () => {
   it("asks Cloudflare for a fixed width without upscaling or a dpr", () => {
     expect(resizedPhotoUrl(source, 480)).toBe(
       "https://portgeochristmascruise.com.au/cdn-cgi/image/width=480,quality=75,format=auto,fit=scale-down/https://files.example/photo.jpg",
@@ -25,12 +20,5 @@ describe.skipIf(!PHOTO_RESIZING_ENABLED)("resized photo URLs", () => {
       `${resizedPhotoUrl(source, 1600)} 1600w`,
     ]);
     expect(srcSet).not.toContain("dpr");
-  });
-});
-
-describe.skipIf(PHOTO_RESIZING_ENABLED)("with resizing off", () => {
-  it("uses the original photo", () => {
-    expect(resizedPhotoUrl(source, 480)).toBe(source);
-    expect(resizedPhotoSrcSet(source, ENTRY_PHOTO.widths)).toBe(source);
   });
 });

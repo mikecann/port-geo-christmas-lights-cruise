@@ -3,11 +3,6 @@
 // small, so most requests hit Cloudflare's cache.
 const IMAGE_ZONE = "https://portgeochristmascruise.com.au";
 
-// Off while Cloudflare's allowed image sources only list the old US Convex
-// deployment: resizing a Sydney storage URL returns 403. Turn back on once
-// shocking-robin-810.ap-southeast-2.convex.cloud is an allowed source.
-export const PHOTO_RESIZING_ENABLED = false;
-
 export const DEFAULT_PHOTO_QUALITY = 75;
 
 export function resizedPhotoUrl(
@@ -15,7 +10,6 @@ export function resizedPhotoUrl(
   width: number,
   quality = DEFAULT_PHOTO_QUALITY,
 ) {
-  if (!PHOTO_RESIZING_ENABLED) return sourceUrl;
   return `${IMAGE_ZONE}/cdn-cgi/image/width=${width},quality=${quality},format=auto,fit=scale-down/${sourceUrl}`;
 }
 
@@ -24,7 +18,6 @@ export function resizedPhotoSrcSet(
   widths: ReadonlyArray<number>,
   quality = DEFAULT_PHOTO_QUALITY,
 ) {
-  if (!PHOTO_RESIZING_ENABLED) return sourceUrl;
   return widths
     .map((width) => `${resizedPhotoUrl(sourceUrl, width, quality)} ${width}w`)
     .join(", ");
