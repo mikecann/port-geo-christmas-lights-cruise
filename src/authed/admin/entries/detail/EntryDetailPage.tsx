@@ -143,7 +143,7 @@ export default function EntryDetailPage({
         </Alert>
       )}
 
-      {entry.status === "submitted" && (
+      {entry.status === "submitted" && isCurrent && (
         <Card withBorder radius="md" padding="lg">
           <Stack gap="sm">
             <Text fw={600}>This entry is waiting for your review</Text>

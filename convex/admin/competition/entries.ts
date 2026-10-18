@@ -283,7 +283,7 @@ export const approve = competitionAdminMutation
   })
   .returns(v.null())
   .handler(async (context, input) => {
-    const entry = await entries.query(context).forEntry(input.entryId).get();
+    const entry = await getCurrentEntry(context, input.entryId);
     const entryNumber = await entries
       .mutate(context)
       .forEntry(input.entryId)
@@ -309,7 +309,7 @@ export const reject = competitionAdminMutation
   })
   .returns(v.null())
   .handler(async (context, input) => {
-    const entry = await entries.query(context).forEntry(input.entryId).get();
+    const entry = await getCurrentEntry(context, input.entryId);
     await entries
       .mutate(context)
       .forEntry(input.entryId)
