@@ -1,6 +1,6 @@
 import { userMutation, userQuery } from "../features/common/auth";
 import {
-  isSameInbox,
+  isOwnEntry,
   OWN_ENTRY_VOTE_MESSAGE,
   SAME_INBOX_VOTE_MESSAGE,
   votes,
@@ -72,7 +72,9 @@ export const getForEntry = userQuery
   .handler(async (context, input) => {
     const entry = await context.db.get(input.entryId);
     return {
-      isOwnEntry: entry?.submittedByUserId === context.userId,
+      isOwnEntry: entry
+        ? await isOwnEntry(context.db, context.userId, entry)
+        : false,
       vote: await findMyVote(context, context.userId),
     };
   })
@@ -104,14 +106,7 @@ export const vote = userMutation
       throw new ConvexError(
         "Sorry, that entry is from a past competition, so it can't be voted for.",
       );
-    const [voter, entrant] = await Promise.all([
-      context.db.get(context.userId),
-      context.db.get(entry.submittedByUserId),
-    ]);
-    if (
-      entry.submittedByUserId === context.userId ||
-      isSameInbox(voter, entrant)
-    )
+    if (await isOwnEntry(context.db, context.userId, entry))
       throw new ConvexError(OWN_ENTRY_VOTE_MESSAGE);
     const voterVotes = votes.forUser(context.userId);
     if (await voterVotes.findFromSameInbox(context.db, competition._id))

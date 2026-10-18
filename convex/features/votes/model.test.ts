@@ -405,8 +405,20 @@ describe("one vote per inbox", () => {
       canonicalEmail: "johnsmith@gmail.com",
     });
 
+    const email = "johnsmith+vote@gmail.com";
+    const entrant = await signInAs(base, {
+      email,
+      canonicalEmail: canonicalEmail(email),
+    });
+
+    expect(
+      await entrant.query(api.my.votes.getForEntry, { entryId: entry._id }),
+    ).toEqual({ isOwnEntry: true, vote: null });
     await expect(
-      voteAs(base, "johnsmith+vote@gmail.com", entry._id),
+      entrant.mutation(api.my.votes.vote, {
+        entryId: entry._id,
+        sawInPerson: false,
+      }),
     ).rejects.toThrow(OWN_ENTRY_VOTE_MESSAGE);
   });
 });

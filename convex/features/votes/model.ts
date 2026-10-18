@@ -19,9 +19,23 @@ const canonicalEmailOf = (user: Doc<"users"> | null) =>
   user?.canonicalEmail ??
   (user?.email === undefined ? undefined : canonicalEmail(user.email));
 
-export const isSameInbox = (a: Doc<"users"> | null, b: Doc<"users"> | null) => {
+const isSameInbox = (a: Doc<"users"> | null, b: Doc<"users"> | null) => {
   const email = canonicalEmailOf(a);
   return email !== undefined && email === canonicalEmailOf(b);
+};
+
+// Counts entries made from another account with the same inbox too
+export const isOwnEntry = async (
+  db: DatabaseReader,
+  userId: Id<"users">,
+  entry: Doc<"entries">,
+) => {
+  if (entry.submittedByUserId === userId) return true;
+  const [voter, entrant] = await Promise.all([
+    db.get(userId),
+    db.get(entry.submittedByUserId),
+  ]);
+  return isSameInbox(voter, entrant);
 };
 
 export const votes = {
