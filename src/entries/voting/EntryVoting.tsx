@@ -56,8 +56,10 @@ export default function EntryVoting({ entryId, competitionId }: Props) {
 
 function VotingControls({ entryId }: { entryId: Id<"entries"> }) {
   const { isAuthenticated } = useConvexAuth();
-  const myVote = useQuery(api.my.votes.mine, isAuthenticated ? {} : "skip");
-  const votedHere = myVote?.entry._id === entryId;
+  const myVotes = useQuery(api.my.votes.mine, isAuthenticated ? {} : "skip");
+  const votedHere =
+    !!myVotes &&
+    Object.values(myVotes).some((vote) => vote?.entry._id === entryId);
 
   return (
     <Card withBorder radius="md" p="lg">
@@ -75,8 +77,8 @@ function VotingControls({ entryId }: { entryId: Id<"entries"> }) {
         </Group>
 
         <Text c="dimmed" size="sm" ta="center">
-          Everyone gets one vote. If you've seen the display in person it counts
-          for In-Person Favourites as well as People's Choice.
+          Everyone gets a vote for best display. If you've seen the display in
+          person, you can vote Most Jolly too.
         </Text>
 
         <Center>
@@ -87,7 +89,7 @@ function VotingControls({ entryId }: { entryId: Id<"entries"> }) {
             variant="filled"
             onClick={() => routes.entryVote({ entryId }).push()}
           >
-            {votedHere ? "See my vote" : "Vote for this Entry"}
+            {votedHere ? "See my votes" : "Vote for this Entry"}
           </Button>
         </Center>
       </Stack>

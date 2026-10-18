@@ -25,8 +25,13 @@ import classes from "./VoteScreen.module.css";
 import { routes } from "../routes";
 import { eventForYear, formatDate } from "../../shared/event";
 import { isSignupDisabled } from "../common/auth";
+import { awardName } from "../../shared/voting";
 import { EmailCodeSignIn } from "../auth/EmailCodeSignIn";
 import { GoogleSignInButton } from "../auth/GoogleSignInButton";
+import {
+  VOTE_CATEGORY_DETAILS,
+  type VoteCategory,
+} from "../../convex/features/votes/schema";
 import type { MyVote } from "./useVoteFlow";
 
 // The number as it is on the house sign
@@ -87,10 +92,22 @@ export function OwnEntryNotice() {
   );
 }
 
-export function VotedForAnotherEntry({ vote }: { vote: MyVote }) {
+const categoryName = (category: VoteCategory) =>
+  VOTE_CATEGORY_DETAILS[category].title.toLowerCase();
+
+// Their votes for other entries in the categories they can vote in here
+export function VotedForOtherEntries({ votes }: { votes: MyVote[] }) {
+  const [only] = votes;
   return (
     <Text size="sm" c="dimmed" ta="center" lineClamp={1}>
-      Your vote: #{vote.entry.entryNumber} {vote.entry.name}
+      {votes.length === 1
+        ? `Your ${categoryName(only.category)} vote: #${only.entry.entryNumber} ${only.entry.name}`
+        : `Your votes: ${votes
+            .map(
+              (vote) =>
+                `#${vote.entry.entryNumber} ${categoryName(vote.category)}`,
+            )
+            .join(", ")}`}
     </Text>
   );
 }
@@ -210,6 +227,51 @@ export function CastVoteButton({
   );
 }
 
+// Best display and Most jolly side by side, for people who've seen it. A tick
+// marks the ones they've voted for this entry.
+export function CategoryVoteButtons({
+  isVotedHere,
+  busy,
+  onVote,
+}: {
+  isVotedHere: (category: VoteCategory) => boolean;
+  busy: VoteCategory | "remove" | null;
+  onVote: (category: VoteCategory) => void;
+}) {
+  return (
+    <Group grow gap="xs" wrap="nowrap" align="stretch">
+      {(["best_display", "most_jolly"] as const).map((category) => {
+        const { title, hint } = VOTE_CATEGORY_DETAILS[category];
+        const isHere = isVotedHere(category);
+        return (
+          <Button
+            key={category}
+            data-testid={`vote-${category}`}
+            size="xl"
+            color={isHere ? "green" : "yellow"}
+            variant={isHere ? "light" : "filled"}
+            autoContrast
+            loading={busy === category}
+            disabled={busy !== null && busy !== category}
+            onClick={() => onVote(category)}
+            classNames={{
+              root: classes.categoryButton,
+              label: classes.categoryLabel,
+            }}
+          >
+            <span className={classes.categoryTitle}>
+              {isHere && <IconCheck size={18} aria-hidden />}
+              {title}
+              {isHere && <VisuallyHidden>, your vote</VisuallyHidden>}
+            </span>
+            <span className={classes.categoryHint}>{hint}</span>
+          </Button>
+        );
+      })}
+    </Group>
+  );
+}
+
 function AwardChip({ children }: { children: ReactNode }) {
   return (
     <Badge
@@ -225,12 +287,14 @@ function AwardChip({ children }: { children: ReactNode }) {
   );
 }
 
-// The bottom bar once they've voted
+// The bottom bar once they've voted for this entry, in one category or both
 export function VoteReceipt({
-  vote,
+  entryNumber,
+  votes,
   onChange,
 }: {
-  vote: MyVote;
+  entryNumber: number;
+  votes: MyVote[];
   onChange: () => void;
 }) {
   return (
@@ -240,16 +304,17 @@ export function VoteReceipt({
           <IconCheck size={20} />
         </ThemeIcon>
         <Text fw={700} size="lg">
-          You voted for #{vote.entry.entryNumber}
+          You voted for #{entryNumber}
         </Text>
       </Group>
-      <Group gap="xs" role="list" aria-label="Your vote counts for">
-        {vote.inPerson && <AwardChip>In-Person Favourites</AwardChip>}
-        <AwardChip>People's Choice</AwardChip>
+      <Group gap="xs" role="list" aria-label="Your votes count for">
+        {votes.map((vote) => (
+          <AwardChip key={vote._id}>{awardName(vote)}</AwardChip>
+        ))}
       </Group>
       <Group grow gap="xs">
         <Button variant="default" size="md" onClick={onChange}>
-          Change my vote
+          {votes.length > 1 ? "Change votes" : "Change my vote"}
         </Button>
         <Button
           variant="default"
@@ -265,19 +330,22 @@ export function VoteReceipt({
 }
 
 export function ChangeVoteOptions({
+  voteCount,
   isBusy,
   onRemove,
   onKeep,
 }: {
+  voteCount: number;
   isBusy: boolean;
   onRemove: () => void;
   onKeep: () => void;
 }) {
+  const votes = voteCount > 1 ? "votes" : "vote";
   return (
     <Stack gap={4} align="center">
       <Group grow gap="xs" w="100%">
         <Button variant="default" onClick={onKeep} disabled={isBusy}>
-          Keep my vote
+          Keep my {votes}
         </Button>
         <Button
           variant="subtle"
@@ -285,7 +353,7 @@ export function ChangeVoteOptions({
           onClick={onRemove}
           loading={isBusy}
         >
-          Remove my vote
+          Remove my {votes}
         </Button>
       </Group>
       <Anchor size="sm" {...routes.voteLanding().link}>
@@ -379,9 +447,11 @@ function SheetEntry({
   );
 }
 
-// One vote each, so moving it to another display gets asked first
+// One vote each per category, so moving it to another display gets asked
+// first
 export function SwitchVoteSheet({
   opened,
+  category,
   from,
   to,
   isBusy,
@@ -389,6 +459,7 @@ export function SwitchVoteSheet({
   onClose,
 }: {
   opened: boolean;
+  category: VoteCategory;
   from: { entryNumber: number; name: string };
   to: { entryNumber: number; name: string };
   isBusy: boolean;
@@ -396,7 +467,11 @@ export function SwitchVoteSheet({
   onClose: () => void;
 }) {
   return (
-    <BottomSheet opened={opened} onClose={onClose} title="Move your vote?">
+    <BottomSheet
+      opened={opened}
+      onClose={onClose}
+      title={`Move your ${categoryName(category)} vote?`}
+    >
       <Stack gap="md">
         <Group justify="center" gap="md" wrap="nowrap">
           <SheetEntry entry={from} isFrom />

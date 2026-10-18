@@ -34,7 +34,7 @@ export default function VotesPage() {
     <Stack gap="xl">
       <AdminPageHeader
         title="Votes and results"
-        description="Who's ahead for the two public prizes, and every vote with where it came from. The judged prizes aren't voted on here."
+        description="Who's ahead for the three public prizes, and every vote with where it came from. New Entrants and Judges' Favourites are judged, so they aren't voted on here."
         actions={
           <Group gap="xs">
             <Select
@@ -85,17 +85,24 @@ export default function VotesPage() {
           </Group>
           <SimpleGrid cols={{ base: 2, sm: 4 }}>
             <StatTile
-              label="All votes"
-              help="These count for People's Choice"
-              value={overview.votes.total}
+              label="In-Person Favourites"
+              help="Best display votes from people who saw it"
+              value={overview.votes.inPerson}
+              color="grape"
+              link={routes.adminVotes().link}
+            />
+            <StatTile
+              label="People's Choice"
+              help="Best display votes from everyone else"
+              value={overview.votes.online}
               color="blue"
               link={routes.adminVotes().link}
             />
             <StatTile
-              label="In person"
-              help="These also count for In-Person Favourites"
-              value={overview.votes.inPerson}
-              color="grape"
+              label="Most Jolly"
+              help="Votes from people who saw it"
+              value={overview.votes.mostJolly}
+              color="red"
               link={routes.adminVotes().link}
             />
           </SimpleGrid>

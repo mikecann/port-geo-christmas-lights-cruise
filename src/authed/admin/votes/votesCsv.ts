@@ -4,8 +4,9 @@ import type {
   LocationCheck,
   VoterLocation,
 } from "../../../../convex/features/votes/schema";
-import { VOTE_CATEGORY_DETAILS } from "../../../../convex/features/votes/schema";
+import type { VoteCategory } from "../../../../convex/features/votes/schema";
 import { toCsv } from "../../../common/utils/csv";
+import { awardName } from "../../../../shared/voting";
 
 export type AdminVote = FunctionReturnType<
   typeof api.admin.competition.votes.getAllVotesForExport
@@ -28,14 +29,17 @@ export const placeName = (location: VoterLocation | undefined) =>
         .join(", ")
     : "";
 
-// What the vote counts for, in the words admins use
-export const countsFor = (vote: AdminVote) => {
-  if (vote.category)
-    return `2025 ${VOTE_CATEGORY_DETAILS[vote.category].title}`;
-  return vote.inPerson
-    ? "In-Person Favourites and People's Choice"
-    : "People's Choice";
+const LEGACY_CATEGORY_NAMES: Record<VoteCategory, string> = {
+  best_display: "2025 Best Display",
+  most_jolly: "2025 Most Jolly",
 };
+
+// What the vote counts for, in the words admins use. 2025's votes have none
+// of the 2026 fields.
+export const countsFor = (vote: AdminVote) =>
+  vote.inPerson === undefined
+    ? LEGACY_CATEGORY_NAMES[vote.category]
+    : awardName({ category: vote.category, inPerson: vote.inPerson });
 
 export function votesToCsv(votes: AdminVote[]) {
   const yesNo = (value: boolean | undefined) =>

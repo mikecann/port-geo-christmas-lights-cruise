@@ -205,3 +205,34 @@
 .sheetEntry[data-from] {
   opacity: 0.6;
 }
+
+/* Best display and Most jolly side by side, each with a few words under its
+   name. Tall enough for both lines at the larger text size. */
+.categoryButton {
+  height: auto;
+  min-height: 4.5rem;
+  padding: 0.5rem;
+}
+
+.categoryLabel {
+  flex-direction: column;
+  gap: 2px;
+  height: auto;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.categoryTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.categoryHint {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+  opacity: 0.85;
+}

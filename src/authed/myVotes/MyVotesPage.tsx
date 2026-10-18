@@ -17,28 +17,35 @@ import { AuthRequired } from "../../auth/AuthRequired";
 import MyVoteEntryCard from "./MyVoteEntryCard";
 import { routes } from "../../routes";
 import { votingClosedMessage } from "../../../shared/eventStatus";
+import {
+  VOTE_CATEGORIES,
+  VOTE_CATEGORY_DETAILS,
+} from "../../../convex/features/votes/schema";
+import { awardName } from "../../../shared/voting";
 
 export default function MyVotesPage() {
-  const vote = useQuery(api.my.votes.mine, {});
+  const votes = useQuery(api.my.votes.mine, {});
   const competition = useQuery(api.public.competitions.current, {});
 
-  if (vote === undefined || competition === undefined)
+  if (votes === undefined || competition === undefined)
     return (
       <AuthRequired>
         <Container size="md" py="xl">
           <Stack align="center">
             <Loader size="lg" />
-            <Text c="dimmed">Loading your vote...</Text>
+            <Text c="dimmed">Loading your votes...</Text>
           </Stack>
         </Container>
       </AuthRequired>
     );
 
+  const hasVoted = votes.best_display !== null || votes.most_jolly !== null;
+
   return (
     <AuthRequired>
       <Container size="md" py="xl">
         <Group justify="space-between" mb="xl">
-          <Title order={1}>My Vote</Title>
+          <Title order={1}>My Votes</Title>
           <Button
             component="a"
             {...routes.competitionDetails().link}
@@ -53,46 +60,59 @@ export default function MyVotesPage() {
         <Stack gap="md">
           {competition.votingOpen ? (
             <Alert color="green" variant="light" title="Voting is open">
-              You get one vote for the {competition.year} competition, and you
-              can change it until voting closes.
+              You get a vote for best display, and a Most Jolly vote for a
+              display you've seen in person. You can change them until voting
+              closes.
             </Alert>
           ) : (
             <Alert color="yellow" variant="light" title="Voting is closed">
-              {vote
-                ? "Your vote is kept here as a read-only record."
+              {hasVoted
+                ? "Your votes are kept here as a read-only record."
                 : votingClosedMessage(competition.year)}
             </Alert>
           )}
 
-          <Card withBorder>
-            {vote ? (
-              <Stack gap="sm">
-                <Group gap="xs">
-                  <Text fw={600}>Your vote</Text>
-                  <Badge
-                    color={vote.inPerson ? "green" : "blue"}
-                    variant="light"
-                  >
-                    {vote.inPerson
-                      ? "In-Person Favourites and People's Choice"
-                      : "People's Choice"}
-                  </Badge>
-                </Group>
-                <MyVoteEntryCard entryId={vote.entry._id} />
-              </Stack>
-            ) : (
-              <Stack gap="sm" align="flex-start">
-                <Text c="dimmed" size="sm">
-                  You haven't voted yet.
-                </Text>
-                {competition.votingOpen && (
-                  <Button component="a" {...routes.voteLanding().link}>
-                    Type the number on a sign
-                  </Button>
-                )}
-              </Stack>
-            )}
-          </Card>
+          {VOTE_CATEGORIES.map((category) => {
+            const vote = votes[category];
+            return (
+              <Card key={category} withBorder>
+                <Stack gap="sm">
+                  <Group gap="xs">
+                    <Text fw={600}>
+                      {VOTE_CATEGORY_DETAILS[category].title}
+                    </Text>
+                    {vote && (
+                      <Badge
+                        color={vote.inPerson ? "green" : "blue"}
+                        variant="light"
+                      >
+                        {awardName(vote)}
+                      </Badge>
+                    )}
+                  </Group>
+                  {vote ? (
+                    <MyVoteEntryCard entryId={vote.entry._id} />
+                  ) : (
+                    <Text c="dimmed" size="sm">
+                      {category === "most_jolly"
+                        ? "No vote yet. It's for a display you've seen in person."
+                        : "No vote yet."}
+                    </Text>
+                  )}
+                </Stack>
+              </Card>
+            );
+          })}
+
+          {competition.votingOpen && (
+            <Button
+              component="a"
+              {...routes.voteLanding().link}
+              style={{ alignSelf: "flex-start" }}
+            >
+              Type the number on a sign
+            </Button>
+          )}
         </Stack>
       </Container>
     </AuthRequired>

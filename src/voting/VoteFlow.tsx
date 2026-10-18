@@ -1,7 +1,9 @@
 import { Stack } from "@mantine/core";
-import { useVoteFlow, type VoteFlowEntry } from "./useVoteFlow";
+import { VOTE_CATEGORIES } from "../../convex/features/votes/schema";
+import { useVoteFlow, votesOn, type VoteFlowEntry } from "./useVoteFlow";
 import {
   CastVoteButton,
+  CategoryVoteButtons,
   ChangeVoteOptions,
   InPersonSlot,
   OwnEntryNotice,
@@ -9,7 +11,7 @@ import {
   SwitchVoteSheet,
   VoteBarLoading,
   VoteReceipt,
-  VotedForAnotherEntry,
+  VotedForOtherEntries,
   VotingClosedNotice,
 } from "./VoteFlowParts";
 
@@ -23,15 +25,35 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
   if (state.step === "closed") return <VotingClosedNotice year={state.year} />;
   if (state.step === "ownEntry") return <OwnEntryNotice />;
   if (state.step === "voted")
-    return <VoteReceipt vote={state.vote} onChange={flow.startChanging} />;
+    return (
+      <VoteReceipt
+        entryNumber={entry.entryNumber}
+        votes={votesOn(state.votes, entry._id)}
+        onChange={flow.startChanging}
+      />
+    );
 
-  const otherVote = state.step === "choose" ? state.otherVote : null;
-  const currentVote = state.step === "choose" ? state.currentVote : null;
+  const votes = state.step === "choose" ? state.votes : null;
+  const isHere = (vote: { entry: { _id: string } } | null | undefined) =>
+    vote?.entry._id === entry._id;
+  const votesHere = votes ? votesOn(votes, entry._id) : [];
   const needsSeenAnswer =
     state.inPersonAllowed === true && flow.sawInPerson === null;
+  // Most Jolly is only for people who've seen it, so only they get both
+  const canVoteMostJolly =
+    state.inPersonAllowed === true && flow.sawInPerson === true;
+  const categories = canVoteMostJolly
+    ? VOTE_CATEGORIES
+    : (["best_display"] as const);
+  const otherVotes = categories.flatMap((category) => {
+    const vote = votes?.[category];
+    return vote && !isHere(vote) ? [vote] : [];
+  });
+  const bestDisplay = votes?.best_display;
+
   return (
     <Stack gap="sm">
-      {otherVote && <VotedForAnotherEntry vote={otherVote} />}
+      {otherVotes.length > 0 && <VotedForOtherEntries votes={otherVotes} />}
       <InPersonSlot
         inPersonAllowed={state.inPersonAllowed}
         canRetryLocation={state.canRetryLocation}
@@ -39,25 +61,34 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
         onChange={flow.setSawInPerson}
         onRetry={flow.retryLocation}
       />
-      <CastVoteButton
-        label={
-          otherVote
-            ? `Switch my vote to #${entry.entryNumber}`
-            : currentVote
-              ? `Update my vote for #${entry.entryNumber}`
+      {canVoteMostJolly ? (
+        <CategoryVoteButtons
+          isVotedHere={(category) => isHere(votes?.[category])}
+          busy={flow.busy}
+          onVote={flow.vote}
+        />
+      ) : (
+        <CastVoteButton
+          label={
+            bestDisplay
+              ? isHere(bestDisplay)
+                ? `Update my vote for #${entry.entryNumber}`
+                : `Switch my vote to #${entry.entryNumber}`
               : `Vote for #${entry.entryNumber}`
-        }
-        isBusy={flow.isBusy}
-        // Wait for the location check, so the switch shows before they vote,
-        // and then for an answer, so nobody is counted as "not seen" by
-        // missing it
-        disabled={state.inPersonAllowed === null || needsSeenAnswer}
-        onClick={flow.vote}
-      />
-      {currentVote && (
+          }
+          isBusy={flow.busy === "best_display"}
+          // Wait for the location check, so the switch shows before they vote,
+          // and then for an answer, so nobody is counted as "not seen" by
+          // missing it
+          disabled={state.inPersonAllowed === null || needsSeenAnswer}
+          onClick={() => flow.vote("best_display")}
+        />
+      )}
+      {votesHere.length > 0 && (
         <ChangeVoteOptions
-          isBusy={flow.isBusy}
-          onRemove={() => flow.remove(currentVote)}
+          voteCount={votesHere.length}
+          isBusy={flow.busy === "remove"}
+          onRemove={flow.removeHere}
           onKeep={flow.stopChanging}
         />
       )}
@@ -66,16 +97,22 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
         onGoogle={flow.leaveForGoogle}
         onClose={flow.cancelSignIn}
       />
-      {otherVote && (
-        <SwitchVoteSheet
-          opened={flow.isConfirmingSwitch}
-          from={otherVote.entry}
-          to={entry}
-          isBusy={flow.isBusy}
-          onConfirm={flow.confirmSwitch}
-          onClose={flow.cancelSwitch}
-        />
-      )}
+      {VOTE_CATEGORIES.map((category) => {
+        const from = votes?.[category];
+        if (!from || isHere(from)) return null;
+        return (
+          <SwitchVoteSheet
+            key={category}
+            opened={flow.switching === category}
+            category={category}
+            from={from.entry}
+            to={entry}
+            isBusy={flow.busy === category}
+            onConfirm={flow.confirmSwitch}
+            onClose={flow.cancelSwitch}
+          />
+        );
+      })}
     </Stack>
   );
 }

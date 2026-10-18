@@ -3,10 +3,6 @@ import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import {
-  VOTE_CATEGORIES,
-  VOTE_CATEGORY_DETAILS,
-} from "../../../../convex/features/votes/schema";
 
 type Ranking = FunctionReturnType<
   typeof api.admin.competition.votes.results
@@ -61,7 +57,8 @@ function RankingTable({
   );
 }
 
-// The two voted prizes, plus 2025's categories when looking back at 2025
+// The three voted prizes. 2025 voted on best display without the in-person
+// check, so its year shows that ranking in place of the first two.
 export default function VoteResults({
   competitionId,
 }: {
@@ -72,37 +69,42 @@ export default function VoteResults({
   });
   if (!results) return null;
 
-  const legacyCategories = VOTE_CATEGORIES.filter(
-    (category) => results.legacyCategories[category].length > 0,
-  );
-  // 2025 voted by category, so its prizes only show if a year has those votes
-  const showPrizes =
-    legacyCategories.length === 0 || results.peoplesChoice.length > 0;
+  const isLegacyYear =
+    results.legacyBestDisplay.length > 0 &&
+    results.inPersonFavourites.length === 0 &&
+    results.peoplesChoice.length === 0;
 
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2 }}>
-      {showPrizes && (
+    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
+      {isLegacyYear ? (
+        <RankingTable
+          title="Best Display"
+          description={`${results.year} category vote.`}
+          ranking={results.legacyBestDisplay}
+        />
+      ) : (
         <>
           <RankingTable
             title="In-Person Favourites"
-            description="Votes from people who said they saw the display in person, from a connection in the in-person area."
+            description="Best display votes from people who said they saw it in person, from a connection in the in-person area."
             ranking={results.inPersonFavourites}
           />
           <RankingTable
             title="People's Choice"
-            description="Every vote, in person or online."
+            description="Best display votes from everyone else. Flagged votes count here."
             ranking={results.peoplesChoice}
           />
         </>
       )}
-      {legacyCategories.map((category) => (
-        <RankingTable
-          key={category}
-          title={VOTE_CATEGORY_DETAILS[category].title}
-          description={`${results.year} category vote.`}
-          ranking={results.legacyCategories[category]}
-        />
-      ))}
+      <RankingTable
+        title="Most Jolly"
+        description={
+          isLegacyYear
+            ? `${results.year} category vote.`
+            : "Votes from people who saw the display in person, for dancing, dressing up and festive fun."
+        }
+        ranking={results.mostJolly}
+      />
     </SimpleGrid>
   );
 }

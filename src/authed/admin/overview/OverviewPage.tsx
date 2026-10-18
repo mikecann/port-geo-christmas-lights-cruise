@@ -121,17 +121,24 @@ export default function OverviewPage() {
         </Text>
         <SimpleGrid cols={{ base: 2, sm: 4 }}>
           <StatTile
-            label="All votes"
-            help="These count for People's Choice"
-            value={votes.total}
+            label="In-Person Favourites"
+            help="Best display votes from people who saw it"
+            value={votes.inPerson}
+            color="grape"
+            link={routes.adminVotes().link}
+          />
+          <StatTile
+            label="People's Choice"
+            help="Best display votes from everyone else"
+            value={votes.online}
             color="blue"
             link={routes.adminVotes().link}
           />
           <StatTile
-            label="In person"
-            help="These also count for In-Person Favourites"
-            value={votes.inPerson}
-            color="grape"
+            label="Most Jolly"
+            help="Votes from people who saw it"
+            value={votes.mostJolly}
+            color="red"
             link={routes.adminVotes().link}
           />
         </SimpleGrid>
