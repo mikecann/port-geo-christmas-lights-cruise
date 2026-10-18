@@ -37,7 +37,7 @@ describe("votesToCsv", () => {
     ]);
     const [headers, outside, legacy] = csv.split("\n");
 
-    expect(headers).toContain("in person,ticked seen in person,location check");
+    expect(headers).toContain("in person,said seen in person,location check");
     expect(headers).toContain("country,region,region code,city,latitude");
     expect(outside).toBe(
       '2026-12-05T11:30:00.000Z,26,"The ""Big"" Display, Keel Retreat",voter@example.com,Voter,People\'s Choice,,no,yes,Outside the area,GB,England,,London,51.5,-0.12,Europe/London',

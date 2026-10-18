@@ -40,10 +40,11 @@ export default function HowVotingWorks() {
         for example), your vote counts for People's Choice only.
       </Text>
       <Text>
-        If the check passes, we'll ask you to tick a box to say you've seen the
-        display in person. It's an honesty box, so please only tick it if you
-        have. We keep the rough location with your vote so the organisers can
-        check for anything odd.
+        If the check passes, we'll ask whether you've seen the display in
+        person, with a switch that starts in the middle. Slide it to "I've seen
+        it" or "I haven't seen it" before you vote. It's on your honour, so
+        please only pick "I've seen it" if you have. We keep the rough location
+        with your vote so the organisers can check for anything odd.
       </Text>
     </Stack>
   );

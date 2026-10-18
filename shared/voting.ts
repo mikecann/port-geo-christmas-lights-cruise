@@ -1,5 +1,10 @@
 import type { LocationCheck } from "../convex/features/votes/schema";
 
+// Shown by the greyed out vote button, and by the vote mutation if the answer
+// is missing
+export const SEEN_IN_PERSON_REQUIRED_MESSAGE =
+  "Tell us whether you've seen it in person first.";
+
 export type InPersonAreaSummary = { countries: string[]; waOnly: boolean };
 
 const areaName = (area: InPersonAreaSummary) => {
@@ -10,7 +15,7 @@ const areaName = (area: InPersonAreaSummary) => {
 };
 
 // Why a vote can only count for People's Choice, in plain words. null when
-// the location check passed, so the honesty tick decides.
+// the location check passed, so their "I've seen it" answer decides.
 export function peoplesChoiceOnlyReason(
   locationCheck: LocationCheck,
   area: InPersonAreaSummary,

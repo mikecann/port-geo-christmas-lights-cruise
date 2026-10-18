@@ -5,13 +5,19 @@ import {
   Anchor,
   Button,
   Card,
-  Checkbox,
   Group,
   Loader,
+  SegmentedControl,
   Stack,
   Text,
+  VisuallyHidden,
 } from "@mantine/core";
-import { IconCircleCheck, IconInfoCircle } from "@tabler/icons-react";
+import {
+  IconArrowsLeftRight,
+  IconCircleCheck,
+  IconInfoCircle,
+} from "@tabler/icons-react";
+import classes from "./InPersonSwitch.module.css";
 import { routes } from "../routes";
 import { votingClosedMessage } from "../../shared/eventStatus";
 import type { MyVote } from "./useVoteFlow";
@@ -95,22 +101,52 @@ export function PeoplesChoiceOnlyNotice({
   );
 }
 
-export function InPersonTick({
-  checked,
+// Three stops, with "not answered" in the middle, so nobody is counted as
+// "not seen" just because they missed it
+export function InPersonSwitch({
+  value,
   onChange,
 }: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
+  value: boolean | null;
+  onChange: (value: boolean | null) => void;
 }) {
   return (
     <Card withBorder padding="md">
-      <Checkbox
-        size="lg"
-        checked={checked}
-        onChange={(event) => onChange(event.currentTarget.checked)}
-        label="I've seen this display in person"
-        description="From a boat or the shore. Your vote then counts for In-Person Favourites as well as People's Choice."
-      />
+      <Stack gap="sm">
+        <Text fw={600} ta="center">
+          Have you seen this display in person?
+        </Text>
+        <SegmentedControl
+          data-testid="seen-in-person"
+          fullWidth
+          size="lg"
+          radius="xl"
+          classNames={classes}
+          mod={{ unset: value === null }}
+          color={value === null ? undefined : value ? "green" : "blue"}
+          value={value === null ? "unset" : value ? "seen" : "notSeen"}
+          onChange={(next) =>
+            onChange(next === "unset" ? null : next === "seen")
+          }
+          data={[
+            { value: "seen", label: "I've seen it" },
+            {
+              value: "unset",
+              label: (
+                <>
+                  <IconArrowsLeftRight size={18} aria-hidden />
+                  <VisuallyHidden>Not answered yet</VisuallyHidden>
+                </>
+              ),
+            },
+            { value: "notSeen", label: "I haven't seen it" },
+          ]}
+        />
+        <Text size="sm" c="dimmed" ta="center">
+          Seen it from a boat or the shore? Then your vote counts for In-Person
+          Favourites as well as People's Choice.
+        </Text>
+      </Stack>
     </Card>
   );
 }
@@ -120,26 +156,36 @@ export function CastVoteButton({
   label,
   isBusy,
   disabled,
+  hint,
   onClick,
 }: {
   entryNumber: number;
   label?: string;
   isBusy: boolean;
   disabled?: boolean;
+  // Why it's greyed out
+  hint?: string;
   onClick: () => void;
 }) {
   return (
-    <Button
-      data-testid="cast-vote"
-      size="xl"
-      fullWidth
-      color="yellow"
-      loading={isBusy}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      {label ?? `Vote for #${entryNumber}`}
-    </Button>
+    <Stack gap={6}>
+      <Button
+        data-testid="cast-vote"
+        size="xl"
+        fullWidth
+        color="yellow"
+        loading={isBusy}
+        disabled={disabled}
+        onClick={onClick}
+      >
+        {label ?? `Vote for #${entryNumber}`}
+      </Button>
+      {hint && (
+        <Text size="sm" c="dimmed" ta="center" data-testid="cast-vote-hint">
+          {hint}
+        </Text>
+      )}
+    </Stack>
   );
 }
 

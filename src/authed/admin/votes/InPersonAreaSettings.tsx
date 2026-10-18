@@ -14,8 +14,8 @@ import { useErrorCatchingMutation } from "../../../common/errors";
 
 type Area = { countries: string[]; waOnly: boolean };
 
-// Where a voter's internet connection has to be for a ticked vote to count
-// as in person
+// Where a voter's internet connection has to be for "I've seen it" to make
+// their vote count as in person
 export default function InPersonAreaSettings() {
   const area = useQuery(api.admin.competition.competitions.getInPersonArea);
   if (!area) return null;

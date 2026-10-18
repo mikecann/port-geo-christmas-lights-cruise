@@ -34,7 +34,7 @@ export const VOTE_CATEGORY_DETAILS: Record<
 };
 
 // Why a vote did or didn't pass the IP location check. Only "ok" lets the
-// voter's honesty tick make it count as in person.
+// voter's "I've seen it" answer make it count as in person.
 export const LOCATION_CHECKS = [
   "ok",
   "outside_area",
@@ -90,7 +90,8 @@ export const voteSchema = v.object({
   ...commonVoteFields,
   // Counts for In-Person Favourites as well as People's Choice
   inPerson: v.boolean(),
-  // The "I've seen this display in person" tick
+  // Their answer to "have you seen this display in person?". false when they
+  // weren't asked because the location check failed.
   sawInPerson: v.boolean(),
   locationCheck: locationCheckValidator,
   // Only set when the token was genuine

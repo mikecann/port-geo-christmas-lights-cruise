@@ -1,9 +1,10 @@
 import { Center, Loader, Stack } from "@mantine/core";
+import { SEEN_IN_PERSON_REQUIRED_MESSAGE } from "../../shared/voting";
 import { useVoteFlow, type VoteFlowEntry } from "./useVoteFlow";
 import {
   CastVoteButton,
   ChangeVoteOptions,
-  InPersonTick,
+  InPersonSwitch,
   LocationCheckingNotice,
   OwnEntryNotice,
   PeoplesChoiceOnlyNotice,
@@ -38,12 +39,14 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
     );
 
   const { otherVote, currentVote } = state;
+  const needsSeenAnswer =
+    state.inPersonAllowed === true && flow.sawInPerson === null;
   return (
     <Stack gap="md">
       {otherVote && <VotedForAnotherEntry vote={otherVote} />}
       {state.inPersonAllowed && (
-        <InPersonTick
-          checked={flow.sawInPerson}
+        <InPersonSwitch
+          value={flow.sawInPerson}
           onChange={flow.setSawInPerson}
         />
       )}
@@ -64,8 +67,11 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
               : undefined
         }
         isBusy={flow.isBusy}
-        // Wait for the location check, so the tick shows before they vote
-        disabled={state.inPersonAllowed === null}
+        // Wait for the location check, so the switch shows before they vote,
+        // and then for an answer, so nobody is counted as "not seen" by
+        // missing it
+        disabled={state.inPersonAllowed === null || needsSeenAnswer}
+        hint={needsSeenAnswer ? SEEN_IN_PERSON_REQUIRED_MESSAGE : undefined}
         onClick={flow.vote}
       />
       {currentVote && (

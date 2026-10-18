@@ -12,6 +12,7 @@ import { entries } from "../features/entries/model";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { votingClosedMessage } from "../../shared/eventStatus";
+import { SEEN_IN_PERSON_REQUIRED_MESSAGE } from "../../shared/voting";
 import { competitions } from "../features/competitions/model";
 import { enforceUserRateLimit } from "../features/rateLimits/lib";
 import { VOTE_ALREADY_REMOVED_MESSAGE } from "../features/votes/model";
@@ -84,8 +85,9 @@ export const getForEntry = userQuery
 export const vote = userMutation
   .input({
     entryId: v.id("entries"),
-    // The "I've seen this display in person" tick
-    sawInPerson: v.boolean(),
+    // Their answer to "have you seen this display in person?". The vote page
+    // only asks when the location check passes, and then it's required.
+    sawInPerson: v.optional(v.boolean()),
     // From the worker's /api/geo, fetched fresh for each vote as it only
     // works once
     geoToken: v.optional(v.string()),
@@ -118,13 +120,16 @@ export const vote = userMutation
       input.geoToken,
       Date.now(),
     );
-    const inPerson = locationCheck === "ok" && input.sawInPerson;
+    if (locationCheck === "ok" && input.sawInPerson === undefined)
+      throw new ConvexError(SEEN_IN_PERSON_REQUIRED_MESSAGE);
+    const sawInPerson = input.sawInPerson ?? false;
+    const inPerson = locationCheck === "ok" && sawInPerson;
 
     await voterVotes.cast(context.db, {
       competitionId: competition._id,
       entryId: entry._id,
       inPerson,
-      sawInPerson: input.sawInPerson,
+      sawInPerson,
       locationCheck,
       ...(location ? { location } : {}),
       castAt: Date.now(),

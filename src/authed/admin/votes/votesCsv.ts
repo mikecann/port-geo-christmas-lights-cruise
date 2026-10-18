@@ -49,7 +49,7 @@ export function votesToCsv(votes: AdminVote[]) {
     "counts for",
     "vote category",
     "in person",
-    "ticked seen in person",
+    "said seen in person",
     "location check",
     "country",
     "region",

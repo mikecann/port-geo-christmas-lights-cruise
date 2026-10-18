@@ -59,7 +59,15 @@ export function useVoteFlow(entry: VoteFlowEntry) {
   const cancelMutation = useMutation(api.my.votes.cancel);
   const onApiError = useErrorHandler();
 
-  const [sawInPerson, setSawInPerson] = useState(false);
+  // Their answer to "have you seen it in person?", for this entry only, so
+  // moving to another entry starts unanswered again
+  const [seen, setSeen] = useState<{
+    entryId: Id<"entries">;
+    answer: boolean;
+  } | null>(null);
+  const sawInPerson = seen?.entryId === entry._id ? seen.answer : null;
+  const setSawInPerson = (answer: boolean | null) =>
+    setSeen(answer === null ? null : { entryId: entry._id, answer });
   const [isChanging, setIsChanging] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
 
@@ -102,7 +110,7 @@ export function useVoteFlow(entry: VoteFlowEntry) {
           peoplesChoiceOnlyReason(vote.locationCheck, area) ??
           (vote.inPerson
             ? null
-            : "You didn't tick that you've seen it in person, so it counts for People's Choice only."),
+            : "You said you haven't seen it in person, so it counts for People's Choice only."),
       };
     return {
       step: "choose",
@@ -125,9 +133,9 @@ export function useVoteFlow(entry: VoteFlowEntry) {
       async () =>
         await voteMutation({
           entryId: entry._id,
-          // Only once the tick has been shown, so a tick from before can't
-          // carry over
-          sawInPerson: inPersonAllowed === true && sawInPerson,
+          // Only asked once the location check passes. Otherwise it can't be
+          // in person, so it goes as "not seen".
+          sawInPerson: inPersonAllowed ? (sawInPerson ?? undefined) : false,
           geoToken: (await geo.forVote()) ?? undefined,
         }),
       "vote",
@@ -157,7 +165,10 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     vote,
     remove,
     retryLocation: geo.retry,
-    startChanging: () => setIsChanging(true),
+    startChanging: () => {
+      setSeen(null);
+      setIsChanging(true);
+    },
     stopChanging: () => setIsChanging(false),
   };
 }

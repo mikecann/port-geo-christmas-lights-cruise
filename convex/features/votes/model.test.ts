@@ -21,6 +21,7 @@ import { competitions } from "../competitions/model";
 import { aggregateVotes, voteNamespace, type VoteTally } from "./lib";
 import { OWN_ENTRY_VOTE_MESSAGE, SAME_INBOX_VOTE_MESSAGE } from "./model";
 import { canonicalEmail } from "../../../shared/auth";
+import { SEEN_IN_PERSON_REQUIRED_MESSAGE } from "../../../shared/voting";
 import { rankEntries } from "./results";
 
 const secret = "test-geo-secret";
@@ -434,7 +435,7 @@ describe("in-person votes", () => {
     entryId = (await createApprovedTestEntryToVoteFor(t))._id;
   });
 
-  const vote = async (args: { sawInPerson: boolean; geoToken?: string }) =>
+  const vote = async (args: { sawInPerson?: boolean; geoToken?: string }) =>
     await t.mutation(api.my.votes.vote, { entryId, ...args });
 
   const theVote = async () => {
@@ -443,7 +444,7 @@ describe("in-person votes", () => {
     return stored;
   };
 
-  it("counts as in person with a token from Australia and the tick", async () => {
+  it("counts as in person with a token from Australia when they've seen it", async () => {
     expect(
       await vote({ sawInPerson: true, geoToken: await geoToken(busselton) }),
     ).toEqual({ inPerson: true, locationCheck: "ok" });
@@ -458,14 +459,14 @@ describe("in-person votes", () => {
     expect(await countVotes(t, "online")).toBe(0);
   });
 
-  it("counts for People's Choice only without the tick", async () => {
+  it("counts for People's Choice only when they haven't seen it", async () => {
     expect(
       await vote({ sawInPerson: false, geoToken: await geoToken(busselton) }),
     ).toEqual({ inPerson: false, locationCheck: "ok" });
     expect(await countVotes(t, "online")).toBe(1);
   });
 
-  it("counts for People's Choice only from overseas, even with the tick", async () => {
+  it("counts for People's Choice only from overseas, even if they say they've seen it", async () => {
     expect(
       await vote({ sawInPerson: true, geoToken: await geoToken(london) }),
     ).toEqual({ inPerson: false, locationCheck: "outside_area" });
@@ -473,6 +474,26 @@ describe("in-person votes", () => {
     expect(await theVote()).toMatchObject({
       sawInPerson: true,
       location: london,
+    });
+  });
+
+  it("needs a seen or not seen answer when the location check passes", async () => {
+    await expect(vote({ geoToken: await geoToken(busselton) })).rejects.toThrow(
+      SEEN_IN_PERSON_REQUIRED_MESSAGE,
+    );
+    expect(await storedVotes(t)).toHaveLength(0);
+  });
+
+  it("doesn't need an answer when the location check fails", async () => {
+    expect(await vote({ geoToken: await geoToken(london) })).toEqual({
+      inPerson: false,
+      locationCheck: "outside_area",
+    });
+    expect(await theVote()).toMatchObject({ sawInPerson: false });
+
+    expect(await vote({})).toEqual({
+      inPerson: false,
+      locationCheck: "no_location",
     });
   });
 

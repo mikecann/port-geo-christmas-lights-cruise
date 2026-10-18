@@ -69,7 +69,7 @@ export default function VoteList({
               <Text size="sm">Counts for {countsFor(vote)}</Text>
               {vote.sawInPerson !== undefined && (
                 <Text size="xs" c="dimmed">
-                  Ticked "I've seen this display in person":{" "}
+                  Said they've seen it in person:{" "}
                   {vote.sawInPerson ? "yes" : "no"}
                 </Text>
               )}

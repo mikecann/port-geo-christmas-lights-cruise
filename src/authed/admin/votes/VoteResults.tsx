@@ -85,7 +85,7 @@ export default function VoteResults({
         <>
           <RankingTable
             title="In-Person Favourites"
-            description="Votes from people who ticked that they saw the display in person, from a connection in the in-person area."
+            description="Votes from people who said they saw the display in person, from a connection in the in-person area."
             ranking={results.inPersonFavourites}
           />
           <RankingTable
