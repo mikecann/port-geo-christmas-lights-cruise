@@ -1,5 +1,6 @@
 import { authStarted, track } from "../analytics/client";
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
   Container,
@@ -11,17 +12,99 @@ import {
   Anchor,
   Box,
   Alert,
+  Divider,
 } from "@mantine/core";
 import { routes, useRoute } from "../routes";
 import { useConvexAuth } from "convex/react";
 import { useErrorHandler } from "../common/errors";
 import { isSignupDisabled } from "../common/auth";
 import { safeReturnTo } from "./returnTo";
+import { EmailCodeSignIn } from "./EmailCodeSignIn";
 
-export function SignInPage() {
+// Grows with its content rather than clipping it, so the form stays
+// reachable on a short phone screen with the keyboard up
+function SignInBackdrop({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      style={{
+        minHeight: "calc(100svh - 60px)",
+        background:
+          "linear-gradient(135deg, #0b1c3b 0%, #1a2332 50%, #0a0f1a 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Container size="xs" py="xl" w="100%">
+        <Paper withBorder shadow="md" p={{ base: "lg", xs: "xl" }} radius="md">
+          {children}
+        </Paper>
+      </Container>
+    </Box>
+  );
+}
+
+function GoogleSignInButton({
+  returnTo,
+  signupDisabled,
+}: {
+  returnTo: string;
+  signupDisabled: boolean;
+}) {
   const { signIn } = useAuthActions();
   const [isLoading, setIsLoading] = useState(false);
   const onApiError = useErrorHandler();
+
+  return (
+    <Button
+      fullWidth
+      size="lg"
+      onClick={() => {
+        authStarted();
+        setIsLoading(true);
+        signIn("google", {
+          // While sign-ups are closed the server turns new accounts
+          // away, and Convex Auth then sends the browser to
+          // redirectTo without a session. Come back here rather than
+          // returnTo so this page can say why.
+          redirectTo: signupDisabled
+            ? routes.signin({ returnTo, unlock: true, attempted: true }).href
+            : returnTo,
+        })
+          .catch((error) => {
+            track("auth_failed");
+            onApiError(error);
+          })
+          .finally(() => setIsLoading(false));
+      }}
+      loading={isLoading}
+      leftSection={
+        <svg width="18" height="18" viewBox="0 0 24 24">
+          <path
+            fill="#4285f4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+          />
+          <path
+            fill="#34a853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+          />
+          <path
+            fill="#fbbc05"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+          />
+          <path
+            fill="#ea4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+          />
+        </svg>
+      }
+    >
+      Continue with Google
+    </Button>
+  );
+}
+
+export function SignInPage() {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const route = useRoute();
 
@@ -45,118 +128,47 @@ export function SignInPage() {
 
   if (signupDisabled && params?.unlock !== true)
     return (
-      <Box
-        style={{
-          minHeight: "calc(100svh - 60px)",
-          height: "calc(100svh - 60px)",
-          background:
-            "linear-gradient(135deg, #0b1c3b 0%, #1a2332 50%, #0a0f1a 100%)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <Container size="xs" py="xl">
-          <Paper withBorder shadow="md" p="xl" radius="md">
-            Sign in and signup is currently under construction. Please check
-            back later.
-          </Paper>
-        </Container>
-      </Box>
+      <SignInBackdrop>
+        Sign in and signup is currently under construction. Please check back
+        later.
+      </SignInBackdrop>
     );
 
   return (
-    <Box
-      style={{
-        minHeight: "calc(100svh - 60px)",
-        height: "calc(100svh - 60px)",
-        background:
-          "linear-gradient(135deg, #0b1c3b 0%, #1a2332 50%, #0a0f1a 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <Container size="xs" py="xl">
-        <Paper withBorder shadow="md" p="xl" radius="md">
-          <Stack gap="xs">
-            <Title order={1} ta="center" size="2.5rem" fw={700}>
-              Welcome
-            </Title>
+    <SignInBackdrop>
+      <Stack gap="md">
+        <Title order={1} ta="center" size="2rem" fw={700}>
+          Sign in
+        </Title>
 
-            <Text ta="center" size="md" c="dimmed" px="md">
-              Sign in or create an account to view entries, vote for your
-              favorites, and join the festive community
-            </Text>
+        <Text ta="center" size="sm" c="dimmed">
+          To vote and to enter your lights. New here? Signing in sets up your
+          account.
+        </Text>
 
-            {signInTurnedAway && (
-              <Alert color="red" title="Sign-in didn't complete" mt="md">
-                If you're new here, accounts can't be created until sign-ups
-                open. If you already have an account, try again with the Google
-                account you used before.
-              </Alert>
-            )}
+        {signInTurnedAway && (
+          <Alert color="red" title="Sign-in didn't complete">
+            If you're new here, accounts can't be created until sign-ups open.
+            If you already have an account, try again with the Google account or
+            email address you used before.
+          </Alert>
+        )}
 
-            <Button
-              fullWidth
-              size="lg"
-              mt="xl"
-              onClick={() => {
-                authStarted();
-                setIsLoading(true);
-                signIn("google", {
-                  // While sign-ups are closed the server turns new accounts
-                  // away, and Convex Auth then sends the browser to
-                  // redirectTo without a session. Come back here rather than
-                  // returnTo so this page can say why.
-                  redirectTo: signupDisabled
-                    ? routes.signin({ returnTo, unlock: true, attempted: true })
-                        .href
-                    : returnTo,
-                })
-                  .catch((error) => {
-                    track("auth_failed");
-                    onApiError(error);
-                  })
-                  .finally(() => setIsLoading(false));
-              }}
-              loading={isLoading}
-              leftSection={
-                <svg width="18" height="18" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285f4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34a853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#fbbc05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#ea4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-              }
-            >
-              Continue with Google
-            </Button>
+        <GoogleSignInButton
+          returnTo={returnTo}
+          signupDisabled={signupDisabled}
+        />
 
-            <Text ta="center" mt="md">
-              <Anchor component="a" {...routes.home().link} size="sm">
-                ← Back to Home
-              </Anchor>
-            </Text>
-          </Stack>
-        </Paper>
-      </Container>
-    </Box>
+        <Divider label="Or get a code by email" labelPosition="center" />
+
+        <EmailCodeSignIn />
+
+        <Text ta="center">
+          <Anchor component="a" {...routes.home().link} size="sm">
+            ← Back to Home
+          </Anchor>
+        </Text>
+      </Stack>
+    </SignInBackdrop>
   );
 }

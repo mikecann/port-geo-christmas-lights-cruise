@@ -52,16 +52,39 @@ bunx @convex-dev/auth
 
 Accept the defaults, this will add a few needed environment variables.
 
-Then because this project is using GoogleAuth only you will need to follow the steps here to setup a Google Project and add the required environment variables (AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET) to the convex deployment: https://labs.convex.dev/auth/config/oauth/google.
+People can sign in two ways: with Google, or with a 6-digit code sent to their email (handy for ARG staff, whose Outlook addresses aren't Google accounts). Both end up as the same user if the email matches, ignoring case.
+
+For Google, follow the steps here to set up a Google project and add `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` to the Convex deployment: https://labs.convex.dev/auth/config/oauth/google.
+
+Email codes go out through Resend like the other emails, so the deployment needs `RESEND_API_KEY`. A code lasts 10 minutes, and each email can ask for 5 in a row, then one every 6 minutes.
+
+Emails saved before this were matched exactly, so run this once on each deployment after deploying it, to lower-case them:
+
+```bash
+bunx convex run internal/users:normalizeEmails
+```
+
+#### Seeing codes on dev
+
+Resend won't send from dev, so set `AUTH_LOG_SIGNIN_CODES=true` on the dev deployment and the codes appear in the Convex logs (`bunx convex logs`) instead of being emailed. Never set it on production. It's ignored anyway when `SITE_URL` is missing or is portgeochristmascruise.com.au, and the code is emailed as usual.
 
 #### Off-season sign-up lock
 
 Outside the season two flags close sign-ups:
 
-- `IS_SIGNUP_DISABLED=true` on the Convex deployment. This is the actual lock: Google sign-in still works for existing accounts (admins included) but can't create new ones.
-- `VITE_IS_SIGNUP_DISABLED=true` in the frontend build. This only swaps the sign-in page for an "under construction" message. Admins can still reach the sign-in button at `/signin?returnTo=/admin&unlock=true`.
+- `IS_SIGNUP_DISABLED=true` on the Convex deployment. This is the actual lock: existing accounts (admins included) can still sign in with Google or an email code, but neither can create new ones.
+- `VITE_IS_SIGNUP_DISABLED=true` in the frontend build. This only swaps the sign-in page for an "under construction" message. Admins can still reach the sign-in options at `/signin?returnTo=/admin&unlock=true`.
 
 Turn both off when sign-ups open.
+
+#### Letting named people in, and making admins
+
+Two more Convex env vars, each a comma-separated list of emails. Case and spaces around each email don't matter.
+
+- `SIGNUP_ALLOWED_EMAILS`: these people can create an account even while `IS_SIGNUP_DISABLED` is on.
+- `COMPETITION_ADMIN_EMAILS`: these people are made competition admins when they sign in, with Google or a code. They can create an account while sign-ups are closed too, so there's no need to list them twice. Taking someone off the list doesn't remove the role; do that on the admin users page.
+
+For example: `COMPETITION_ADMIN_EMAILS=ZOliver@aigleroyal.com.au, TJulian@aigleroyal.com.au`. Send them to `/signin?returnTo=/admin&unlock=true` while the sign-in page is switched off.
 
 ### Testing
 

@@ -9,7 +9,10 @@ const GENERIC_MESSAGE = "Something went wrong. Please try again.";
 
 // Convex hides plain Error messages in production, so only a ConvexError's
 // message is meant for people to read. Strings are messages the app wrote.
-const getMessage = (error: unknown): string => {
+export const getErrorMessage = (
+  error: unknown,
+  fallback = GENERIC_MESSAGE,
+): string => {
   if (typeof error === "string") return error;
   if (error instanceof ConvexError) {
     if (typeof error.data === "string") return error.data;
@@ -21,7 +24,7 @@ const getMessage = (error: unknown): string => {
     )
       return error.data.message;
   }
-  return GENERIC_MESSAGE;
+  return fallback;
 };
 
 export const useErrorHandler = () => {
@@ -30,7 +33,7 @@ export const useErrorHandler = () => {
     console.error(`Error${title ? ` from ${title}` : ""}: `, error);
     notifications.show({
       title: "Error",
-      message: getMessage(error),
+      message: getErrorMessage(error),
       color: "red",
     });
   }, []);
