@@ -6,6 +6,11 @@ import { entries } from "../entries/model";
 import { competitions } from "../competitions/model";
 import { users } from "../users/model";
 import { SIGN_IN_CODE_LIFETIME_MINUTES } from "../../../shared/auth";
+import {
+  cruiseTimeGroups,
+  eventForYear,
+  formatDate,
+} from "../../../shared/event";
 
 // Entry names, addresses and rejection reasons are user or admin written text
 export function escapeHtml(value: unknown) {
@@ -30,6 +35,11 @@ export const email = {
   // Matches the myEntries route in src/routes.ts
   myEntriesUrl() {
     return `${process.env.SITE_URL ?? ""}/my-entries`;
+  },
+
+  // Matches the tickets route in src/routes.ts
+  ticketsUrl() {
+    return `${process.env.SITE_URL ?? ""}/tickets`;
   },
 
   async sendTestEmail(ctx: MutationCtx, args: { to: string }) {
@@ -132,6 +142,40 @@ export const email = {
     entryNumber: number;
     competition: Doc<"competitions">;
   }) {
+    const year = escapeHtml(args.competition.year);
+    // Only this year's facts are known, so other years get the general steps
+    const event = eventForYear(args.competition.year);
+    const signCollection = event?.signCollection;
+    const sailings = event?.cruise.sailings ?? [];
+
+    const collectSign = signCollection
+      ? `Your A0 corflute sign has your entry number and a QR code. You can collect it from ${escapeHtml(formatDate(signCollection.from))} to ${escapeHtml(formatDate(signCollection.to))} at ${escapeHtml(signCollection.place)}.`
+      : "We'll email you the sign collection details separately.";
+
+    const decorate =
+      sailings.length > 0
+        ? `Make sure your Christmas lights display is ready for the first cruise on ${escapeHtml(formatDate(sailings[0].date))}.`
+        : `Make sure your Christmas lights display is ready for the cruise dates in December ${year}.`;
+
+    const beVisible =
+      sailings.length > 0
+        ? "Ensure your lights are switched on during the cruise times below."
+        : "Ensure your lights are switched on during cruise hours (we'll send you the schedule closer to the date).";
+
+    const schedule =
+      sailings.length > 0
+        ? `<p><strong>Cruise times:</strong></p>
+        <ul>
+          ${cruiseTimeGroups(sailings)
+            .map(
+              (group) =>
+                `<li>${escapeHtml(group.times)}: ${escapeHtml(group.dates.map((date) => formatDate(date, true)).join(", "))}</li>`,
+            )
+            .join("")}
+        </ul>
+        <p>The cruise times are also on the site: <a href="${escapeHtml(email.ticketsUrl())}">${escapeHtml(email.ticketsUrl())}</a></p>`
+        : "";
+
     return `
         <h2>Congratulations! Your Entry Has Been Approved</h2>
         <p>We're excited to let you know that your entry for the Port Geographe Christmas Lights Competition has been approved!</p>
@@ -144,12 +188,15 @@ export const email = {
 
         <h3>Next Steps:</h3>
         <ol>
-          <li><strong>Collect Your Sign:</strong> We'll email you the sign collection details separately.</li>
-          <li><strong>Decorate Your Home:</strong> Make sure your Christmas lights display is ready for the cruise dates in December ${escapeHtml(args.competition.year)}.</li>
-          <li><strong>Be Visible:</strong> Ensure your lights are switched on during cruise hours (we'll send you the schedule closer to the date).</li>
+          <li><strong>Collect Your Sign:</strong> ${collectSign}</li>
+          <li><strong>Put Your Sign Up:</strong> Display it on your canal side and light it so it can be seen at night. The QR code is how people vote for you.</li>
+          <li><strong>Decorate Your Home:</strong> ${decorate}</li>
+          <li><strong>Be Visible:</strong> ${beVisible}</li>
           <li><strong>Share the Joy:</strong> Tell your friends and neighbours about the event!</li>
           <li><strong>Stay Updated:</strong> Keep an eye on your email for important updates about the cruise schedule.</li>
         </ol>
+
+        ${schedule}
 
         <p><a href="${escapeHtml(email.myEntriesUrl())}" style="display: inline-block; padding: 12px 24px; background-color: #16a34a; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Your Entry</a></p>
 

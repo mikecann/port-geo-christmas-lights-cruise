@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Doc, Id } from "../../_generated/dataModel";
 import { email, escapeHtml } from "./model";
+import { event } from "../../../shared/event";
 
 const entry = {
   _id: "entry" as Id<"entries">,
@@ -38,6 +39,21 @@ describe("entry emails", () => {
     expect(html).toContain("sign collection details separately");
     expect(html).not.toContain("35 Keel Retreat");
     expect(html).not.toContain("Sunday 30th");
+  });
+
+  it("give this year's sign collection and cruise times", () => {
+    const html = email.approvalHtml({
+      entry,
+      entryNumber: 7,
+      competition: { year: event.year } as Doc<"competitions">,
+    });
+    expect(html).toContain(
+      "collect it from Sunday 29 November to Friday 4 December at 35 Keel Retreat",
+    );
+    expect(html).toContain("first cruise on Friday 4 December");
+    expect(html).toContain("7:30pm and 8:30pm: Thu 17 Dec");
+    expect(html).toContain('href="/tickets"');
+    expect(html).not.toContain("sign collection details separately");
   });
 
   it("give the cruise month for the entry's competition year", () => {
