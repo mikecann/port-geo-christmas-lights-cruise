@@ -20,6 +20,7 @@ import type * as admin_system_users from "../admin/system/users.js";
 import type * as admin_system_votes from "../admin/system/votes.js";
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
+import type * as features_auth_model from "../features/auth/model.js";
 import type * as features_common_auth from "../features/common/auth.js";
 import type * as features_common_lib from "../features/common/lib.js";
 import type * as features_competitions_model from "../features/competitions/model.js";
@@ -67,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   "admin/system/votes": typeof admin_system_votes;
   auth: typeof auth;
   crons: typeof crons;
+  "features/auth/model": typeof features_auth_model;
   "features/common/auth": typeof features_common_auth;
   "features/common/lib": typeof features_common_lib;
   "features/competitions/model": typeof features_competitions_model;

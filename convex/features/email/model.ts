@@ -1,10 +1,11 @@
 import { components } from "../../_generated/api";
 import { Resend } from "@convex-dev/resend";
-import type { MutationCtx } from "../../_generated/server";
+import type { ActionCtx, MutationCtx } from "../../_generated/server";
 import type { Doc, Id } from "../../_generated/dataModel";
 import { entries } from "../entries/model";
 import { competitions } from "../competitions/model";
 import { users } from "../users/model";
+import { SIGN_IN_CODE_LIFETIME_MINUTES } from "../../../shared/auth";
 
 // Entry names, addresses and rejection reasons are user or admin written text
 export function escapeHtml(value: unknown) {
@@ -38,6 +39,30 @@ export const email = {
       subject: "Test Email",
       html: "<p>This is a test email from the system admin.</p>",
     });
+  },
+
+  // The code leads the subject so it shows in the phone's notification, and
+  // phones can offer it to the code field from there
+  async sendSignInCode(
+    ctx: MutationCtx | ActionCtx,
+    args: { to: string; code: string },
+  ) {
+    await resend.sendEmail(ctx, {
+      from: email.adminFromAddress,
+      to: args.to,
+      subject: `${args.code} is your Port Geographe Christmas Cruise sign-in code`,
+      html: email.signInCodeHtml(args),
+      text: `Your sign-in code is ${args.code}. It works for ${SIGN_IN_CODE_LIFETIME_MINUTES} minutes. If you didn't ask for it, you can ignore this email.`,
+    });
+  },
+
+  signInCodeHtml(args: { code: string }) {
+    return `
+        <p>Your sign-in code for the Port Geographe Christmas Lights Cruise is:</p>
+        <p style="font-size: 32px; font-weight: bold; letter-spacing: 6px; margin: 20px 0;">${escapeHtml(args.code)}</p>
+        <p>It works for ${SIGN_IN_CODE_LIFETIME_MINUTES} minutes.</p>
+        <p style="color: #666; font-size: 14px; margin-top: 30px;">If you didn't ask for this code, you can ignore this email.</p>
+      `;
   },
 
   async sendNewEntryNotificationToCompetitionAdmins(

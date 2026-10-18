@@ -106,3 +106,20 @@ export const cleanupStuckUploads = mutation
     };
   })
   .internal();
+
+// Convex Auth finds a sign-in code by its value and leaves expired ones
+// behind. Codes are only 6 digits, so clearing them stops a new code clashing
+// with an old one.
+export const cleanupExpiredSignInCodes = mutation
+  .input({})
+  .handler(async (ctx) => {
+    const now = Date.now();
+    let deleted = 0;
+    for (const code of await ctx.db.query("authVerificationCodes").take(1000))
+      if (code.expirationTime < now) {
+        await ctx.db.delete(code._id);
+        deleted++;
+      }
+    return { deleted };
+  })
+  .internal();

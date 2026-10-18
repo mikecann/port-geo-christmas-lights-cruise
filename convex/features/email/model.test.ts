@@ -46,3 +46,11 @@ describe("entry emails", () => {
     ).toContain("cruise dates in December 2027");
   });
 });
+
+describe("sign-in code email", () => {
+  it("shows the code and how long it lasts", () => {
+    const html = email.signInCodeHtml({ code: "042917" });
+    expect(html).toContain(">042917<");
+    expect(html).toContain("10 minutes");
+  });
+});

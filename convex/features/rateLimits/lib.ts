@@ -14,17 +14,28 @@ const limits = {
   enterCompetition: { kind: "token bucket", rate: 5, period: HOUR },
   // Shared by vote and cancel so flipping a vote back and forth is limited too
   changeVote: { kind: "token bucket", rate: 30, period: 10 * MINUTE },
+  // Keyed by email: each code is an email sent. A few quick resends are fine,
+  // then one every 6 minutes.
+  sendSignInCode: { kind: "token bucket", rate: 10, period: HOUR, capacity: 5 },
 } as const;
 
 export const rateLimiter = new RateLimiter(components.rateLimiter, limits);
 
 export type RateLimitName = keyof typeof limits;
 
+export async function enforceRateLimit(
+  ctx: MutationCtx | ActionCtx,
+  name: RateLimitName,
+  key: string,
+) {
+  const { ok } = await rateLimiter.limit(ctx, name, { key });
+  if (!ok) throw new ConvexError(RATE_LIMITED_MESSAGE);
+}
+
 export async function enforceUserRateLimit(
   ctx: MutationCtx | ActionCtx,
   name: RateLimitName,
   userId: Id<"users">,
 ) {
-  const { ok } = await rateLimiter.limit(ctx, name, { key: userId });
-  if (!ok) throw new ConvexError(RATE_LIMITED_MESSAGE);
+  await enforceRateLimit(ctx, name, userId);
 }

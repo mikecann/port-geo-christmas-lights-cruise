@@ -11,4 +11,11 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "cleanup expired sign-in codes",
+  { hours: 1 },
+  internal.internal.cleanup.cleanupExpiredSignInCodes,
+  {},
+);
+
 export default crons;
