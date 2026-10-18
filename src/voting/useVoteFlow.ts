@@ -17,6 +17,8 @@ import {
 } from "../../convex/features/votes/schema";
 import { useGeoToken } from "./useGeoToken";
 import { pendingVoteAction, pendingVotes } from "./pendingVote";
+import { seenAnswerFromVotes, voteButtonStatus } from "./voteButtons";
+import { showVoteToast } from "./voteToast";
 
 export type VoteFlowEntry = {
   _id: Id<"entries">;
@@ -52,10 +54,7 @@ export type VoteFlowStep =
   // They can answer and tap Vote before signing in; it sends once they're in
   | ({ step: "signedOut" } & InPersonCheck)
   | { step: "ownEntry" }
-  // At least one of their votes is for this entry
-  | ({ step: "voted"; votes: MyVotes } & InPersonCheck)
-  // Votes for other entries would move here, and ones for this entry are
-  // being changed
+  // Signed in, with their votes in each category, on this entry or another
   | ({ step: "choose"; votes: MyVotes } & InPersonCheck);
 
 export function useVoteFlow(entry: VoteFlowEntry) {
@@ -78,17 +77,17 @@ export function useVoteFlow(entry: VoteFlowEntry) {
   // moving to another entry starts unanswered again
   const [seen, setSeen] = useState<{
     entryId: Id<"entries">;
-    answer: boolean;
+    answer: boolean | null;
   } | null>(null);
-  const sawInPerson = seen?.entryId === entry._id ? seen.answer : null;
   const setSawInPerson = (answer: boolean | null) =>
-    setSeen(answer === null ? null : { entryId: entry._id, answer });
-  const [isChanging, setIsChanging] = useState(false);
-  // What's being sent: a vote in one category, or removing their votes here
-  const [busy, setBusy] = useState<VoteCategory | "remove" | null>(null);
+    setSeen({ entryId: entry._id, answer });
+  // The category being sent, voted or removed
+  const [busy, setBusy] = useState<VoteCategory | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
   // The category whose vote for another entry they'd move here
   const [switching, setSwitching] = useState<VoteCategory | null>(null);
+  // The category whose vote here they've tapped, while it asks to remove it
+  const [removing, setRemoving] = useState<VoteCategory | null>(null);
 
   const analytics = {
     entry_id: entry._id,
@@ -122,11 +121,14 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     if (mine === undefined) return { step: "loading" };
     if (mine.isOwnEntry) return { step: "ownEntry" };
 
-    const { votes } = mine;
-    if (votesOn(votes, entry._id).length > 0 && !isChanging)
-      return { step: "voted", votes, ...inPersonCheck };
-    return { step: "choose", votes, ...inPersonCheck };
+    return { step: "choose", votes: mine.votes, ...inPersonCheck };
   })();
+  const votes = state.step === "choose" ? state.votes : null;
+  // Until they answer on this page, what their votes here were sent with
+  const sawInPerson =
+    seen?.entryId === entry._id
+      ? seen.answer
+      : seenAnswerFromVotes(votes, entry._id);
 
   // Set straight away, unlike isBusy, so a second tap in the same moment
   // can't send it again
@@ -149,8 +151,8 @@ export function useVoteFlow(entry: VoteFlowEntry) {
       { ...analytics, category },
     )
       .then(() => {
-        setIsChanging(false);
         setSwitching(null);
+        showVoteToast(category, "sent");
       })
       .catch(onApiError)
       .finally(() => {
@@ -177,11 +179,7 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     if (action === "drop" || action === "ask") return;
     setSawInPerson(pending.sawInPerson);
     if (action === "send") send(pending.category, pending.sawInPerson);
-    else {
-      // The sheet shows over the vote buttons, not the receipt
-      setIsChanging(true);
-      setSwitching(pending.category);
-    }
+    else setSwitching(pending.category);
   });
   useLayoutEffect(() => {
     // Signing in and the location check both finish outside React, so this
@@ -213,19 +211,23 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     return () => window.removeEventListener("pageshow", onPageShow);
   }, []);
 
-  // Their votes for this entry, in every category
-  const removeHere = () => {
-    if (state.step !== "choose") return;
-    const here = votesOn(state.votes, entry._id);
-    setBusy("remove");
-    void Promise.all(here.map((vote) => cancelMutation({ voteId: vote._id })))
+  // Their vote in this category, once they've said yes to removing it
+  const remove = () => {
+    const vote = removing && votes?.[removing];
+    if (!vote || vote.entry._id !== entry._id || isSending.current) return;
+    isSending.current = true;
+    setBusy(vote.category);
+    void cancelMutation({ voteId: vote._id })
       .then(() => {
-        setIsChanging(false);
-        for (const vote of here)
-          track("vote_cancelled", { ...analytics, category: vote.category });
+        setRemoving(null);
+        track("vote_cancelled", { ...analytics, category: vote.category });
+        showVoteToast(vote.category, "removed");
       })
       .catch(onApiError)
-      .finally(() => setBusy(null));
+      .finally(() => {
+        isSending.current = false;
+        setBusy(null);
+      });
   };
 
   return {
@@ -233,7 +235,16 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     sawInPerson,
     setSawInPerson,
     busy,
-    // A vote button: sign in first, or check before moving their vote
+    status: (category: VoteCategory) =>
+      voteButtonStatus(
+        votes,
+        category,
+        entry._id,
+        sawInPerson,
+        inPersonAllowed,
+      ),
+    // A vote button: sign in first, offer to remove a vote that's here, or
+    // check before moving one from another entry
     vote: (category: VoteCategory) => {
       if (state.step === "signedOut") {
         pendingVotes.save(entry._id, category, sawInPerson);
@@ -242,12 +253,16 @@ export function useVoteFlow(entry: VoteFlowEntry) {
       }
       // Tapped themselves, so a stored one mustn't follow it
       pendingVotes.take(entry._id);
-      const existing = state.step === "choose" ? state.votes[category] : null;
-      if (existing && existing.entry._id !== entry._id) {
-        setSwitching(category);
-        return;
-      }
-      send(category, sawInPerson);
+      const status = voteButtonStatus(
+        votes,
+        category,
+        entry._id,
+        sawInPerson,
+        inPersonAllowed,
+      );
+      if (status === "voted") setRemoving(category);
+      else if (status === "move") setSwitching(category);
+      else send(category, sawInPerson);
     },
     isSigningIn: isSheetOpen,
     leaveForGoogle: () => pendingVotes.setAtGoogle(true),
@@ -261,12 +276,9 @@ export function useVoteFlow(entry: VoteFlowEntry) {
       if (switching) send(switching, sawInPerson);
     },
     cancelSwitch: () => setSwitching(null),
-    removeHere,
+    removing: state.step === "choose" ? removing : null,
+    confirmRemove: remove,
+    cancelRemove: () => setRemoving(null),
     retryLocation: geo.retry,
-    startChanging: () => {
-      setSeen(null);
-      setIsChanging(true);
-    },
-    stopChanging: () => setIsChanging(false),
   };
 }

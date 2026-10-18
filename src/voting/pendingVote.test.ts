@@ -185,12 +185,6 @@ describe("pendingVoteAction", () => {
     inPersonAllowed,
     canRetryLocation: false,
   });
-  const voted = (votes: Partial<MyVotes>): VoteFlowStep => ({
-    step: "voted",
-    votes: { ...noVotes, ...votes },
-    inPersonAllowed: true,
-    canRetryLocation: false,
-  });
 
   const signedOut: VoteFlowStep = {
     step: "signedOut",
@@ -271,9 +265,13 @@ describe("pendingVoteAction", () => {
   it("sends the other category when they've already voted one here", () => {
     const here = { best_display: voteFor("entry1", "best_display") };
     expect(
-      pendingVoteAction(voted(here), fromGoogle(true, "most_jolly"), false),
+      pendingVoteAction(
+        choose(true, here),
+        fromGoogle(true, "most_jolly"),
+        false,
+      ),
     ).toBe("send");
-    expect(pendingVoteAction(voted(here), fromGoogle(true), false)).toBe(
+    expect(pendingVoteAction(choose(true, here), fromGoogle(true), false)).toBe(
       "drop",
     );
   });

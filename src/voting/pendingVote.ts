@@ -150,7 +150,7 @@ export function pendingVoteAction(
   // Only a sign-in they started for it sends it, not one later on
   if (!isSheetOpen && !pending.isAtGoogle) return "drop";
   // Their own entry, or voting closed meanwhile
-  if (state.step !== "choose" && state.step !== "voted") return "drop";
+  if (state.step !== "choose") return "drop";
   const existing = state.votes[pending.category];
   // Already voted for it in this category
   if (existing?.entry._id === pending.entryId) return "drop";

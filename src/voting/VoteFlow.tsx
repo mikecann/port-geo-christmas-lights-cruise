@@ -1,22 +1,29 @@
-import { Stack } from "@mantine/core";
+import { Anchor, Stack } from "@mantine/core";
 import { VOTE_CATEGORIES } from "../../convex/features/votes/schema";
+import { routes } from "../routes";
 import { useVoteFlow, votesOn, type VoteFlowEntry } from "./useVoteFlow";
 import {
   CastVoteButton,
   CategoryVoteButtons,
-  ChangeVoteOptions,
   InPersonSlot,
   OwnEntryNotice,
+  RemoveVoteConfirm,
   SignInSheet,
   SwitchVoteSheet,
   VoteBarLoading,
-  VoteReceipt,
   VotedForOtherEntries,
   VotingClosedNotice,
 } from "./VoteFlowParts";
 
+const SINGLE_BUTTON_LABELS = {
+  vote: "Vote for",
+  voted: "Voted for",
+  update: "Update my vote for",
+  move: "Switch my vote to",
+};
+
 // The vote page's bottom bar: everything between seeing an entry and "your
-// vote is in"
+// vote is in". It stays as it is after a vote, so the other one is a tap away.
 export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
   const flow = useVoteFlow(entry);
   const { state } = flow;
@@ -24,19 +31,11 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
   if (state.step === "loading") return <VoteBarLoading />;
   if (state.step === "closed") return <VotingClosedNotice year={state.year} />;
   if (state.step === "ownEntry") return <OwnEntryNotice />;
-  if (state.step === "voted")
-    return (
-      <VoteReceipt
-        entryNumber={entry.entryNumber}
-        votes={votesOn(state.votes, entry._id)}
-        onChange={flow.startChanging}
-      />
-    );
 
   const votes = state.step === "choose" ? state.votes : null;
   const isHere = (vote: { entry: { _id: string } } | null | undefined) =>
     vote?.entry._id === entry._id;
-  const votesHere = votes ? votesOn(votes, entry._id) : [];
+  const hasVotedHere = votes ? votesOn(votes, entry._id).length > 0 : false;
   const needsSeenAnswer =
     state.inPersonAllowed === true && flow.sawInPerson === null;
   // Most Jolly is only for people who've seen it, so only they get both
@@ -49,7 +48,7 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
     const vote = votes?.[category];
     return vote && !isHere(vote) ? [vote] : [];
   });
-  const bestDisplay = votes?.best_display;
+  const bestDisplayStatus = flow.status("best_display");
 
   return (
     <Stack gap="sm">
@@ -63,34 +62,37 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
       />
       {canVoteMostJolly ? (
         <CategoryVoteButtons
-          isVotedHere={(category) => isHere(votes?.[category])}
+          status={flow.status}
           busy={flow.busy}
+          removing={flow.removing}
           onVote={flow.vote}
+          onRemove={flow.confirmRemove}
+          onKeep={flow.cancelRemove}
         />
       ) : (
-        <CastVoteButton
-          label={
-            bestDisplay
-              ? isHere(bestDisplay)
-                ? `Update my vote for #${entry.entryNumber}`
-                : `Switch my vote to #${entry.entryNumber}`
-              : `Vote for #${entry.entryNumber}`
-          }
+        <RemoveVoteConfirm
+          category="best_display"
+          opened={flow.removing === "best_display"}
           isBusy={flow.busy === "best_display"}
-          // Wait for the location check, so the switch shows before they vote,
-          // and then for an answer, so nobody is counted as "not seen" by
-          // missing it
-          disabled={state.inPersonAllowed === null || needsSeenAnswer}
-          onClick={() => flow.vote("best_display")}
-        />
+          onRemove={flow.confirmRemove}
+          onKeep={flow.cancelRemove}
+        >
+          <CastVoteButton
+            label={`${SINGLE_BUTTON_LABELS[bestDisplayStatus]} #${entry.entryNumber}`}
+            isVoted={bestDisplayStatus === "voted"}
+            isBusy={flow.busy === "best_display"}
+            // Wait for the location check, so the switch shows before they vote,
+            // and then for an answer, so nobody is counted as "not seen" by
+            // missing it
+            disabled={state.inPersonAllowed === null || needsSeenAnswer}
+            onClick={() => flow.vote("best_display")}
+          />
+        </RemoveVoteConfirm>
       )}
-      {votesHere.length > 0 && (
-        <ChangeVoteOptions
-          voteCount={votesHere.length}
-          isBusy={flow.busy === "remove"}
-          onRemove={flow.removeHere}
-          onKeep={flow.stopChanging}
-        />
+      {hasVotedHere && (
+        <Anchor size="sm" ta="center" {...routes.entries().link}>
+          All displays
+        </Anchor>
       )}
       <SignInSheet
         opened={flow.isSigningIn}
