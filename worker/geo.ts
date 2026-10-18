@@ -48,7 +48,10 @@ export async function handleGeoRequest(
 ): Promise<Response> {
   const cf = (request as Request & { cf?: Partial<CfLocation> }).cf;
   const token = secret
-    ? await signGeoToken({ ...locationFromCf(cf), issuedAt: now }, secret)
+    ? await signGeoToken(
+        { ...locationFromCf(cf), issuedAt: now, nonce: crypto.randomUUID() },
+        secret,
+      )
     : null;
   return Response.json(
     { token },

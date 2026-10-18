@@ -4,6 +4,7 @@ import {
   GEO_TOKEN_LIFETIME_MS,
   signGeoToken,
   verifyGeoToken,
+  type GeoTokenPayload,
 } from "../shared/geoToken";
 
 const secret = "test-geo-secret";
@@ -56,8 +57,24 @@ describe("handleGeoRequest", () => {
         latitude: -33.65,
         longitude: 115.35,
         issuedAt: now,
+        nonce: expect.any(String),
       },
     });
+  });
+
+  it("gives every token its own nonce, so each can only be used once", async () => {
+    const nonces = new Set<string>();
+    for (let i = 0; i < 3; i++) {
+      const response = await handleGeoRequest(
+        requestFrom(busselton),
+        secret,
+        now,
+      );
+      const { token } = (await response.json()) as { token: string };
+      const check = await verifyGeoToken(token, secret, now);
+      if (check.ok) nonces.add(check.payload.nonce);
+    }
+    expect(nonces.size).toBe(3);
   });
 
   it("gives no token when the secret isn't set", async () => {
@@ -71,10 +88,12 @@ describe("handleGeoRequest", () => {
 });
 
 describe("verifyGeoToken", () => {
+  const nonce = "0123456789abcdef";
   const sign = (issuedAt = now) =>
-    signGeoToken({ country: "AU", city: "Perth", issuedAt }, secret);
+    signGeoToken({ country: "AU", city: "Perth", issuedAt, nonce }, secret);
 
-  it("accepts a token until it's 15 minutes old", async () => {
+  it("accepts a token until it's 10 minutes old", async () => {
+    expect(GEO_TOKEN_LIFETIME_MS).toBe(10 * 60_000);
     const token = await sign();
     expect(
       (await verifyGeoToken(token, secret, now + GEO_TOKEN_LIFETIME_MS)).ok,
@@ -92,7 +111,7 @@ describe("verifyGeoToken", () => {
 
   it("rejects a token signed with another secret", async () => {
     const token = await signGeoToken(
-      { country: "AU", issuedAt: now },
+      { country: "AU", issuedAt: now, nonce },
       "someone-elses-secret",
     );
     expect(await verifyGeoToken(token, secret, now)).toEqual({
@@ -103,13 +122,24 @@ describe("verifyGeoToken", () => {
 
   it("rejects a token whose location was changed", async () => {
     const [, signature] = (await sign()).split(".");
-    const forged = btoa(JSON.stringify({ country: "AU", issuedAt: now }))
+    const forged = btoa(JSON.stringify({ country: "AU", issuedAt: now, nonce }))
       .replace(/=+$/, "")
       .replace(/\+/g, "-")
       .replace(/\//g, "_");
     expect(await verifyGeoToken(`${forged}.${signature}`, secret, now)).toEqual(
       { ok: false, reason: "invalid" },
     );
+  });
+
+  it("rejects a token signed before tokens had a nonce", async () => {
+    const token = await signGeoToken(
+      { country: "AU", issuedAt: now } as GeoTokenPayload,
+      secret,
+    );
+    expect(await verifyGeoToken(token, secret, now)).toEqual({
+      ok: false,
+      reason: "invalid",
+    });
   });
 
   it("rejects things that aren't tokens", async () => {
@@ -122,7 +152,7 @@ describe("verifyGeoToken", () => {
 
   it("keeps non-ASCII place names intact", async () => {
     const token = await signGeoToken(
-      { country: "NZ", city: "Ōtautahi", issuedAt: now },
+      { country: "NZ", city: "Ōtautahi", issuedAt: now, nonce },
       secret,
     );
     const check = await verifyGeoToken(token, secret, now);

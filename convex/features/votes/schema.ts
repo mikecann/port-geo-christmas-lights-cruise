@@ -42,6 +42,8 @@ export const LOCATION_CHECKS = [
   "invalid",
   "expired",
   "not_configured",
+  // A genuine token that had already been used for a vote
+  "reused",
 ] as const;
 
 export type LocationCheck = (typeof LOCATION_CHECKS)[number];
@@ -63,6 +65,15 @@ export const voterLocationValidator = v.object({
 });
 
 export type VoterLocation = typeof voterLocationValidator.type;
+
+// Each location token's nonce, once a vote has used it. Rows can go once the
+// token would have expired anyway.
+export const usedGeoTokenTable = defineTable({
+  nonce: v.string(),
+  issuedAt: v.number(),
+})
+  .index("by_nonce", ["nonce"])
+  .index("by_issuedAt", ["issuedAt"]);
 
 const commonVoteFields = {
   competitionId: v.id("competitions"),

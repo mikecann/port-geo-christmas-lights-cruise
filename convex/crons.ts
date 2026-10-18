@@ -18,4 +18,11 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "cleanup used location tokens",
+  { hours: 1 },
+  internal.internal.cleanup.cleanupUsedGeoTokens,
+  {},
+);
+
 export default crons;

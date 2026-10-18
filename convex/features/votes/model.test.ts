@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { api } from "../../_generated/api";
+import { api, internal } from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type {
   AuthenticatedConvexTest,
@@ -19,7 +19,8 @@ import { votingClosedMessage } from "../../../shared/eventStatus";
 import { GEO_TOKEN_LIFETIME_MS, signGeoToken } from "../../../shared/geoToken";
 import { competitions } from "../competitions/model";
 import { aggregateVotes, voteNamespace, type VoteTally } from "./lib";
-import { OWN_ENTRY_VOTE_MESSAGE } from "./model";
+import { OWN_ENTRY_VOTE_MESSAGE, SAME_INBOX_VOTE_MESSAGE } from "./model";
+import { canonicalEmail } from "../../../shared/auth";
 import { rankEntries } from "./results";
 
 const secret = "test-geo-secret";
@@ -41,7 +42,7 @@ const sydney = {
 const london = { country: "GB", region: "England", city: "London" };
 
 const geoToken = (location: object, issuedAt = Date.now()) =>
-  signGeoToken({ ...location, issuedAt }, secret);
+  signGeoToken({ ...location, issuedAt, nonce: crypto.randomUUID() }, secret);
 
 const countVotes = (t: AuthenticatedConvexTest, tally: VoteTally) =>
   t.run(async (ctx) => {
@@ -249,12 +250,90 @@ describe("no self-votes", () => {
   });
 });
 
+describe("one vote per inbox", () => {
+  const voteAs = async (
+    base: ConvexTest,
+    email: string,
+    entryId: Id<"entries">,
+  ) =>
+    (
+      await signInAs(base, { email, canonicalEmail: canonicalEmail(email) })
+    ).mutation(api.my.votes.vote, { entryId, sawInPerson: false });
+
+  it("won't take a second vote from another spelling of the same email", async () => {
+    const { base, t } = await setup();
+    await openVoting(t);
+    const entry = await createApprovedTestEntryToVoteFor(t);
+    await voteAs(base, "john.smith@gmail.com", entry._id);
+
+    for (const email of ["johnsmith@gmail.com", "john.smith+2@googlemail.com"])
+      await expect(voteAs(base, email, entry._id)).rejects.toThrow(
+        SAME_INBOX_VOTE_MESSAGE,
+      );
+    expect(await storedVotes(t)).toHaveLength(1);
+
+    // A different person is fine
+    await voteAs(base, "jane.smith@gmail.com", entry._id);
+    expect(await storedVotes(t)).toHaveLength(2);
+  });
+
+  it("works for users the backfill hasn't reached yet", async () => {
+    const { base, t } = await setup();
+    await openVoting(t);
+    const entry = await createApprovedTestEntryToVoteFor(t);
+    await voteAs(base, "jane.doe@outlook.com", entry._id);
+
+    const unfilled = await signInAs(base, { email: "jane.doe+x@outlook.com" });
+    await expect(
+      unfilled.mutation(api.my.votes.vote, {
+        entryId: entry._id,
+        sawInPerson: false,
+      }),
+    ).rejects.toThrow(SAME_INBOX_VOTE_MESSAGE);
+  });
+
+  it("still lets them change their own vote", async () => {
+    const { base, t } = await setup();
+    await openVoting(t);
+    const first = await createApprovedTestEntryToVoteFor(t);
+    const second = await createApprovedTestEntryToVoteFor(t);
+    const voter = await signInAs(base, {
+      email: "john.smith@gmail.com",
+      canonicalEmail: "johnsmith@gmail.com",
+    });
+
+    for (const entry of [first, second])
+      await voter.mutation(api.my.votes.vote, {
+        entryId: entry._id,
+        sawInPerson: false,
+      });
+
+    expect((await storedVotes(t)).map((vote) => vote.entryId)).toEqual([
+      second._id,
+    ]);
+  });
+
+  it("counts an entry from another spelling of their email as their own", async () => {
+    const { base, t } = await setup();
+    await openVoting(t);
+    const entry = await createApprovedTestEntryToVoteFor(t, {
+      email: "john.smith@gmail.com",
+      canonicalEmail: "johnsmith@gmail.com",
+    });
+
+    await expect(
+      voteAs(base, "johnsmith+vote@gmail.com", entry._id),
+    ).rejects.toThrow(OWN_ENTRY_VOTE_MESSAGE);
+  });
+});
+
 describe("in-person votes", () => {
+  let base: ConvexTest;
   let t: AuthenticatedConvexTest;
   let entryId: Id<"entries">;
 
   beforeEach(async () => {
-    ({ t } = await setup());
+    ({ base, t } = await setup());
     await openVoting(t);
     entryId = (await createApprovedTestEntryToVoteFor(t))._id;
   });
@@ -317,7 +396,7 @@ describe("in-person votes", () => {
     });
 
     const forged = await signGeoToken(
-      { ...busselton, issuedAt: Date.now() },
+      { ...busselton, issuedAt: Date.now(), nonce: crypto.randomUUID() },
       "a-guessed-secret",
     );
     expect(await vote({ sawInPerson: true, geoToken: forged })).toEqual({
@@ -377,6 +456,56 @@ describe("in-person votes", () => {
     });
   });
 
+  it("only accepts each location token once", async () => {
+    const token = await geoToken(busselton);
+    expect(await vote({ sawInPerson: true, geoToken: token })).toEqual({
+      inPerson: true,
+      locationCheck: "ok",
+    });
+
+    // Passed on to someone else, or sent again
+    const friend = await signInAs(base, { name: "Friend" });
+    expect(
+      await friend.mutation(api.my.votes.vote, {
+        entryId,
+        sawInPerson: true,
+        geoToken: token,
+      }),
+    ).toEqual({ inPerson: false, locationCheck: "reused" });
+    expect(await vote({ sawInPerson: true, geoToken: token })).toEqual({
+      inPerson: false,
+      locationCheck: "reused",
+    });
+    expect((await theVote()).location).toBeUndefined();
+
+    // A fresh one works again
+    expect(
+      await vote({ sawInPerson: true, geoToken: await geoToken(busselton) }),
+    ).toEqual({ inPerson: true, locationCheck: "ok" });
+  });
+
+  it("forgets used tokens once they'd have expired anyway", async () => {
+    await vote({ sawInPerson: true, geoToken: await geoToken(busselton) });
+    const old = await geoToken(busselton, Date.now() - GEO_TOKEN_LIFETIME_MS);
+    await vote({ sawInPerson: true, geoToken: old });
+    expect(
+      await t.run((ctx) => ctx.db.query("usedGeoTokens").collect()),
+    ).toHaveLength(2);
+
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + 1);
+    try {
+      expect(
+        await t.mutation(internal.internal.cleanup.cleanupUsedGeoTokens, {}),
+      ).toEqual({ deleted: 1 });
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(
+      await t.run((ctx) => ctx.db.query("usedGeoTokens").collect()),
+    ).toHaveLength(1);
+  });
+
   it("moves the count when a vote changes to in person", async () => {
     await vote({ sawInPerson: false, geoToken: await geoToken(busselton) });
     expect(await countVotes(t, "online")).toBe(1);
@@ -393,7 +522,6 @@ describe("results", () => {
     await openVoting(t);
     const a = await createApprovedTestEntryToVoteFor(t, { name: "A" });
     const b = await createApprovedTestEntryToVoteFor(t, { name: "B" });
-    const fromBusselton = await geoToken(busselton);
     const ballots = [
       { entryId: a._id, inPerson: true },
       { entryId: b._id, inPerson: false },
@@ -407,7 +535,7 @@ describe("results", () => {
       ).mutation(api.my.votes.vote, {
         entryId: ballot.entryId,
         sawInPerson: ballot.inPerson,
-        geoToken: fromBusselton,
+        geoToken: await geoToken(busselton),
       });
 
     const asAdmin = await signInAs(base, { isCompetitionAdmin: true });

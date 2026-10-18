@@ -1,14 +1,28 @@
 import { ConvexError } from "convex/values";
-import type { Id } from "../../_generated/dataModel";
+import type { Doc, Id } from "../../_generated/dataModel";
 import type { DatabaseReader, DatabaseWriter } from "../../_generated/server";
 import type { WithoutSystemFields } from "convex/server";
 import { isLegacyVote, type CurrentVoteDoc } from "./schema";
+import { canonicalEmail } from "../../../shared/auth";
 
 export const VOTE_ALREADY_REMOVED_MESSAGE =
   "That vote has already been removed.";
 
 export const OWN_ENTRY_VOTE_MESSAGE =
   "That's your own entry, so you can't vote for it. Thanks for lighting up the canals!";
+
+export const SAME_INBOX_VOTE_MESSAGE =
+  "You've already voted this year from another account with the same email address. Each person gets one vote, so sign in with that account if you'd like to change it.";
+
+// Saved at sign-in, and worked out here for anyone the backfill missed
+const canonicalEmailOf = (user: Doc<"users"> | null) =>
+  user?.canonicalEmail ??
+  (user?.email === undefined ? undefined : canonicalEmail(user.email));
+
+export const isSameInbox = (a: Doc<"users"> | null, b: Doc<"users"> | null) => {
+  const email = canonicalEmailOf(a);
+  return email !== undefined && email === canonicalEmailOf(b);
+};
 
 export const votes = {
   forUser(userId: Id<"users">) {
@@ -47,6 +61,26 @@ export const votes = {
         if (!existing) return await db.insert("votes", vote);
         await db.replace(existing._id, vote);
         return existing._id;
+      },
+
+      // One person can have an account for each spelling of their email (see
+      // canonicalEmail), so a vote from any of the others counts as theirs
+      async findFromSameInbox(
+        db: DatabaseReader,
+        competitionId: Id<"competitions">,
+      ) {
+        const email = canonicalEmailOf(await db.get(userId));
+        if (email === undefined) return null;
+        const others = await db
+          .query("users")
+          .withIndex("by_canonicalEmail", (q) => q.eq("canonicalEmail", email))
+          .take(20);
+        for (const other of others) {
+          if (other._id === userId || other.isTestUser === true) continue;
+          const vote = await votes.forUser(other._id).find(db, competitionId);
+          if (vote) return vote;
+        }
+        return null;
       },
     };
   },

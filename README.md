@@ -90,13 +90,13 @@ For example: `COMPETITION_ADMIN_EMAILS=ZOliver@aigleroyal.com.au, TJulian@aigler
 
 ### Voting
 
-Everyone gets one vote per competition, which they can change or remove until voting closes. Entrants can't vote for their own entry. A vote counts for In-Person Favourites and People's Choice when it's in person, and People's Choice only when it isn't.
+Everyone gets one vote per competition, which they can change or remove until voting closes. That's one per inbox too: accounts whose emails only differ by a `+tag`, or by dots for Gmail, share a vote. Entrants can't vote for their own entry. A vote counts for In-Person Favourites and People's Choice when it's in person, and People's Choice only when it isn't.
 
 The QR code on each house sign goes to `/v/<number>`, which opens this year's entry with that number. The QR code on the boat goes to `/vote`, where people type the number on the sign.
 
 #### The in-person check
 
-Convex can't see a voter's IP address, but the Cloudflare Worker can. `GET /api/geo` on the worker returns a token with Cloudflare's guess at where the visitor is (country, region, city, coordinates, timezone), signed with `GEO_TOKEN_SECRET` and good for 15 minutes. The vote mutation checks the signature and the age. A vote is in person only when the token is genuine, the country is in the competition's list (AU by default, and admins can narrow it to WA on the admin Votes page) and the voter ticks "I've seen this display in person". The location is saved on the vote so admins can review it.
+Convex can't see a voter's IP address, but the Cloudflare Worker can. `GET /api/geo` on the worker returns a token with Cloudflare's guess at where the visitor is (country, region, city, coordinates, timezone), signed with `GEO_TOKEN_SECRET` and good for 10 minutes. Each token has a random nonce and only works for one vote, so the vote page fetches a fresh one each time someone votes. The vote mutation checks the signature and the age, and records the nonce (an hourly cron clears old ones) so a token passed round or sent again counts for People's Choice only. A vote is in person only when the token is genuine, the country is in the competition's list (AU by default, and admins can narrow it to WA on the admin Votes page) and the voter ticks "I've seen this display in person". The location is saved on the vote so admins can review it.
 
 The worker and Convex need the same secret. If either is missing, nobody's vote counts as in person and the vote page says so. Generate one with `openssl rand -base64 32`, then:
 

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation } from "../features/common/lib";
+import { usedGeoTokenCutoff } from "../features/votes/location";
 
 // Photos stuck uploading for more than 5 minutes are considered abandoned
 const UPLOAD_TIMEOUT_MS = 5 * 60 * 1000;
@@ -121,5 +122,20 @@ export const cleanupExpiredSignInCodes = mutation
         deleted++;
       }
     return { deleted };
+  })
+  .internal();
+
+// A used location token's nonce only matters until the token expires
+export const cleanupUsedGeoTokens = mutation
+  .input({})
+  .handler(async (ctx) => {
+    const old = await ctx.db
+      .query("usedGeoTokens")
+      .withIndex("by_issuedAt", (q) =>
+        q.lt("issuedAt", usedGeoTokenCutoff(Date.now())),
+      )
+      .take(1000);
+    for (const row of old) await ctx.db.delete(row._id);
+    return { deleted: old.length };
   })
   .internal();

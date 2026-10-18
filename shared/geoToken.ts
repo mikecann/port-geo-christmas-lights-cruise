@@ -2,8 +2,9 @@ import { z } from "zod";
 
 // The Cloudflare Worker sees the voter's IP location and signs it, so the vote
 // mutation (which can't see the IP) can trust it. Both sides need the same
-// GEO_TOKEN_SECRET.
-export const GEO_TOKEN_LIFETIME_MS = 15 * 60_000;
+// GEO_TOKEN_SECRET. Each token has a random nonce and the vote mutation only
+// accepts it once, so a token can't be passed round for other people's votes.
+export const GEO_TOKEN_LIFETIME_MS = 10 * 60_000;
 // Allows for the worker's clock being a little ahead of Convex's
 const ALLOWED_CLOCK_SKEW_MS = 60_000;
 
@@ -19,6 +20,7 @@ const geoLocationSchema = z.object({
 
 const geoTokenPayloadSchema = geoLocationSchema.extend({
   issuedAt: z.number(),
+  nonce: z.string().min(16),
 });
 
 export type GeoLocation = z.infer<typeof geoLocationSchema>;

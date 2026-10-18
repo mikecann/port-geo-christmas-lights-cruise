@@ -18,6 +18,7 @@ export const LOCATION_CHECK_LABELS: Record<LocationCheck, string> = {
   invalid: "Location not genuine",
   expired: "Location too old",
   not_configured: "Check switched off",
+  reused: "Location used twice",
 };
 
 export const placeName = (location: VoterLocation | undefined) =>

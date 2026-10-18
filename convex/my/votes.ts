@@ -1,5 +1,10 @@
 import { userMutation, userQuery } from "../features/common/auth";
-import { OWN_ENTRY_VOTE_MESSAGE, votes } from "../features/votes/model";
+import {
+  isSameInbox,
+  OWN_ENTRY_VOTE_MESSAGE,
+  SAME_INBOX_VOTE_MESSAGE,
+  votes,
+} from "../features/votes/model";
 import { ConvexError, v } from "convex/values";
 import { locationCheckValidator } from "../features/votes/schema";
 import type { CurrentVoteDoc } from "../features/votes/schema";
@@ -10,7 +15,7 @@ import { votingClosedMessage } from "../../shared/eventStatus";
 import { competitions } from "../features/competitions/model";
 import { enforceUserRateLimit } from "../features/rateLimits/lib";
 import { VOTE_ALREADY_REMOVED_MESSAGE } from "../features/votes/model";
-import { checkVoterLocation } from "../features/votes/location";
+import { claimVoterLocation } from "../features/votes/location";
 import { publicEntryValidator } from "../features/entries/schema";
 
 function requireVotingToBeOpen(competition: Doc<"competitions">) {
@@ -79,7 +84,8 @@ export const vote = userMutation
     entryId: v.id("entries"),
     // The "I've seen this display in person" tick
     sawInPerson: v.boolean(),
-    // From the worker's /api/geo
+    // From the worker's /api/geo, fetched fresh for each vote as it only
+    // works once
     geoToken: v.optional(v.string()),
   })
   .returns(
@@ -98,17 +104,28 @@ export const vote = userMutation
       throw new ConvexError(
         "Sorry, that entry is from a past competition, so it can't be voted for.",
       );
-    if (entry.submittedByUserId === context.userId)
+    const [voter, entrant] = await Promise.all([
+      context.db.get(context.userId),
+      context.db.get(entry.submittedByUserId),
+    ]);
+    if (
+      entry.submittedByUserId === context.userId ||
+      isSameInbox(voter, entrant)
+    )
       throw new ConvexError(OWN_ENTRY_VOTE_MESSAGE);
+    const voterVotes = votes.forUser(context.userId);
+    if (await voterVotes.findFromSameInbox(context.db, competition._id))
+      throw new ConvexError(SAME_INBOX_VOTE_MESSAGE);
 
-    const { locationCheck, location } = await checkVoterLocation(
+    const { locationCheck, location } = await claimVoterLocation(
+      context.db,
       competitions.inPersonArea(competition),
       input.geoToken,
       Date.now(),
     );
     const inPerson = locationCheck === "ok" && input.sawInPerson;
 
-    await votes.forUser(context.userId).cast(context.db, {
+    await voterVotes.cast(context.db, {
       competitionId: competition._id,
       entryId: entry._id,
       inPerson,
