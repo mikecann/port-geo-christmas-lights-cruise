@@ -2,8 +2,8 @@ import { defineTable } from "convex/server";
 import { v } from "convex/values";
 import type { Doc } from "../../_generated/dataModel";
 
-// 2025's votes were one per category. From 2026 each person has one vote, and
-// these are only kept so the old votes stay valid and viewable.
+// Each person gets one vote per category per competition. Best display counts
+// for In-Person Favourites or People's Choice, and Most Jolly is in person only.
 export const VOTE_CATEGORIES = ["best_display", "most_jolly"] as const;
 
 export const voteCategoryValidator = v.union(
@@ -12,25 +12,13 @@ export const voteCategoryValidator = v.union(
 
 export type VoteCategory = (typeof VOTE_CATEGORIES)[number];
 
-// What people read about each category, on the vote screen and My Votes
+// Each category's name, and the few words under its button on the vote page
 export const VOTE_CATEGORY_DETAILS: Record<
   VoteCategory,
-  { title: string; description: string; whatToConsider: string }
+  { title: string; hint: string }
 > = {
-  best_display: {
-    title: "Best Display",
-    description:
-      "Best Display highlights creativity, visual impact and overall presentation of the lights.",
-    whatToConsider:
-      "Vote for the home that impresses you most with its creativity, scale, and technical execution.",
-  },
-  most_jolly: {
-    title: "Most Jolly",
-    description:
-      "Most Jolly celebrates festive spirit, warmth and joy conveyed by the display.",
-    whatToConsider:
-      "Vote for the home that brings the most Christmas cheer and warm fuzzy feelings. Look for homes that have gone the extra mile, dressing up, dancing, singing and welcoming boats!",
-  },
+  best_display: { title: "Best display", hint: "The lights" },
+  most_jolly: { title: "Most jolly", hint: "Dancing & dress-ups" },
 };
 
 // Why a vote did or didn't pass the IP location check. Only "ok" lets the
@@ -88,7 +76,12 @@ export const legacyVoteSchema = v.object({
 
 export const voteSchema = v.object({
   ...commonVoteFields,
-  // Counts for In-Person Favourites as well as People's Choice
+  // Missing on 2026 votes cast before Most Jolly became a public vote, which
+  // were all for best display. Read it with voteCategoryOf.
+  category: v.optional(voteCategoryValidator),
+  // Seen in person and the location check passed. A best display vote counts
+  // for In-Person Favourites when true and People's Choice when false. Most
+  // Jolly votes are always in person.
   inPerson: v.boolean(),
   // Their answer to "have you seen this display in person?". false when they
   // weren't asked because the location check failed.
@@ -117,8 +110,11 @@ export const voteTable = defineTable(v.union(legacyVoteSchema, voteSchema))
     "voterCanonicalEmail",
   ]);
 
-export type LegacyVoteDoc = Doc<"votes"> & { category: VoteCategory };
-export type CurrentVoteDoc = Exclude<Doc<"votes">, { category: VoteCategory }>;
+export type CurrentVoteDoc = Extract<Doc<"votes">, { inPerson: boolean }>;
+export type LegacyVoteDoc = Exclude<Doc<"votes">, { inPerson: boolean }>;
 
 export const isLegacyVote = (vote: Doc<"votes">): vote is LegacyVoteDoc =>
-  "category" in vote;
+  !("inPerson" in vote);
+
+export const voteCategoryOf = (vote: Doc<"votes">): VoteCategory =>
+  vote.category ?? "best_display";

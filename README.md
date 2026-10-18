@@ -90,13 +90,22 @@ For example: `COMPETITION_ADMIN_EMAILS=ZOliver@aigleroyal.com.au, TJulian@aigler
 
 ### Voting
 
-Everyone gets one vote per competition, which they can change or remove until voting closes. That's one per inbox too: accounts whose emails only differ by a `+tag`, or by dots for Gmail, share a vote. Entrants can't vote for their own entry. A vote counts for In-Person Favourites and People's Choice when it's in person, and People's Choice only when it isn't.
+There are two public votes, and everyone gets one vote in each per competition, which they can change or remove until voting closes:
+
+- **Best display.** It counts for In-Person Favourites when it's in person, and People's Choice when it isn't. They're separate pools: an in-person vote doesn't count for People's Choice too.
+- **Most Jolly** (dancing, dressing up and festive fun). Only in-person votes are allowed; the vote mutation turns anything else away.
+
+That's one vote per category per inbox too: accounts whose emails only differ by a `+tag`, or by dots for Gmail, share their votes. Entrants can't vote for their own entry in either. New Entrants and Judges' Favourites are judged, so they aren't voted on here.
+
+2026 votes cast before Most Jolly became a public vote (there are some on dev) have no `category`. They count as best display (`voteCategoryOf` in `convex/features/votes/schema.ts`), and their counts were already in the right place, so there's no backfill. Changing one of those votes saves it with its category. 2025's votes have a category and none of the in-person fields; they stay viewable on the admin Votes page for 2025.
+
+The vote counts come from `@convex-dev/aggregate` with one namespace per ranking, kept up to date by a trigger whenever a vote is cast, moved or removed: `in_person` (In-Person Favourites), `online` (People's Choice) and `most_jolly` (Most Jolly, shared with 2025's Most Jolly votes), plus `best_display` for 2025's best display votes.
 
 The QR code on each house sign goes to `/v/<number>`, which opens this year's entry with that number. The QR code on the boat goes to `/vote`, where people type the number on the sign.
 
 #### The in-person check
 
-Convex can't see a voter's IP address, but the Cloudflare Worker can. `GET /api/geo` on the worker returns a token with Cloudflare's guess at where the visitor is (country, region, city, coordinates, timezone), signed with `GEO_TOKEN_SECRET` and good for 10 minutes. Each token has a random nonce and only works for one vote, so the vote page fetches a fresh one each time someone votes. The vote mutation checks the signature and the age, and records the nonce (an hourly cron clears old ones) so a token passed round or sent again counts for People's Choice only. A vote is in person only when the token is genuine, the country is in the competition's list (AU by default, and admins can narrow it to WA on the admin Votes page) and the voter answers "I've seen it" on the vote page's three-way switch (the vote button stays greyed out until they pick "I've seen it" or "I haven't seen it"). The location is saved on the vote so admins can review it.
+Convex can't see a voter's IP address, but the Cloudflare Worker can. `GET /api/geo` on the worker returns a token with Cloudflare's guess at where the visitor is (country, region, city, coordinates, timezone), signed with `GEO_TOKEN_SECRET` and good for 10 minutes. Each token has a random nonce and only works for one vote, so the vote page fetches a fresh one each time someone votes. The vote mutation checks the signature and the age, and records the nonce (an hourly cron clears old ones) so a token passed round or sent again can only count for People's Choice. A vote is in person only when the token is genuine, the country is in the competition's list (AU by default, and admins can narrow it to WA on the admin Votes page) and the voter answers "I've seen it" on the vote page's three-way switch (the vote button stays greyed out until they pick "I've seen it" or "I haven't seen it"). With "I've seen it" and a passing check, the vote page shows a Best display and a Most jolly button side by side; otherwise it shows one button, for best display. The location is saved on the vote so admins can review it.
 
 The worker and Convex need the same secret. If either is missing, nobody's vote counts as in person and the vote page says so. Generate one with `openssl rand -base64 32`, then:
 
@@ -110,7 +119,7 @@ For local dev, put `GEO_TOKEN_SECRET=<secret>` in `.dev.vars` (gitignored, read 
 
 ### Admin area
 
-`/admin` is for competition admins (ARG) and system admins. It opens on an overview with the competition's status, switches to open and close entries and voting, and how many entries are waiting for review. The other pages are Entries (the review queue, then every entry), Numbers (the number range and which numbers are taken, kept for returning entrants or free), Votes (both rankings, flagged votes and the CSV), and People (finding people and making them admins). System admins also get a Danger zone page with the testing tools and wipes.
+`/admin` is for competition admins (ARG) and system admins. It opens on an overview with the competition's status, switches to open and close entries and voting, and how many entries are waiting for review. The other pages are Entries (the review queue, then every entry), Numbers (the number range and which numbers are taken, kept for returning entrants or free), Votes (the three rankings, flagged votes and the CSV), and People (finding people and making them admins). System admins also get a Danger zone page with the testing tools and wipes.
 
 ### Testing
 

@@ -1,11 +1,13 @@
 import { components } from "../../_generated/api";
 import type { DataModel, Doc, Id } from "../../_generated/dataModel";
 import { TableAggregate } from "@convex-dev/aggregate";
-import { isLegacyVote, type VoteCategory } from "./schema";
+import { isLegacyVote, voteCategoryOf, type VoteCategory } from "./schema";
 
-// 2025's votes count per category. From 2026 a vote is either in person or
-// online, so In-Person Favourites reads one namespace and People's Choice
-// adds the two. Keyed by entry, so each entry's count is a prefix count.
+// One namespace per ranking, so each prize reads one count per entry. From
+// 2026 a best display vote is in person (In-Person Favourites) or online
+// (People's Choice), never both. Most Jolly votes share 2025's tally, and
+// 2025's best display votes keep theirs. Keyed by entry, so each entry's
+// count is a prefix count.
 export type VoteTally = VoteCategory | "in_person" | "online";
 
 export const aggregateVotes = new TableAggregate<{
@@ -20,7 +22,8 @@ export const aggregateVotes = new TableAggregate<{
 });
 
 export function voteTally(vote: Doc<"votes">): VoteTally {
-  if (isLegacyVote(vote)) return vote.category;
+  const category = voteCategoryOf(vote);
+  if (isLegacyVote(vote) || category === "most_jolly") return category;
   return vote.inPerson ? "in_person" : "online";
 }
 

@@ -7,6 +7,7 @@ import {
   voteCategoryValidator,
   voterLocationValidator,
   isLegacyVote,
+  voteCategoryOf,
 } from "../../features/votes/schema";
 import { v } from "convex/values";
 import { convex } from "../../schema";
@@ -36,7 +37,7 @@ const rankedEntryValidator = v.object({
   votes: v.number(),
 });
 
-// One row per vote. 2025's votes have a category and none of the 2026 fields.
+// One row per vote. 2025's votes have none of the 2026 fields.
 const adminVoteValidator = v.object({
   _id: v.id("votes"),
   castAt: v.number(),
@@ -44,7 +45,7 @@ const adminVoteValidator = v.object({
   entryName: v.optional(v.string()),
   voterEmail: v.optional(v.string()),
   voterName: v.optional(v.string()),
-  category: v.optional(voteCategoryValidator),
+  category: voteCategoryValidator,
   inPerson: v.optional(v.boolean()),
   sawInPerson: v.optional(v.boolean()),
   locationCheck: v.optional(locationCheckValidator),
@@ -60,9 +61,9 @@ const toAdminVote = async (ctx: QueryCtx, vote: Doc<"votes">) => {
     entryName: entry?.name,
     voterEmail: voter?.email,
     voterName: voter?.name,
+    category: voteCategoryOf(vote),
   };
-  if (isLegacyVote(vote))
-    return { ...common, castAt: vote._creationTime, category: vote.category };
+  if (isLegacyVote(vote)) return { ...common, castAt: vote._creationTime };
   return {
     ...common,
     castAt: vote.castAt,
@@ -83,10 +84,8 @@ export const results = competitionAdminQuery
       year: v.number(),
       inPersonFavourites: v.array(rankedEntryValidator),
       peoplesChoice: v.array(rankedEntryValidator),
-      legacyCategories: v.object({
-        best_display: v.array(rankedEntryValidator),
-        most_jolly: v.array(rankedEntryValidator),
-      }),
+      mostJolly: v.array(rankedEntryValidator),
+      legacyBestDisplay: v.array(rankedEntryValidator),
     }),
   )
   .handler(async (context, input) => {

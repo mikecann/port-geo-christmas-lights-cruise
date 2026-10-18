@@ -6,13 +6,21 @@ import {
   votes,
 } from "../features/votes/model";
 import { ConvexError, v } from "convex/values";
-import { locationCheckValidator } from "../features/votes/schema";
-import type { CurrentVoteDoc } from "../features/votes/schema";
+import {
+  locationCheckValidator,
+  voteCategoryOf,
+  voteCategoryValidator,
+} from "../features/votes/schema";
+import type { CurrentVoteDoc, VoteCategory } from "../features/votes/schema";
 import { entries } from "../features/entries/model";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { votingClosedMessage } from "../../shared/eventStatus";
-import { SEEN_IN_PERSON_REQUIRED_MESSAGE } from "../../shared/voting";
+import {
+  LOCATION_RETRY_MESSAGE,
+  MOST_JOLLY_IN_PERSON_MESSAGE,
+  SEEN_IN_PERSON_REQUIRED_MESSAGE,
+} from "../../shared/voting";
 import { competitions } from "../features/competitions/model";
 import { enforceUserRateLimit } from "../features/rateLimits/lib";
 import { VOTE_ALREADY_REMOVED_MESSAGE } from "../features/votes/model";
@@ -26,19 +34,27 @@ function requireVotingToBeOpen(competition: Doc<"competitions">) {
 
 const myVoteValidator = v.object({
   _id: v.id("votes"),
+  category: voteCategoryValidator,
   entry: publicEntryValidator,
   inPerson: v.boolean(),
   sawInPerson: v.boolean(),
   locationCheck: locationCheckValidator,
 });
 
-const toMyVote = async (ctx: QueryCtx, vote: CurrentVoteDoc | null) => {
+// Their vote in each category, or null where they haven't voted
+const myVotesValidator = v.object({
+  best_display: v.union(myVoteValidator, v.null()),
+  most_jolly: v.union(myVoteValidator, v.null()),
+});
+
+const toMyVote = async (ctx: QueryCtx, vote: CurrentVoteDoc | undefined) => {
   if (!vote) return null;
   // Deleting an entry deletes its votes, so this only misses mid-review
   const entry = await entries.query(ctx).forEntry(vote.entryId).findApproved();
   if (!entry) return null;
   return {
     _id: vote._id,
+    category: voteCategoryOf(vote),
     entry: entries.toPublic(entry),
     inPerson: vote.inPerson,
     sawInPerson: vote.sawInPerson,
@@ -46,19 +62,28 @@ const toMyVote = async (ctx: QueryCtx, vote: CurrentVoteDoc | null) => {
   };
 };
 
-const findMyVote = async (ctx: QueryCtx, userId: Id<"users">) => {
+const findMyVotes = async (ctx: QueryCtx, userId: Id<"users">) => {
   const competition = await competitions.query(ctx).current();
-  return await toMyVote(
-    ctx,
-    await votes.forUser(userId).find(ctx.db, competition._id),
-  );
+  const current = await votes
+    .forUser(userId)
+    .listCurrent(ctx.db, competition._id);
+  const voteIn = (category: VoteCategory) =>
+    toMyVote(
+      ctx,
+      current.find((vote) => voteCategoryOf(vote) === category),
+    );
+  const [best_display, most_jolly] = await Promise.all([
+    voteIn("best_display"),
+    voteIn("most_jolly"),
+  ]);
+  return { best_display, most_jolly };
 };
 
-// Their one vote this year, whichever entry it's for
+// Their votes this year, whichever entries they're for
 export const mine = userQuery
   .input({})
-  .returns(v.union(myVoteValidator, v.null()))
-  .handler(async (context) => await findMyVote(context, context.userId))
+  .returns(myVotesValidator)
+  .handler(async (context) => await findMyVotes(context, context.userId))
   .public();
 
 // What the vote page for one entry needs to know about the signed in person
@@ -67,7 +92,7 @@ export const getForEntry = userQuery
   .returns(
     v.object({
       isOwnEntry: v.boolean(),
-      vote: v.union(myVoteValidator, v.null()),
+      votes: myVotesValidator,
     }),
   )
   .handler(async (context, input) => {
@@ -76,15 +101,17 @@ export const getForEntry = userQuery
       isOwnEntry: entry
         ? await isOwnEntry(context.db, context.userId, entry)
         : false,
-      vote: await findMyVote(context, context.userId),
+      votes: await findMyVotes(context, context.userId),
     };
   })
   .public();
 
-// Votes for this entry, replacing any vote they already had this year
+// Votes for this entry in one category, replacing any vote they already had
+// in it this year
 export const vote = userMutation
   .input({
     entryId: v.id("entries"),
+    category: voteCategoryValidator,
     // Their answer to "have you seen this display in person?". The vote page
     // only asks when the location check passes, and then it's required.
     sawInPerson: v.optional(v.boolean()),
@@ -111,7 +138,13 @@ export const vote = userMutation
     if (await isOwnEntry(context.db, context.userId, entry))
       throw new ConvexError(OWN_ENTRY_VOTE_MESSAGE);
     const voterVotes = votes.forUser(context.userId);
-    if (await voterVotes.findFromSameInbox(context.db, competition._id))
+    if (
+      await voterVotes.findFromSameInbox(
+        context.db,
+        competition._id,
+        input.category,
+      )
+    )
       throw new ConvexError(SAME_INBOX_VOTE_MESSAGE);
 
     const { locationCheck, location } = await claimVoterLocation(
@@ -122,12 +155,25 @@ export const vote = userMutation
     );
     if (locationCheck === "ok" && input.sawInPerson === undefined)
       throw new ConvexError(SEEN_IN_PERSON_REQUIRED_MESSAGE);
+    // A dropout or an old token says nothing about where they are, so they
+    // try again rather than have an in-person vote land in People's Choice
+    const isTransient =
+      (locationCheck === "no_location" && input.geoToken === undefined) ||
+      locationCheck === "expired" ||
+      locationCheck === "invalid" ||
+      locationCheck === "reused";
+    if (input.sawInPerson === true && isTransient)
+      throw new ConvexError(LOCATION_RETRY_MESSAGE);
     const sawInPerson = input.sawInPerson ?? false;
     const inPerson = locationCheck === "ok" && sawInPerson;
+    // Throwing undoes claiming the token too, so they can try again with it
+    if (input.category === "most_jolly" && !inPerson)
+      throw new ConvexError(MOST_JOLLY_IN_PERSON_MESSAGE);
 
     await voterVotes.cast(context.db, {
       competitionId: competition._id,
       entryId: entry._id,
+      category: input.category,
       inPerson,
       sawInPerson,
       locationCheck,

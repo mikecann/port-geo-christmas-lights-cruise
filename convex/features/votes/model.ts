@@ -2,7 +2,12 @@ import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { DatabaseReader, DatabaseWriter } from "../../_generated/server";
 import type { WithoutSystemFields } from "convex/server";
-import { isLegacyVote, type CurrentVoteDoc } from "./schema";
+import {
+  isLegacyVote,
+  voteCategoryOf,
+  type CurrentVoteDoc,
+  type VoteCategory,
+} from "./schema";
 import { canonicalEmail } from "../../../shared/auth";
 
 export const VOTE_ALREADY_REMOVED_MESSAGE =
@@ -12,7 +17,7 @@ export const OWN_ENTRY_VOTE_MESSAGE =
   "That's your own entry, so you can't vote for it. Thanks for lighting up the canals!";
 
 export const SAME_INBOX_VOTE_MESSAGE =
-  "You've already voted this year from another account with the same email address. Each person gets one vote, so sign in with that account if you'd like to change it.";
+  "You've already cast this vote from another account with the same email address. Each person gets one vote in each category, so sign in with that account if you'd like to change it.";
 
 // Saved at sign-in, and worked out here for anyone the backfill missed
 const canonicalEmailOf = (user: Doc<"users"> | null) =>
@@ -40,28 +45,32 @@ export const isOwnEntry = async (
 
 export const votes = {
   forUser(userId: Id<"users">) {
-    const listInCompetition = (
+    // This year's votes, one per category at most. 2025's don't count.
+    const listCurrent = async (
       db: DatabaseReader,
       competitionId: Id<"competitions">,
     ) =>
-      db
-        .query("votes")
-        .withIndex("by_votingUserId_and_competitionId_and_category", (q) =>
-          q.eq("votingUserId", userId).eq("competitionId", competitionId),
-        )
-        .collect();
+      (
+        await db
+          .query("votes")
+          .withIndex("by_votingUserId_and_competitionId_and_category", (q) =>
+            q.eq("votingUserId", userId).eq("competitionId", competitionId),
+          )
+          .collect()
+      ).filter((vote): vote is CurrentVoteDoc => !isLegacyVote(vote));
 
     return {
-      // Their one vote this competition. 2025's per-category votes don't count.
+      listCurrent,
+
+      // Their vote in this category this competition
       async find(
         db: DatabaseReader,
         competitionId: Id<"competitions">,
+        category: VoteCategory,
       ): Promise<CurrentVoteDoc | null> {
-        const competitionVotes = await listInCompetition(db, competitionId);
+        const current = await listCurrent(db, competitionId);
         return (
-          competitionVotes.find(
-            (vote): vote is CurrentVoteDoc => !isLegacyVote(vote),
-          ) ?? null
+          current.find((vote) => voteCategoryOf(vote) === category) ?? null
         );
       },
 
@@ -70,8 +79,8 @@ export const votes = {
         db: DatabaseWriter,
         args: Omit<
           WithoutSystemFields<CurrentVoteDoc>,
-          "votingUserId" | "voterCanonicalEmail"
-        >,
+          "votingUserId" | "voterCanonicalEmail" | "category"
+        > & { category: VoteCategory },
       ) {
         const email = canonicalEmailOf(await db.get(userId));
         const vote = {
@@ -79,7 +88,7 @@ export const votes = {
           votingUserId: userId,
           ...(email === undefined ? {} : { voterCanonicalEmail: email }),
         };
-        const existing = await this.find(db, args.competitionId);
+        const existing = await this.find(db, args.competitionId, args.category);
         if (!existing) return await db.insert("votes", vote);
         await db.replace(existing._id, vote);
         return existing._id;
@@ -87,10 +96,11 @@ export const votes = {
 
       // One person can have an account for each spelling of their email (see
       // canonicalEmail), so a vote from any of the others counts as theirs.
-      // Each account has one vote at most, so this only reads a few rows.
+      // Each account has two votes at most, so this only reads a few rows.
       async findFromSameInbox(
         db: DatabaseReader,
         competitionId: Id<"competitions">,
+        category: VoteCategory,
       ) {
         const email = canonicalEmailOf(await db.get(userId));
         if (email === undefined) return null;
@@ -102,7 +112,12 @@ export const votes = {
               .eq("voterCanonicalEmail", email),
           )
           .collect();
-        return inboxVotes.find((vote) => vote.votingUserId !== userId) ?? null;
+        return (
+          inboxVotes.find(
+            (vote) =>
+              vote.votingUserId !== userId && voteCategoryOf(vote) === category,
+          ) ?? null
+        );
       },
     };
   },

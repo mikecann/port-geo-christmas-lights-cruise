@@ -85,7 +85,11 @@ export const generateMock = systemAdminMutation
       "mock.io",
     ];
 
-    // One vote per person, about half of them in person
+    const randomEntry = () =>
+      approvedEntries[Math.floor(Math.random() * approvedEntries.length)];
+
+    // A best display vote each, about half of them in person, and a Most
+    // Jolly vote from most of those who were there
     for (let i = 0; i < input.count; i++) {
       const firstName = firstNames[i % firstNames.length];
       const lastName = lastNames[(i + 3) % lastNames.length];
@@ -100,19 +104,15 @@ export const generateMock = systemAdminMutation
 
       mockUsers.push(userId);
 
-      const randomEntry =
-        approvedEntries[Math.floor(Math.random() * approvedEntries.length)];
       // Every tenth is from overseas, so the flagged list has some too
       const isOverseas = i % 10 === 9;
       const inPerson = !isOverseas && Math.random() < 0.5;
-
-      await context.db.insert("votes", {
+      const vote = {
         competitionId: competition._id,
-        entryId: randomEntry._id,
         votingUserId: userId,
         inPerson,
         sawInPerson: inPerson || isOverseas,
-        locationCheck: isOverseas ? "outside_area" : "ok",
+        locationCheck: isOverseas ? ("outside_area" as const) : ("ok" as const),
         location: isOverseas
           ? {
               country: "US",
@@ -128,9 +128,23 @@ export const generateMock = systemAdminMutation
               issuedAt: Date.now(),
             },
         castAt: Date.now(),
-      });
+      };
 
+      await context.db.insert("votes", {
+        ...vote,
+        entryId: randomEntry()._id,
+        category: "best_display",
+      });
       totalVotesCreated++;
+
+      if (inPerson && Math.random() < 0.7) {
+        await context.db.insert("votes", {
+          ...vote,
+          entryId: randomEntry()._id,
+          category: "most_jolly",
+        });
+        totalVotesCreated++;
+      }
     }
 
     return {

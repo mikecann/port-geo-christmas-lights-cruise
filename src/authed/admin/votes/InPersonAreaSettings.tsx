@@ -39,9 +39,10 @@ function AreaForm({ area }: { area: Area }) {
           Where in-person votes can come from
         </Text>
         <Text size="sm" c="dimmed">
-          We check roughly where a voter's internet connection is. Votes from
-          outside this area count for People's Choice only. Phones sometimes
-          show up in the wrong state, so Australia-wide is the safer choice.
+          We check roughly where a voter's internet connection is. Best display
+          votes from outside this area count for People's Choice, and can't be
+          for Most Jolly. Phones sometimes show up in the wrong state, so
+          Australia-wide is the safer choice.
         </Text>
         <TextInput
           label="Countries"

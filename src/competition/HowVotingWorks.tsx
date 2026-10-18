@@ -15,7 +15,8 @@ export default function HowVotingWorks() {
           email you.
         </List.Item>
         <List.Item>
-          You get one vote. You can change it any time until voting closes.
+          You get two votes: one for the best display, and one for Most Jolly.
+          You can change them any time until voting closes.
         </List.Item>
         <List.Item>Entrants can't vote for their own display.</List.Item>
         {event.voting && (
@@ -27,17 +28,30 @@ export default function HowVotingWorks() {
       </List>
 
       <Text fw={600} mt="sm">
-        In-Person Favourites or People's Choice?
+        Best display
       </Text>
       <Text>
-        If you saw the display in person, from a boat or from the shore, your
-        vote counts for In-Person Favourites and People's Choice. If you didn't,
-        it counts for People's Choice only.
+        Vote for the lights you like best. If you saw the display in person,
+        from a boat or from the shore, your vote counts for In-Person
+        Favourites. If you didn't, it counts for People's Choice.
+      </Text>
+
+      <Text fw={600} mt="sm">
+        Most Jolly
+      </Text>
+      <Text>
+        For the house with the most festive fun: dancing, dressing up, waving at
+        the boats. It's only for people who saw the display in person.
+      </Text>
+
+      <Text fw={600} mt="sm">
+        How we know you were there
       </Text>
       <Text>
         When you vote, we do a rough check of where your internet connection is.
         If it looks like you're too far away to have seen the lights (overseas,
-        for example), your vote counts for People's Choice only.
+        for example), your best display vote counts for People's Choice and you
+        can't vote Most Jolly.
       </Text>
       <Text>
         If the check passes, we'll ask whether you've seen the display in

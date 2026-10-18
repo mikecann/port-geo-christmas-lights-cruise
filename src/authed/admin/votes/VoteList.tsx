@@ -46,7 +46,7 @@ export default function VoteList({
         <Text size="sm" c="dimmed">
           {show === "flagged"
             ? "Votes where the voter's internet connection wasn't in the in-person area, for example overseas. They still count for People's Choice, but not In-Person Favourites."
-            : "Each person has one vote, which they can change until voting closes."}
+            : "Each person has a best display vote and a Most Jolly vote, which they can change until voting closes."}
         </Text>
 
         {results.map((vote) => (

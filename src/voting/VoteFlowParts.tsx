@@ -1,18 +1,16 @@
 // The pieces of the vote flow's bottom bar and sheets. Each piece only takes
 // what it shows, and the words are kept to what's needed to act.
-import { useId, type ReactNode } from "react";
+import { useId, type ReactElement, type ReactNode, type Ref } from "react";
 import {
-  Anchor,
-  Badge,
   Button,
   Divider,
   Drawer,
   Group,
   Loader,
+  Popover,
   SegmentedControl,
   Stack,
   Text,
-  ThemeIcon,
   VisuallyHidden,
 } from "@mantine/core";
 import {
@@ -22,12 +20,16 @@ import {
 } from "@tabler/icons-react";
 import switchClasses from "./InPersonSwitch.module.css";
 import classes from "./VoteScreen.module.css";
-import { routes } from "../routes";
 import { eventForYear, formatDate } from "../../shared/event";
 import { isSignupDisabled } from "../common/auth";
 import { EmailCodeSignIn } from "../auth/EmailCodeSignIn";
 import { GoogleSignInButton } from "../auth/GoogleSignInButton";
+import {
+  VOTE_CATEGORY_DETAILS,
+  type VoteCategory,
+} from "../../convex/features/votes/schema";
 import type { MyVote } from "./useVoteFlow";
+import type { VoteButtonStatus } from "./voteButtons";
 
 // The number as it is on the house sign
 export function SignNumber({
@@ -87,10 +89,22 @@ export function OwnEntryNotice() {
   );
 }
 
-export function VotedForAnotherEntry({ vote }: { vote: MyVote }) {
+const categoryName = (category: VoteCategory) =>
+  VOTE_CATEGORY_DETAILS[category].title.toLowerCase();
+
+// Their votes for other entries in the categories they can vote in here
+export function VotedForOtherEntries({ votes }: { votes: MyVote[] }) {
+  const [only] = votes;
   return (
     <Text size="sm" c="dimmed" ta="center" lineClamp={1}>
-      Your vote: #{vote.entry.entryNumber} {vote.entry.name}
+      {votes.length === 1
+        ? `Your ${categoryName(only.category)} vote: #${only.entry.entryNumber} ${only.entry.name}`
+        : `Your votes: ${votes
+            .map(
+              (vote) =>
+                `#${vote.entry.entryNumber} ${categoryName(vote.category)}`,
+            )
+            .join(", ")}`}
     </Text>
   );
 }
@@ -183,24 +197,32 @@ export function InPersonSwitch({
   );
 }
 
+// Calmer once their vote is on this entry
 export function CastVoteButton({
+  ref,
   label,
+  isVoted,
   isBusy,
   disabled,
   onClick,
 }: {
+  ref?: Ref<HTMLButtonElement>;
   label: string;
+  isVoted: boolean;
   isBusy: boolean;
   disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <Button
+      ref={ref}
       data-testid="cast-vote"
       size="xl"
       fullWidth
-      color="yellow"
+      color={isVoted ? "green" : "yellow"}
+      variant={isVoted ? "light" : "filled"}
       autoContrast
+      leftSection={isVoted && <IconCheck size={20} aria-hidden />}
       loading={isBusy}
       disabled={disabled}
       onClick={onClick}
@@ -210,88 +232,114 @@ export function CastVoteButton({
   );
 }
 
-function AwardChip({ children }: { children: ReactNode }) {
-  return (
-    <Badge
-      role="listitem"
-      size="lg"
-      variant="light"
-      color="green"
-      tt="none"
-      rightSection={<IconCheck size={14} aria-hidden />}
-    >
-      {children}
-    </Badge>
-  );
-}
+const CATEGORY_HINTS: Partial<Record<VoteButtonStatus, string>> = {
+  voted: "Voted",
+  update: "Update my vote",
+};
 
-// The bottom bar once they've voted
-export function VoteReceipt({
-  vote,
-  onChange,
-}: {
-  vote: MyVote;
-  onChange: () => void;
-}) {
-  return (
-    <Stack gap="sm" data-testid="vote-confirmation">
-      <Group gap="sm" wrap="nowrap">
-        <ThemeIcon color="green" radius="xl" size="lg" aria-hidden>
-          <IconCheck size={20} />
-        </ThemeIcon>
-        <Text fw={700} size="lg">
-          You voted for #{vote.entry.entryNumber}
-        </Text>
-      </Group>
-      <Group gap="xs" role="list" aria-label="Your vote counts for">
-        {vote.inPerson && <AwardChip>In-Person Favourites</AwardChip>}
-        <AwardChip>People's Choice</AwardChip>
-      </Group>
-      <Group grow gap="xs">
-        <Button variant="default" size="md" onClick={onChange}>
-          Change my vote
-        </Button>
-        <Button
-          variant="default"
-          size="md"
-          component="a"
-          {...routes.entries().link}
-        >
-          All displays
-        </Button>
-      </Group>
-    </Stack>
-  );
-}
-
-export function ChangeVoteOptions({
-  isBusy,
+// Best display and Most jolly side by side, for people who've seen it. A tick
+// marks the ones they've voted for this entry.
+export function CategoryVoteButtons({
+  status,
+  busy,
+  removing,
+  onVote,
   onRemove,
   onKeep,
 }: {
-  isBusy: boolean;
+  status: (category: VoteCategory) => VoteButtonStatus;
+  busy: VoteCategory | null;
+  removing: VoteCategory | null;
+  onVote: (category: VoteCategory) => void;
   onRemove: () => void;
   onKeep: () => void;
 }) {
   return (
-    <Stack gap={4} align="center">
-      <Group grow gap="xs" w="100%">
-        <Button variant="default" onClick={onKeep} disabled={isBusy}>
-          Keep my vote
-        </Button>
-        <Button
-          variant="subtle"
-          color="red"
-          onClick={onRemove}
-          loading={isBusy}
-        >
-          Remove my vote
-        </Button>
-      </Group>
-      <Anchor size="sm" {...routes.voteLanding().link}>
-        Vote for a different display
-      </Anchor>
-    </Stack>
+    <Group grow gap="xs" wrap="nowrap" align="stretch">
+      {(["best_display", "most_jolly"] as const).map((category) => {
+        const { title, hint } = VOTE_CATEGORY_DETAILS[category];
+        const isVoted = status(category) === "voted";
+        return (
+          <RemoveVoteConfirm
+            key={category}
+            category={category}
+            opened={removing === category}
+            isBusy={busy === category}
+            onRemove={onRemove}
+            onKeep={onKeep}
+          >
+            <Button
+              data-testid={`vote-${category}`}
+              size="xl"
+              color={isVoted ? "green" : "yellow"}
+              variant={isVoted ? "light" : "filled"}
+              autoContrast
+              loading={busy === category}
+              disabled={busy !== null && busy !== category}
+              onClick={() => onVote(category)}
+              classNames={{
+                root: classes.categoryButton,
+                label: classes.categoryLabel,
+              }}
+            >
+              <span className={classes.categoryTitle}>
+                {isVoted && <IconCheck size={18} aria-hidden />}
+                {title}
+              </span>
+              <span className={classes.categoryHint}>
+                {CATEGORY_HINTS[status(category)] ?? hint}
+              </span>
+            </Button>
+          </RemoveVoteConfirm>
+        );
+      })}
+    </Group>
+  );
+}
+
+// Tapping a vote that's on this entry asks before taking it off
+export function RemoveVoteConfirm({
+  category,
+  opened,
+  isBusy,
+  onRemove,
+  onKeep,
+  children,
+}: {
+  category: VoteCategory;
+  opened: boolean;
+  isBusy: boolean;
+  onRemove: () => void;
+  onKeep: () => void;
+  children: ReactElement;
+}) {
+  return (
+    <Popover
+      opened={opened}
+      onDismiss={onKeep}
+      position="top"
+      withArrow
+      shadow="md"
+      trapFocus
+      returnFocus
+    >
+      <Popover.Target>{children}</Popover.Target>
+      <Popover.Dropdown data-testid="remove-vote">
+        <Stack gap="xs">
+          <Text size="sm" fw={600}>
+            Remove your {categoryName(category)} vote?
+          </Text>
+          <Group gap="xs" grow wrap="nowrap">
+            <Button variant="default" disabled={isBusy} onClick={onKeep}>
+              Keep
+            </Button>
+            <Button color="red" loading={isBusy} onClick={onRemove}>
+              Remove
+            </Button>
+          </Group>
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
   );
 }
 
@@ -379,9 +427,11 @@ function SheetEntry({
   );
 }
 
-// One vote each, so moving it to another display gets asked first
+// One vote each per category, so moving it to another display gets asked
+// first
 export function SwitchVoteSheet({
   opened,
+  category,
   from,
   to,
   isBusy,
@@ -389,6 +439,7 @@ export function SwitchVoteSheet({
   onClose,
 }: {
   opened: boolean;
+  category: VoteCategory;
   from: { entryNumber: number; name: string };
   to: { entryNumber: number; name: string };
   isBusy: boolean;
@@ -396,7 +447,11 @@ export function SwitchVoteSheet({
   onClose: () => void;
 }) {
   return (
-    <BottomSheet opened={opened} onClose={onClose} title="Move your vote?">
+    <BottomSheet
+      opened={opened}
+      onClose={onClose}
+      title={`Move your ${categoryName(category)} vote?`}
+    >
       <Stack gap="md">
         <Group justify="center" gap="md" wrap="nowrap">
           <SheetEntry entry={from} isFrom />

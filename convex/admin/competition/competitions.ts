@@ -4,7 +4,11 @@ import {
 } from "../../features/common/auth";
 import { competitions } from "../../features/competitions/model";
 import { entries } from "../../features/entries/model";
-import { aggregateVotes, voteNamespace } from "../../features/votes/lib";
+import {
+  aggregateVotes,
+  voteNamespace,
+  type VoteTally,
+} from "../../features/votes/lib";
 import { v } from "convex/values";
 
 // What the admin overview leads with
@@ -12,20 +16,23 @@ export const overview = competitionAdminQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
-    const countVotes = (tally: "in_person" | "online") =>
+    const countVotes = (tally: VoteTally) =>
       aggregateVotes.count(context, {
         namespace: voteNamespace(competition._id, tally),
       });
-    const [inPerson, online] = await Promise.all([
+    const [inPerson, online, mostJolly] = await Promise.all([
       countVotes("in_person"),
       countVotes("online"),
+      countVotes("most_jolly"),
     ]);
     return {
       year: competition.year,
       entriesOpen: competition.entriesOpen,
       votingOpen: competition.votingOpen,
       entries: await entries.query(context).getStats(competition._id),
-      votes: { inPerson, total: inPerson + online },
+      // One count per ranking: In-Person Favourites, People's Choice and Most
+      // Jolly
+      votes: { inPerson, online, mostJolly },
     };
   })
   .public();
