@@ -22,8 +22,9 @@ const WRONG_CODE_MESSAGE =
   "That code didn't work. Check it and try again, or send a new one.";
 
 // Signing in moves the page on by itself (see SignInPage), so this only has
-// to get the code checked
-export function EmailCodeSignIn() {
+// to get the code checked. Compact is the vote page's sheet, which keeps the
+// words to a minimum.
+export function EmailCodeSignIn({ compact = false }: { compact?: boolean }) {
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [sentTo, setSentTo] = useState<string>();
@@ -31,6 +32,7 @@ export function EmailCodeSignIn() {
   const [error, setError] = useState<string>();
   const [isBusy, setIsBusy] = useState(false);
   const [resendIn, setResendIn] = useState(0);
+  const resendLabel = compact ? "Resend" : "Resend code";
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -86,15 +88,16 @@ export function EmailCodeSignIn() {
           <TextInput
             type="email"
             name="email"
-            label="Email"
-            placeholder="you@example.com"
+            label={compact ? undefined : "Email"}
+            aria-label={compact ? "Email" : undefined}
+            placeholder={compact ? "Your email" : "you@example.com"}
             autoComplete="email"
             inputMode="email"
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
             required
-            size="md"
+            size={compact ? "lg" : "md"}
             value={email}
             onChange={(event) => {
               setEmail(event.currentTarget.value);
@@ -123,21 +126,29 @@ export function EmailCodeSignIn() {
       }}
     >
       <Stack gap="sm">
-        <Text size="sm">
-          We sent a {SIGN_IN_CODE_LENGTH}-digit code to <b>{sentTo}</b>. It
-          works for {SIGN_IN_CODE_LIFETIME_MINUTES} minutes.
-        </Text>
+        {compact ? (
+          <Text size="sm" c="dimmed">
+            Code sent to <b>{sentTo}</b>
+          </Text>
+        ) : (
+          <Text size="sm">
+            We sent a {SIGN_IN_CODE_LENGTH}-digit code to <b>{sentTo}</b>. It
+            works for {SIGN_IN_CODE_LIFETIME_MINUTES} minutes.
+          </Text>
+        )}
         <TextInput
           name="code"
-          label="Code"
+          label={compact ? undefined : "Code"}
+          aria-label={compact ? `${SIGN_IN_CODE_LENGTH}-digit code` : undefined}
+          placeholder={compact ? "••••••" : undefined}
           autoFocus
           inputMode="numeric"
           autoComplete="one-time-code"
           pattern="[0-9]*"
-          size="md"
+          size={compact ? "xl" : "md"}
           styles={{
             input: {
-              fontSize: 24,
+              fontSize: compact ? 32 : 24,
               letterSpacing: "0.4em",
               textAlign: "center",
             },
@@ -171,7 +182,7 @@ export function EmailCodeSignIn() {
               setError(undefined);
             }}
           >
-            Use a different email
+            {compact ? "Change email" : "Use a different email"}
           </Button>
           <Button
             variant="subtle"
@@ -179,7 +190,7 @@ export function EmailCodeSignIn() {
             disabled={resendIn > 0 || isBusy}
             onClick={() => void sendCode(sentTo)}
           >
-            {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
+            {resendIn > 0 ? `${resendLabel} in ${resendIn}s` : resendLabel}
           </Button>
         </Group>
       </Stack>
