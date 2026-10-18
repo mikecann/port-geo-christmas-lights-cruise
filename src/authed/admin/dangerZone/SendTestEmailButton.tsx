@@ -14,8 +14,8 @@ export default function SendTestEmailButton() {
       variant="outline"
       color="green"
       leftSection={<IconMail size={16} />}
-      onClick={() => {
-        sendTestEmail({});
+      onClick={async () => {
+        if (!(await sendTestEmail({}))) return;
         notifications.show({
           title: "Email Sent!",
           message: "Test email sent successfully",

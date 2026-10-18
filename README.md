@@ -82,7 +82,7 @@ Turn both off when sign-ups open.
 Two more Convex env vars, each a comma-separated list of emails. Case and spaces around each email don't matter.
 
 - `SIGNUP_ALLOWED_EMAILS`: these people can create an account even while `IS_SIGNUP_DISABLED` is on.
-- `COMPETITION_ADMIN_EMAILS`: these people are made competition admins when they sign in, with Google or a code. They can create an account while sign-ups are closed too, so there's no need to list them twice. Taking someone off the list doesn't remove the role; do that on the admin users page.
+- `COMPETITION_ADMIN_EMAILS`: these people are made competition admins when they sign in, with Google or a code. They can create an account while sign-ups are closed too, so there's no need to list them twice. Taking someone off the list doesn't remove the role; do that on the admin People page (`/admin/people`), where competition admins can also add each other once that person has signed in.
 
 For example: `COMPETITION_ADMIN_EMAILS=ZOliver@aigleroyal.com.au, TJulian@aigleroyal.com.au`. Send them to `/signin?returnTo=/admin&unlock=true` while the sign-in page is switched off.
 
@@ -94,7 +94,7 @@ The QR code on each house sign goes to `/v/<number>`, which opens this year's en
 
 #### The in-person check
 
-Convex can't see a voter's IP address, but the Cloudflare Worker can. `GET /api/geo` on the worker returns a token with Cloudflare's guess at where the visitor is (country, region, city, coordinates, timezone), signed with `GEO_TOKEN_SECRET` and good for 15 minutes. The vote mutation checks the signature and the age. A vote is in person only when the token is genuine, the country is in the competition's list (AU by default, and admins can narrow it to WA on the Vote Management page) and the voter ticks "I've seen this display in person". The location is saved on the vote so admins can review it.
+Convex can't see a voter's IP address, but the Cloudflare Worker can. `GET /api/geo` on the worker returns a token with Cloudflare's guess at where the visitor is (country, region, city, coordinates, timezone), signed with `GEO_TOKEN_SECRET` and good for 15 minutes. The vote mutation checks the signature and the age. A vote is in person only when the token is genuine, the country is in the competition's list (AU by default, and admins can narrow it to WA on the admin Votes page) and the voter ticks "I've seen this display in person". The location is saved on the vote so admins can review it.
 
 The worker and Convex need the same secret. If either is missing, nobody's vote counts as in person and the vote page says so. Generate one with `openssl rand -base64 32`, then:
 
@@ -105,6 +105,10 @@ npx convex env set GEO_TOKEN_SECRET '<the same secret>' --prod
 ```
 
 For local dev, put `GEO_TOKEN_SECRET=<secret>` in `.dev.vars` (gitignored, read by the Vite Cloudflare plugin) and set the same value on your dev deployment with `npx convex env set GEO_TOKEN_SECRET '<secret>'`. Locally, Cloudflare's location is a guess from your own connection.
+
+### Admin area
+
+`/admin` is for competition admins (ARG) and system admins. It opens on an overview with the competition's status, switches to open and close entries and voting, and how many entries are waiting for review. The other pages are Entries (the review queue, then every entry), Numbers (the number range and which numbers are taken, kept for returning entrants or free), Votes (both rankings, flagged votes and the CSV), and People (finding people and making them admins). System admins also get a Danger zone page with the testing tools and wipes.
 
 ### Testing
 

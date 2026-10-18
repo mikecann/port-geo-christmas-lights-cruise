@@ -22,9 +22,11 @@ function RankingTable({
   ranking: Ranking;
 }) {
   return (
-    <Card withBorder>
+    <Card withBorder radius="md" padding="lg">
       <Stack gap="xs">
-        <Title order={3}>{title}</Title>
+        <Title order={3} fz="lg">
+          {title}
+        </Title>
         <Text size="sm" c="dimmed">
           {description}
         </Text>
@@ -83,12 +85,12 @@ export default function VoteResults({
         <>
           <RankingTable
             title="In-Person Favourites"
-            description="Votes from people who saw the display in person."
+            description="Votes from people who ticked that they saw the display in person, from a connection in the in-person area."
             ranking={results.inPersonFavourites}
           />
           <RankingTable
             title="People's Choice"
-            description="Every vote, in person or not."
+            description="Every vote, in person or online."
             ranking={results.peoplesChoice}
           />
         </>

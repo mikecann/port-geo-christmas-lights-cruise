@@ -5,6 +5,7 @@ import type {
   VoterLocation,
 } from "../../../../convex/features/votes/schema";
 import { VOTE_CATEGORY_DETAILS } from "../../../../convex/features/votes/schema";
+import { toCsv } from "../../../common/utils/csv";
 
 export type AdminVote = FunctionReturnType<
   typeof api.admin.competition.votes.getAllVotesForExport
@@ -35,13 +36,6 @@ export const countsFor = (vote: AdminVote) => {
     : "People's Choice";
 };
 
-const escapeCSV = (value: string | number | boolean | undefined) => {
-  if (value === undefined) return "";
-  const str = String(value);
-  if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
-  return str;
-};
-
 export function votesToCsv(votes: AdminVote[]) {
   const yesNo = (value: boolean | undefined) =>
     value === undefined ? undefined : value ? "yes" : "no";
@@ -64,42 +58,24 @@ export function votesToCsv(votes: AdminVote[]) {
     "longitude",
     "timezone",
   ];
-  const rows = votes.map((vote) =>
-    [
-      new Date(vote.castAt).toISOString(),
-      vote.entryNumber,
-      vote.entryName,
-      vote.voterEmail,
-      vote.voterName,
-      countsFor(vote),
-      vote.category,
-      yesNo(vote.inPerson),
-      yesNo(vote.sawInPerson),
-      vote.locationCheck && LOCATION_CHECK_LABELS[vote.locationCheck],
-      vote.location?.country,
-      vote.location?.region,
-      vote.location?.regionCode,
-      vote.location?.city,
-      vote.location?.latitude,
-      vote.location?.longitude,
-      vote.location?.timezone,
-    ]
-      .map(escapeCSV)
-      .join(","),
-  );
-  return [headers.join(","), ...rows].join("\n");
-}
-
-export function downloadCsv(content: string, name: string) {
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
-  link.href = url;
-  link.download = `${name}-${stamp}.csv`;
-  link.style.visibility = "hidden";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const rows = votes.map((vote) => [
+    new Date(vote.castAt).toISOString(),
+    vote.entryNumber,
+    vote.entryName,
+    vote.voterEmail,
+    vote.voterName,
+    countsFor(vote),
+    vote.category,
+    yesNo(vote.inPerson),
+    yesNo(vote.sawInPerson),
+    vote.locationCheck && LOCATION_CHECK_LABELS[vote.locationCheck],
+    vote.location?.country,
+    vote.location?.region,
+    vote.location?.regionCode,
+    vote.location?.city,
+    vote.location?.latitude,
+    vote.location?.longitude,
+    vote.location?.timezone,
+  ]);
+  return toCsv(headers, rows);
 }

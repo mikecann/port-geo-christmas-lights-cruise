@@ -19,9 +19,13 @@ import type { PhotoDoc } from "../../../../../convex/features/photos/schema";
 
 interface AdminPhotoCardProps {
   photo: PhotoDoc;
+  canRemove: boolean;
 }
 
-export default function AdminPhotoCard({ photo }: AdminPhotoCardProps) {
+export default function AdminPhotoCard({
+  photo,
+  canRemove,
+}: AdminPhotoCardProps) {
   const [removePhoto, isRemoving] = useErrorCatchingMutation(
     api.admin.competition.photos.remove,
   );
@@ -94,7 +98,7 @@ export default function AdminPhotoCard({ photo }: AdminPhotoCardProps) {
             onError={() => setError(true)}
           />
         )}
-        {!isUploading && (
+        {canRemove && !isUploading && (
           <ActionIcon
             variant="filled"
             color="red"
@@ -102,13 +106,14 @@ export default function AdminPhotoCard({ photo }: AdminPhotoCardProps) {
             pos="absolute"
             top={4}
             right={4}
+            aria-label="Remove photo"
             onClick={async (e) => {
               e.stopPropagation();
               const confirmed = await confirm({
-                title: "Remove Photo",
+                title: "Remove this photo?",
                 content:
-                  "Are you sure you want to remove this photo from this entry?",
-                confirmButton: "Remove Photo",
+                  "It will be taken off the entry everywhere on the site. This can't be undone.",
+                confirmButton: "Remove photo",
                 confirmButtonColor: "red",
               });
               if (!confirmed) return;

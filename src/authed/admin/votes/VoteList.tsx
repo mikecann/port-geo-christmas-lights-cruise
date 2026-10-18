@@ -3,10 +3,9 @@ import {
   Button,
   Card,
   Group,
-  ScrollArea,
+  Paper,
   SegmentedControl,
   Stack,
-  Table,
   Text,
 } from "@mantine/core";
 import { usePaginatedQuery } from "convex/react";
@@ -30,10 +29,10 @@ export default function VoteList({
   );
 
   return (
-    <Card withBorder>
+    <Card withBorder radius="md" padding="lg">
       <Stack gap="sm">
         <Group justify="space-between">
-          <Text fw={600}>Votes</Text>
+          <Text fw={600}>Every vote, newest first</Text>
           <SegmentedControl
             size="xs"
             value={show}
@@ -44,69 +43,59 @@ export default function VoteList({
             ]}
           />
         </Group>
-        <ScrollArea>
-          <Table striped withTableBorder miw={900}>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>When</Table.Th>
-                <Table.Th>Entry</Table.Th>
-                <Table.Th>Voter</Table.Th>
-                <Table.Th>Counts for</Table.Th>
-                <Table.Th>Ticked "seen in person"</Table.Th>
-                <Table.Th>Location</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {results.map((vote) => (
-                <Table.Tr key={vote._id}>
-                  <Table.Td>{new Date(vote.castAt).toLocaleString()}</Table.Td>
-                  <Table.Td>
-                    #{vote.entryNumber ?? "-"} {vote.entryName}
-                  </Table.Td>
-                  <Table.Td>
-                    {vote.voterName ?? "-"}
-                    <Text size="xs" c="dimmed">
-                      {vote.voterEmail}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>{countsFor(vote)}</Table.Td>
-                  <Table.Td>
-                    {vote.sawInPerson === undefined
-                      ? "-"
-                      : vote.sawInPerson
-                        ? "Yes"
-                        : "No"}
-                  </Table.Td>
-                  <Table.Td>
-                    {placeName(vote.location) || "-"}
-                    {vote.locationCheck && (
-                      <div>
-                        <Badge
-                          size="xs"
-                          variant="light"
-                          color={vote.locationCheck === "ok" ? "green" : "red"}
-                        >
-                          {LOCATION_CHECK_LABELS[vote.locationCheck]}
-                        </Badge>
-                      </div>
-                    )}
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-              {results.length === 0 && status !== "LoadingFirstPage" && (
-                <Table.Tr>
-                  <Table.Td colSpan={6}>
-                    <Text size="sm" c="dimmed" ta="center" py="sm">
-                      {show === "flagged"
-                        ? "No flagged votes."
-                        : "No votes yet."}
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
+        <Text size="sm" c="dimmed">
+          {show === "flagged"
+            ? "Votes where the voter's internet connection wasn't in the in-person area, for example overseas. They still count for People's Choice, but not In-Person Favourites."
+            : "Each person has one vote, which they can change until voting closes."}
+        </Text>
+
+        {results.map((vote) => (
+          <Paper key={vote._id} withBorder radius="md" p="sm">
+            <Stack gap={4}>
+              <Group justify="space-between" gap="xs">
+                <Text fw={500}>
+                  #{vote.entryNumber ?? "-"} {vote.entryName}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {new Date(vote.castAt).toLocaleString()}
+                </Text>
+              </Group>
+              <Text size="sm" style={{ wordBreak: "break-word" }}>
+                {vote.voterName ?? "No name"}{" "}
+                <Text span size="xs" c="dimmed">
+                  {vote.voterEmail}
+                </Text>
+              </Text>
+              <Text size="sm">Counts for {countsFor(vote)}</Text>
+              {vote.sawInPerson !== undefined && (
+                <Text size="xs" c="dimmed">
+                  Ticked "I've seen this display in person":{" "}
+                  {vote.sawInPerson ? "yes" : "no"}
+                </Text>
               )}
-            </Table.Tbody>
-          </Table>
-        </ScrollArea>
+              {vote.locationCheck && (
+                <Group gap={6}>
+                  <Badge
+                    size="sm"
+                    variant="light"
+                    color={vote.locationCheck === "ok" ? "green" : "red"}
+                  >
+                    {LOCATION_CHECK_LABELS[vote.locationCheck]}
+                  </Badge>
+                  <Text size="xs" c="dimmed">
+                    {placeName(vote.location) || "Location unknown"}
+                  </Text>
+                </Group>
+              )}
+            </Stack>
+          </Paper>
+        ))}
+
+        {results.length === 0 && status !== "LoadingFirstPage" && (
+          <Text size="sm" c="dimmed" ta="center" py="sm">
+            {show === "flagged" ? "No flagged votes." : "No votes yet."}
+          </Text>
+        )}
         {status === "CanLoadMore" && (
           <Button variant="light" onClick={() => loadMore(50)}>
             Show more

@@ -44,16 +44,25 @@ export const MyVotesPage = lazy(
   () => import("../../authed/myVotes/MyVotesPage"),
 );
 
-export const AdminPage = lazy(() => import("../../authed/admin/AdminPage"));
-export const EntryManagementPage = lazy(
-  () => import("../../authed/admin/entries/EntryManagementPage"),
+export const AdminLayout = lazy(() => import("../../authed/admin/AdminLayout"));
+export const AdminOverviewPage = lazy(
+  () => import("../../authed/admin/overview/OverviewPage"),
 );
-export const VoteManagementPage = lazy(
-  () => import("../../authed/admin/votes/VoteManagementPage"),
+export const AdminEntriesPage = lazy(
+  () => import("../../authed/admin/entries/EntriesPage"),
 );
-export const SystemAdminPage = lazy(
-  () => import("../../authed/admin/systemAdmin/SystemAdminPage"),
+export const AdminEntryPage = lazy(
+  () => import("../../authed/admin/entries/detail/EntryDetailPage"),
 );
-export const UserManagementPage = lazy(
-  () => import("../../authed/admin/users/UserManagementPage"),
+export const AdminNumbersPage = lazy(
+  () => import("../../authed/admin/numbers/NumbersPage"),
+);
+export const AdminVotesPage = lazy(
+  () => import("../../authed/admin/votes/VotesPage"),
+);
+export const AdminPeoplePage = lazy(
+  () => import("../../authed/admin/people/PeoplePage"),
+);
+export const AdminDangerZonePage = lazy(
+  () => import("../../authed/admin/dangerZone/DangerZonePage"),
 );

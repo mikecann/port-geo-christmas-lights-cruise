@@ -32,9 +32,9 @@ export function GenerateMockVotesButton({
                 for testing and demonstration purposes.
               </Text>
               <Text size="sm" c="dimmed">
-                Mock votes will be distributed randomly across approved entries
-                in both categories (Best Display and Most Jolly). Each fake user
-                will vote once per category.
+                Each fake person votes once for a random approved entry. About
+                half count as in person, and one in ten comes from overseas so
+                there are flagged votes to look at.
               </Text>
             </>
           ),

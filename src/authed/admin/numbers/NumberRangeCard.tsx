@@ -6,7 +6,7 @@ import { useErrorCatchingMutation } from "../../../common/errors";
 
 type Range = { min: number; max: number };
 
-export default function EntryNumberRangeCard() {
+export default function NumberRangeCard() {
   const range = useQuery(
     api.admin.competition.competitions.getEntryNumberRange,
   );
@@ -23,15 +23,13 @@ function RangeForm({ range }: { range: Range }) {
   );
 
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder>
+    <Card padding="lg" radius="md" withBorder>
       <Stack gap="xs">
-        <Text size="lg" fw={500}>
-          Entry numbers
-        </Text>
+        <Text fw={600}>Number range</Text>
         <Text size="sm" c="dimmed">
-          New entrants get a random number from this range, to match the printed
-          signs. Returning entrants keep their number from last time, even if
-          it's outside the range.
+          Set this to the numbers you have printed signs for. New entrants get a
+          random free number from this range. Returning entrants keep last
+          year's number, even if it's outside it.
         </Text>
         <Group gap="xs" align="flex-end">
           <NumberInput

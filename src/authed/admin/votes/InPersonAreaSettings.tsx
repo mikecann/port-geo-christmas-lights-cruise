@@ -33,7 +33,7 @@ function AreaForm({ area }: { area: Area }) {
   );
 
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder>
+    <Card padding="lg" radius="md" withBorder>
       <Stack gap="xs">
         <Text size="lg" fw={500}>
           Where in-person votes can come from
