@@ -41,19 +41,40 @@ describe("entry emails", () => {
     expect(html).not.toContain("Sunday 30th");
   });
 
-  it("give this year's sign collection and cruise times", () => {
+  it("give this year's cruise times, and leave sign collection for later while it's unconfirmed", () => {
     const html = email.approvalHtml({
       entry,
       entryNumber: 7,
       competition: { year: event.year } as Doc<"competitions">,
     });
-    expect(html).toContain(
-      "collect it from Sunday 29 November to Friday 4 December at 35 Keel Retreat",
-    );
+    expect(event.signCollection).toBeNull();
+    expect(html).toContain("sign collection details separately");
+    expect(html).not.toContain("35 Keel Retreat");
     expect(html).toContain("first cruise on Friday 4 December");
     expect(html).toContain("7:30pm and 8:30pm: Thu 17 Dec");
     expect(html).toContain('href="/tickets"');
-    expect(html).not.toContain("sign collection details separately");
+  });
+
+  it("give the sign collection once it's confirmed", () => {
+    const { signCollection } = event;
+    event.signCollection = {
+      from: "2026-11-29",
+      to: "2026-12-04",
+      place: "35 Keel Retreat",
+    };
+    try {
+      const html = email.approvalHtml({
+        entry,
+        entryNumber: 7,
+        competition: { year: event.year } as Doc<"competitions">,
+      });
+      expect(html).toContain(
+        "collect it from Sunday 29 November to Friday 4 December at 35 Keel Retreat",
+      );
+      expect(html).not.toContain("sign collection details separately");
+    } finally {
+      event.signCollection = signCollection;
+    }
   });
 
   it("give the cruise month for the entry's competition year", () => {

@@ -63,12 +63,9 @@ export const event: EventFacts = {
       sailing("2026-12-24", "7:30pm", "8:30pm"),
     ],
   },
-  // The place is still to be confirmed by ARG
-  signCollection: {
-    from: "2026-11-29",
-    to: "2026-12-04",
-    place: "35 Keel Retreat",
-  },
+  // Proposed Sunday 29 November to Friday 4 December at 35 Keel Retreat, not
+  // confirmed by ARG yet
+  signCollection: null,
   // Proposed 4 to 27 December, not confirmed yet
   voting: null,
   // Proposed Saturday 9 January 2027, not confirmed yet
