@@ -2,13 +2,7 @@ import { AspectRatio, Badge, Center, Group, Stack, Text } from "@mantine/core";
 import { IconPhoto } from "@tabler/icons-react";
 import type { PublicPhoto } from "../../convex/features/photos/schema";
 import { usePhotoSrcSet } from "../common/hooks/usePhotoUrl";
-
-// Small enough for patchy mobile data; the page is at most 36em wide
-const VOTE_PHOTO = {
-  widths: [480, 780],
-  sizes: "(max-width: 36em) 100vw, 576px",
-  fallbackWidth: 480,
-};
+import { VOTE_PHOTO } from "../../shared/photoUrls";
 
 // The photo, number and name, so people know they've got the right house
 export default function VoteEntrySummary({

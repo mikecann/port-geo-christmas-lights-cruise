@@ -7,7 +7,11 @@ import {
   OG_TIMEOUT_MS,
   withTimeout,
 } from "./og";
-import { ENTRY_PHOTO, resizedPhotoSrcSet } from "../shared/photoUrls";
+import {
+  ENTRY_PHOTO,
+  resizedPhotoSrcSet,
+  VOTE_PHOTO,
+} from "../shared/photoUrls";
 
 const id = "j970pq0asyav77fekdj08grwan6npmh1";
 const meta = {
@@ -174,7 +178,7 @@ describe("withTimeout", () => {
 });
 
 describe("buildOgTags", () => {
-  const url = new URL(`https://site.example/entries/${id}/vote`);
+  const url = new URL(`https://site.example/entries/${id}`);
 
   it("preloads the carousel's responsive image and shares the original", () => {
     const tags = buildOgTags(url, meta);
@@ -186,6 +190,15 @@ describe("buildOgTags", () => {
     );
     expect(tags).not.toContain("preconnect");
     expect(tags).not.toContain(`href="${meta.imageUrl}"`);
+  });
+
+  it("preloads the vote page's smaller photo on the vote pages", () => {
+    const srcset = resizedPhotoSrcSet(meta.imageUrl, VOTE_PHOTO.widths);
+    for (const path of [`/entries/${id}/vote`, "/v/26"]) {
+      const tags = buildOgTags(new URL(path, url), meta);
+      expect(tags).toContain(`imagesrcset="${srcset}"`);
+      expect(tags).toContain(`imagesizes="${VOTE_PHOTO.sizes}"`);
+    }
   });
 
   it("makes mock photo paths absolute for sharing", () => {

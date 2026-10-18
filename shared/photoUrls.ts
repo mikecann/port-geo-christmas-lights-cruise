@@ -34,3 +34,11 @@ export const ENTRY_PHOTO = {
   // The loading skeleton uses the same ratio, so the page doesn't jump
   aspectRatio: 16 / 10,
 } as const;
+
+// The vote page's full-screen photo, small for patchy mobile data on the boat.
+// The page is at most 36em wide, and the worker preloads this too.
+export const VOTE_PHOTO = {
+  widths: [480, 780],
+  sizes: "(max-width: 36em) 100vw, 576px",
+  fallbackWidth: 480,
+} as const;
