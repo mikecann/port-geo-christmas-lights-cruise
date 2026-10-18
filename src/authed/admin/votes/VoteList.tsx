@@ -25,7 +25,7 @@ export default function VoteList({
   const { results, status, loadMore } = usePaginatedQuery(
     api.admin.competition.votes.listPage,
     { competitionId, flaggedOnly: show === "flagged" },
-    { initialNumItems: 50 },
+    { initialNumItems: 20 },
   );
 
   return (
