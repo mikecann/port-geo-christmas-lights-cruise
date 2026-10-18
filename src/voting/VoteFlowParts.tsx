@@ -334,9 +334,11 @@ function BottomSheet({
 // sends itself once they're in.
 export function SignInSheet({
   opened,
+  onGoogle,
   onClose,
 }: {
   opened: boolean;
+  onGoogle: () => void;
   onClose: () => void;
 }) {
   return (
@@ -345,6 +347,7 @@ export function SignInSheet({
         <GoogleSignInButton
           returnTo={window.location.pathname + window.location.search}
           signupDisabled={isSignupDisabled()}
+          onStart={onGoogle}
         />
         <Divider label="or" labelPosition="center" />
         <EmailCodeSignIn compact />

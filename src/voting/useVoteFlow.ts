@@ -1,4 +1,10 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../convex/_generated/api";
@@ -115,7 +121,12 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     };
   })();
 
+  // Set straight away, unlike isBusy, so a second tap in the same moment
+  // can't send it again
+  const isSending = useRef(false);
   const send = (answer: boolean | null) => {
+    if (isSending.current) return;
+    isSending.current = true;
     setIsBusy(true);
     void measured(
       async () =>
@@ -134,7 +145,10 @@ export function useVoteFlow(entry: VoteFlowEntry) {
         setIsConfirmingSwitch(false);
       })
       .catch(onApiError)
-      .finally(() => setIsBusy(false));
+      .finally(() => {
+        isSending.current = false;
+        setIsBusy(false);
+      });
   };
 
   // A vote tapped before signing in, picked up once they're in and the
@@ -142,20 +156,50 @@ export function useVoteFlow(entry: VoteFlowEntry) {
   const resumePendingVote = useEffectEvent(() => {
     const pending = pendingVotes.peek(entry._id);
     if (!pending) return;
-    const action = pendingVoteAction(state, pending.sawInPerson);
-    if (action === "wait" || !pendingVotes.take(entry._id)) return;
+    const action = pendingVoteAction(state, pending, isSigningIn);
+    if (action === "wait") return;
+    if (action === "reopen") {
+      pendingVotes.setAtGoogle(false);
+      setSawInPerson(pending.sawInPerson);
+      setIsSigningIn(true);
+      return;
+    }
+    if (!pendingVotes.take(entry._id)) return;
     setIsSigningIn(false);
     if (action === "drop" || action === "ask") return;
     setSawInPerson(pending.sawInPerson);
     if (action === "confirmSwitch") setIsConfirmingSwitch(true);
     else send(pending.sawInPerson);
   });
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Signing in and the location check both finish outside React, so this
-    // is the first chance to act on the stored vote
+    // is the first chance to act on the stored vote. Before paint, so Vote
+    // is never tappable while it's about to send itself.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (isAuthenticated) resumePendingVote();
+    resumePendingVote();
   }, [isAuthenticated, state.step, inPersonAllowed]);
+
+  // Leaving with the sheet open (the header, the logo, "Photos & map")
+  // doesn't close it, so forget the vote here too
+  const isSheetOpen = isSigningIn && state.step === "signedOut";
+  const wasSheetOpen = useRef(false);
+  useEffect(() => {
+    wasSheetOpen.current = isSheetOpen;
+  });
+  useEffect(
+    () => () => {
+      if (wasSheetOpen.current) pendingVotes.abandon();
+    },
+    [],
+  );
+  useEffect(() => {
+    // Back from Google with the back button and the page kept as it was
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) pendingVotes.setAtGoogle(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   const remove = (myVote: MyVote) => {
     setIsBusy(true);
@@ -180,13 +224,16 @@ export function useVoteFlow(entry: VoteFlowEntry) {
         setIsSigningIn(true);
         return;
       }
+      // Tapped themselves, so a stored one mustn't follow it
+      pendingVotes.take(entry._id);
       if (state.step === "choose" && state.otherVote) {
         setIsConfirmingSwitch(true);
         return;
       }
       send(sawInPerson);
     },
-    isSigningIn: isSigningIn && state.step === "signedOut",
+    isSigningIn: isSheetOpen,
+    leaveForGoogle: () => pendingVotes.setAtGoogle(true),
     cancelSignIn: () => {
       pendingVotes.clear();
       setIsSigningIn(false);

@@ -1,5 +1,7 @@
 // A vote tapped while signed out. Google sign-in leaves the site and comes
-// back, so it's kept in sessionStorage and sent once they're in.
+// back, so it's kept in sessionStorage and sent once they're in. It only
+// lives while the sign-in sheet is open or they're away at Google, so a vote
+// they walked away from never sends itself later.
 import type { VoteFlowStep } from "./useVoteFlow";
 
 const KEY = "pg-pending-vote-v1";
@@ -11,6 +13,8 @@ export type PendingVote = {
   // Their "seen it in person?" answer, null when it wasn't asked
   sawInPerson: boolean | null;
   savedAt: number;
+  // They tapped Google and left the site to sign in
+  isAtGoogle: boolean;
 };
 
 type Storage = Pick<globalThis.Storage, "getItem" | "setItem" | "removeItem">;
@@ -27,10 +31,13 @@ const read = (storage: Storage): PendingVote | null => {
   try {
     const saved: unknown = JSON.parse(storage.getItem(KEY) ?? "null");
     if (typeof saved !== "object" || saved === null) return null;
-    const { entryId, sawInPerson, savedAt } = saved as Record<string, unknown>;
+    const { entryId, sawInPerson, savedAt, isAtGoogle } = saved as Record<
+      string,
+      unknown
+    >;
     if (typeof entryId !== "string" || typeof savedAt !== "number") return null;
     if (sawInPerson !== null && typeof sawInPerson !== "boolean") return null;
-    return { entryId, sawInPerson, savedAt };
+    return { entryId, sawInPerson, savedAt, isAtGoogle: isAtGoogle === true };
   } catch {
     return null;
   }
@@ -50,16 +57,31 @@ export function createPendingVotes(
     };
   };
 
+  const write = (pending: PendingVote) => {
+    try {
+      getStorage()?.setItem(KEY, JSON.stringify(pending));
+    } catch {
+      /* Storage unavailable: email sign-in still works on this page. */
+    }
+  };
+
+  const clear = () => {
+    try {
+      getStorage()?.removeItem(KEY);
+    } catch {
+      /* Nothing to clear. */
+    }
+  };
+
   return {
     save(entryId: string, sawInPerson: boolean | null) {
-      try {
-        getStorage()?.setItem(
-          KEY,
-          JSON.stringify({ entryId, sawInPerson, savedAt: now() }),
-        );
-      } catch {
-        /* Storage unavailable: email sign-in still works on this page. */
-      }
+      write({ entryId, sawInPerson, savedAt: now(), isAtGoogle: false });
+    },
+    // Set as they leave for Google, and unset once they're back on the site
+    setAtGoogle(isAtGoogle: boolean) {
+      const storage = getStorage();
+      const pending = storage && read(storage);
+      if (pending) write({ ...pending, isAtGoogle });
     },
     peek(entryId: string): PendingVote | null {
       const storage = getStorage();
@@ -79,28 +101,33 @@ export function createPendingVotes(
       }
       return pending;
     },
-    clear() {
-      try {
-        getStorage()?.removeItem(KEY);
-      } catch {
-        /* Nothing to clear. */
-      }
+    clear,
+    // They left the page with the sheet still open. Going to Google keeps it.
+    abandon() {
+      const storage = getStorage();
+      if (storage && read(storage)?.isAtGoogle !== true) clear();
     },
   };
 }
 
 export const pendingVotes = createPendingVotes();
 
-// What to do with a pending vote once they're signed in
+// What to do with a pending vote. isSheetOpen is whether this page has the
+// sign-in sheet open for it.
 export function pendingVoteAction(
   state: VoteFlowStep,
-  sawInPerson: boolean | null,
-): "wait" | "drop" | "ask" | "send" | "confirmSwitch" {
-  if (state.step === "loading" || state.step === "signedOut") return "wait";
+  pending: Pick<PendingVote, "sawInPerson" | "isAtGoogle">,
+  isSheetOpen: boolean,
+): "wait" | "reopen" | "drop" | "ask" | "send" | "confirmSwitch" {
+  if (state.step === "loading") return "wait";
+  // Back without signing in, e.g. they cancelled at Google
+  if (state.step === "signedOut") return isSheetOpen ? "wait" : "reopen";
+  // Only a sign-in they started for it sends it, not one later on
+  if (!isSheetOpen && !pending.isAtGoogle) return "drop";
   // Already voted for it, their own entry, or voting closed meanwhile
   if (state.step !== "choose") return "drop";
   if (state.inPersonAllowed === null) return "wait";
   // The location check passed after all, so they still have to answer
-  if (state.inPersonAllowed && sawInPerson === null) return "ask";
+  if (state.inPersonAllowed && pending.sawInPerson === null) return "ask";
   return state.otherVote ? "confirmSwitch" : "send";
 }

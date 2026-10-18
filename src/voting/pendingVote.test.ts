@@ -83,6 +83,42 @@ describe("pending votes", () => {
     expect(pending.take("entry1")).toBe(null);
   });
 
+  it("keeps the vote while they're away at Google", () => {
+    const { pending } = setup();
+    pending.save("entry1", true);
+    expect(pending.peek("entry1")?.isAtGoogle).toBe(false);
+    pending.setAtGoogle(true);
+    pending.abandon();
+    expect(pending.peek("entry1")).toMatchObject({
+      sawInPerson: true,
+      isAtGoogle: true,
+    });
+    pending.setAtGoogle(false);
+    expect(pending.peek("entry1")?.isAtGoogle).toBe(false);
+  });
+
+  it("forgets the vote when they walk away from the sheet", () => {
+    const { pending } = setup();
+    pending.save("entry1", true);
+    pending.abandon();
+    expect(pending.peek("entry1")).toBe(null);
+  });
+
+  it("doesn't make up a vote when marking Google", () => {
+    const { pending, storage } = setup();
+    pending.setAtGoogle(true);
+    expect(storage.items.size).toBe(0);
+  });
+
+  it("reads a vote saved before the Google flag as not at Google", () => {
+    const { pending, storage } = setup();
+    storage.setItem(
+      "pg-pending-vote-v1",
+      JSON.stringify({ entryId: "entry1", sawInPerson: true, savedAt: 1e6 }),
+    );
+    expect(pending.peek("entry1")?.isAtGoogle).toBe(false);
+  });
+
   it("ignores junk in storage", () => {
     const { pending, storage } = setup();
     storage.setItem("pg-pending-vote-v1", "{not json");
@@ -126,34 +162,89 @@ describe("pendingVoteAction", () => {
     canRetryLocation: false,
   });
 
+  const signedOut: VoteFlowStep = {
+    step: "signedOut",
+    inPersonAllowed: true,
+    canRetryLocation: false,
+  };
+  const fromGoogle = (sawInPerson: boolean | null) => ({
+    sawInPerson,
+    isAtGoogle: true,
+  });
+  const inSheet = (sawInPerson: boolean | null) => ({
+    sawInPerson,
+    isAtGoogle: false,
+  });
+
   it("waits for the page and the location check", () => {
-    expect(pendingVoteAction({ step: "loading" }, true)).toBe("wait");
-    expect(pendingVoteAction(choose(null), true)).toBe("wait");
+    expect(
+      pendingVoteAction({ step: "loading" }, fromGoogle(true), false),
+    ).toBe("wait");
+    expect(pendingVoteAction(choose(null), fromGoogle(true), false)).toBe(
+      "wait",
+    );
   });
 
   it("sends with their answer once it's settled", () => {
-    expect(pendingVoteAction(choose(true), true)).toBe("send");
-    expect(pendingVoteAction(choose(true), false)).toBe("send");
-    expect(pendingVoteAction(choose(false), null)).toBe("send");
+    expect(pendingVoteAction(choose(true), fromGoogle(true), false)).toBe(
+      "send",
+    );
+    expect(pendingVoteAction(choose(true), fromGoogle(false), false)).toBe(
+      "send",
+    );
+    expect(pendingVoteAction(choose(false), fromGoogle(null), false)).toBe(
+      "send",
+    );
+  });
+
+  it("sends after signing in from the sheet on this page", () => {
+    expect(pendingVoteAction(choose(true), inSheet(true), true)).toBe("send");
+  });
+
+  it("never sends one left over from a sign-in they walked away from", () => {
+    expect(pendingVoteAction(choose(true), inSheet(true), false)).toBe("drop");
+    expect(
+      pendingVoteAction(choose(true, otherVote), inSheet(true), false),
+    ).toBe("drop");
+  });
+
+  it("reopens the sheet when they come back still signed out", () => {
+    expect(pendingVoteAction(signedOut, fromGoogle(true), false)).toBe(
+      "reopen",
+    );
+    expect(pendingVoteAction(signedOut, inSheet(true), false)).toBe("reopen");
+    expect(pendingVoteAction(signedOut, inSheet(true), true)).toBe("wait");
   });
 
   it("asks before moving a vote from another display", () => {
-    expect(pendingVoteAction(choose(true, otherVote), true)).toBe(
-      "confirmSwitch",
-    );
+    expect(
+      pendingVoteAction(choose(true, otherVote), fromGoogle(true), false),
+    ).toBe("confirmSwitch");
   });
 
   it("asks for an answer the location check now needs", () => {
-    expect(pendingVoteAction(choose(true), null)).toBe("ask");
+    expect(pendingVoteAction(choose(true), fromGoogle(null), false)).toBe(
+      "ask",
+    );
   });
 
   it("drops it when there's nothing to vote on", () => {
-    expect(pendingVoteAction({ step: "ownEntry" }, true)).toBe("drop");
-    expect(pendingVoteAction({ step: "closed", year: 2026 }, true)).toBe(
-      "drop",
-    );
-    expect(pendingVoteAction({ step: "voted", vote: otherVote }, true)).toBe(
-      "drop",
-    );
+    expect(
+      pendingVoteAction({ step: "ownEntry" }, fromGoogle(true), false),
+    ).toBe("drop");
+    expect(
+      pendingVoteAction(
+        { step: "closed", year: 2026 },
+        fromGoogle(true),
+        false,
+      ),
+    ).toBe("drop");
+    expect(
+      pendingVoteAction(
+        { step: "voted", vote: otherVote },
+        fromGoogle(true),
+        false,
+      ),
+    ).toBe("drop");
   });
 });

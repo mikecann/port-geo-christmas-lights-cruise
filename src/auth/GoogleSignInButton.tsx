@@ -8,9 +8,12 @@ import { routes } from "../routes";
 export function GoogleSignInButton({
   returnTo,
   signupDisabled,
+  onStart,
 }: {
   returnTo: string;
   signupDisabled: boolean;
+  // Called just before the browser leaves for Google
+  onStart?: () => void;
 }) {
   const { signIn } = useAuthActions();
   const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +25,7 @@ export function GoogleSignInButton({
       size="lg"
       onClick={() => {
         authStarted();
+        onStart?.();
         setIsLoading(true);
         signIn("google", {
           // While sign-ups are closed the server turns new accounts

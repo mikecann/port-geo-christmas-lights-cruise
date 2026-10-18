@@ -61,7 +61,11 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
           onKeep={flow.stopChanging}
         />
       )}
-      <SignInSheet opened={flow.isSigningIn} onClose={flow.cancelSignIn} />
+      <SignInSheet
+        opened={flow.isSigningIn}
+        onGoogle={flow.leaveForGoogle}
+        onClose={flow.cancelSignIn}
+      />
       {otherVote && (
         <SwitchVoteSheet
           opened={flow.isConfirmingSwitch}
