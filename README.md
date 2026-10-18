@@ -121,6 +121,14 @@ For local dev, put `GEO_TOKEN_SECRET=<secret>` in `.dev.vars` (gitignored, read 
 
 `/admin` is for competition admins (ARG) and system admins. It opens on an overview with the competition's status, switches to open and close entries and voting, and how many entries are waiting for review. The other pages are Entries (the review queue, then every entry), Numbers (the number range and which numbers are taken, kept for returning entrants or free), Votes (the three rankings, flagged votes and the CSV), and People (finding people and making them admins). System admins also get a Danger zone page with the testing tools and wipes.
 
+### Production deployment
+
+Production runs on the Convex deployment `shocking-robin-810` in Sydney (`aws-ap-southeast-2`, reference `production`), moved from US East on 18 October 2026. Merging to `main` deploys it: the Cloudflare Workers build runs `convex deploy` with a Sydney deploy key in its build variables, then builds the site against it. `convex.portgeochristmascruise.com.au` (HTTP actions, Google sign-in callbacks, the worker's OG lookups) points at Sydney too.
+
+The old US deployment `fortunate-grouse-28` (reference `us-retired`) is still around as a fallback. Until it's deleted, the Convex CLI still treats it as the project's default production deployment, so don't run `npx convex deploy` or `--prod` commands from your machine: use `--deployment production`, or a Sydney deploy key in `CONVEX_DEPLOY_KEY`.
+
+Photo resizing through Cloudflare (`/cdn-cgi/image/...`) is switched off with `PHOTO_RESIZING_ENABLED` in `shared/photoUrls.ts`, because Cloudflare's allowed image sources only list the old US host. Turn it back on once `shocking-robin-810.ap-southeast-2.convex.cloud` is an allowed source.
+
 ### Moving to a new deployment
 
 Uploaded photos save their full file URL, which includes the deployment's host, so after importing an export (with file storage) into a new deployment they still point at the old one. Once the import is done, run this against the new deployment:
