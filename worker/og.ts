@@ -3,6 +3,7 @@
 import { httpApiOgEntryReturnValidator } from "../shared/validators";
 import {
   ENTRY_PHOTO,
+  VOTE_PHOTO,
   resizedPhotoSrcSet,
   resizedPhotoUrl,
 } from "../shared/photoUrls";
@@ -163,14 +164,19 @@ export function buildOgTags(url: URL, meta: OgMeta): string {
   const source = meta.imageUrl;
   // Mock photos have site-relative paths
   const imageUrl = source ? new URL(source, url).href : null;
-  // The same image the carousel's first <img> picks, so it downloads once
+  // The vote pages show a smaller photo than the entry page's carousel
+  const isVotePage =
+    entryNumberFromPath(url.pathname) !== null ||
+    url.pathname.endsWith("/vote");
+  const photo = isVotePage ? VOTE_PHOTO : ENTRY_PHOTO;
+  // The same image the page's first <img> picks, so it downloads once
   const preload = iife(() => {
     if (!source) return "";
     if (!/^https?:\/\//.test(source))
       return `<link rel="preload" as="image" href="${escapeHTML(source)}" fetchpriority="high">`;
-    const href = resizedPhotoUrl(source, ENTRY_PHOTO.fallbackWidth);
-    const srcset = resizedPhotoSrcSet(source, ENTRY_PHOTO.widths);
-    return `<link rel="preload" as="image" href="${escapeHTML(href)}" imagesrcset="${escapeHTML(srcset)}" imagesizes="${escapeHTML(ENTRY_PHOTO.sizes)}" fetchpriority="high">`;
+    const href = resizedPhotoUrl(source, photo.fallbackWidth);
+    const srcset = resizedPhotoSrcSet(source, photo.widths);
+    return `<link rel="preload" as="image" href="${escapeHTML(href)}" imagesrcset="${escapeHTML(srcset)}" imagesizes="${escapeHTML(photo.sizes)}" fetchpriority="high">`;
   });
 
   return `

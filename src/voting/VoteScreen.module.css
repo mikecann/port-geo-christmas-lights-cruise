@@ -1,0 +1,175 @@
+/* One phone screen under the site header: the photo takes what the bar
+   doesn't, so the Vote button always sits under your thumb */
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
+  max-width: 36em;
+  margin-inline: auto;
+  background-color: var(--mantine-color-dark-8);
+}
+
+.photo {
+  position: relative;
+  flex: 1;
+  min-height: 12rem;
+  overflow: hidden;
+  background-color: var(--mantine-color-dark-7);
+}
+
+.placeholder,
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The map's tiny thumbnail, often cached already, until the photo arrives */
+.placeholder {
+  filter: blur(14px);
+  transform: scale(1.15);
+}
+
+.image {
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+.image[data-loaded] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image {
+    transition: none;
+  }
+}
+
+.shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0) 20%,
+    rgba(0, 0, 0, 0) 50%,
+    rgba(20, 20, 20, 0.95) 100%
+  );
+}
+
+.links {
+  position: absolute;
+  top: var(--mantine-spacing-sm);
+  left: var(--mantine-spacing-sm);
+  right: var(--mantine-spacing-sm);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-xs);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding-inline: 14px;
+  border-radius: 999px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: var(--mantine-color-white);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pill:focus-visible {
+  outline: 2px solid var(--mantine-color-yellow-5);
+  outline-offset: 2px;
+}
+
+.caption {
+  position: absolute;
+  margin: 0;
+  left: var(--mantine-spacing-md);
+  right: var(--mantine-spacing-md);
+  bottom: var(--mantine-spacing-md);
+}
+
+/* Like the number on the house sign, readable over a night photo */
+.number {
+  display: inline-block;
+  padding: 0.25rem 0.85rem;
+  border-radius: var(--mantine-radius-md);
+  background-color: var(--mantine-color-white);
+  color: var(--mantine-color-dark-9);
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+}
+
+.number[data-size="sm"] {
+  font-size: 1.5rem;
+  padding: 0.2rem 0.55rem;
+}
+
+.name {
+  margin-top: var(--mantine-spacing-xs);
+  color: var(--mantine-color-white);
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bar {
+  flex: none;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md)
+    calc(var(--mantine-spacing-sm) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--mantine-color-dark-6);
+  background-color: var(--mantine-color-dark-8);
+}
+
+/* The space above the Vote button for the seen-it switch, held while the
+   location check runs so the button doesn't move */
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 5rem;
+}
+
+.sheet {
+  border-top-left-radius: var(--mantine-radius-lg);
+  border-top-right-radius: var(--mantine-radius-lg);
+}
+
+/* Bottom sheets span the screen, their contents only the page's width */
+.sheetInner {
+  width: 100%;
+  max-width: 36em;
+  margin-inline: auto;
+}
+
+.sheetBody {
+  padding-bottom: calc(var(--mantine-spacing-md) + env(safe-area-inset-bottom));
+}
+
+.sheetEntry {
+  width: 8rem;
+  text-align: center;
+}
+
+.sheetEntry[data-from] {
+  opacity: 0.6;
+}

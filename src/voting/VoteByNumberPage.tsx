@@ -1,11 +1,8 @@
-import { Alert, Anchor, Center, Container, Loader, Stack } from "@mantine/core";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useEntryView } from "../analytics/useEntryView";
-import { routes } from "../routes";
-import EntryNumberForm from "./EntryNumberForm";
-import VoteEntrySummary from "./VoteEntrySummary";
-import VoteFlow from "./VoteFlow";
+import EntryNumberPad from "./EntryNumberPad";
+import VoteScreen from "./VoteScreen";
 
 // /v/<number>, where the QR code on each house sign goes
 export default function VoteByNumberPage({
@@ -20,36 +17,21 @@ export default function VoteByNumberPage({
   );
   useEntryView(found?.entry._id, found?.entry.competitionId, "entry");
 
+  // The number from the sign shows straight away, before the entry loads
   if (number !== null && found === undefined)
-    return (
-      <Center py="xl">
-        <Loader />
-      </Center>
-    );
+    return <VoteScreen entryNumber={number} />;
 
+  // The keypad says there's no display with that number
   if (!found)
     return (
-      <Container size="xs" py="xl">
-        <Stack gap="lg">
-          <Alert color="yellow" title={`We couldn't find #${entryNumber}`}>
-            There's no display with that number this year. Check the number on
-            the sign and try again.
-          </Alert>
-          <EntryNumberForm />
-        </Stack>
-      </Container>
+      <EntryNumberPad initialValue={number === null ? "" : String(number)} />
     );
 
-  const { entry, photos } = found;
   return (
-    <Container size="xs" py="md">
-      <Stack gap="lg">
-        <VoteEntrySummary entry={entry} photo={photos[0]} />
-        <VoteFlow entry={entry} />
-        <Anchor ta="center" {...routes.entry({ entryId: entry._id }).link}>
-          See more photos and where it is
-        </Anchor>
-      </Stack>
-    </Container>
+    <VoteScreen
+      entryNumber={found.entry.entryNumber}
+      entry={found.entry}
+      photo={found.photos[0]}
+    />
   );
 }

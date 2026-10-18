@@ -78,6 +78,12 @@ export const routeGroups = {
   ]),
   map: createGroup([routes.map, routes.mapEntry]),
   entry: createGroup([routes.entry, routes.entryVote]),
+  // Full-screen pages, without the footer
+  voteScreen: createGroup([
+    routes.entryVote,
+    routes.voteByNumber,
+    routes.voteLanding,
+  ]),
   admin: createGroup([
     routes.admin,
     routes.adminEntries,

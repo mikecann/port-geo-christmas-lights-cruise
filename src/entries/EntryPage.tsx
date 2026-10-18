@@ -6,7 +6,7 @@ import { IconPhoto } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { routes, routeGroups } from "../routes";
+import { routeGroups } from "../routes";
 import { useState } from "react";
 import { AspectRatio } from "@mantine/core";
 import EntryPageSkeleton from "./EntryPageSkeleton";
@@ -14,7 +14,7 @@ import PhotoLightbox from "../authed/myEntries/photos/PhotoLightbox";
 import EntryHeader from "./EntryHeader";
 import SystemAdminSection from "./SystemAdminSection";
 import EntryVoting from "./voting/EntryVoting";
-import VoteModal from "../voting/VoteModal";
+import VoteScreen from "../voting/VoteScreen";
 import ShareModal from "./ShareModal";
 import { PhotoSlide } from "./PhotoSlide";
 import { NotFoundPage } from "../common/NotFoundPage";
@@ -35,7 +35,6 @@ export default function EntryPage({
   const entryWithPhotos = useQuery(api.public.entries.getWithPhotos, {
     entryId,
   });
-  const competition = useQuery(api.public.competitions.current, {});
 
   useEntryView(
     entryWithPhotos ? entryId : undefined,
@@ -43,7 +42,8 @@ export default function EntryPage({
     "entry",
   );
 
-  if (entryWithPhotos === undefined) return <EntryPageSkeleton />;
+  if (entryWithPhotos === undefined)
+    return route.name === "entryVote" ? <VoteScreen /> : <EntryPageSkeleton />;
   if (entryWithPhotos === null)
     return (
       <NotFoundPage
@@ -53,6 +53,16 @@ export default function EntryPage({
     );
 
   const { entry, photos } = entryWithPhotos;
+
+  // The vote step is the same full-screen page as the house sign's QR code
+  if (route.name === "entryVote")
+    return (
+      <VoteScreen
+        entryNumber={entry.entryNumber}
+        entry={entry}
+        photo={photos[0]}
+      />
+    );
 
   return (
     <Container size="lg" py="xl">
@@ -141,19 +151,6 @@ export default function EntryPage({
         }}
         imageUrl={selectedImageUrl}
       />
-
-      {/* Vote Modal */}
-      {competition?.votingOpen &&
-      competition._id === entry.competitionId &&
-      route.name == "entryVote" ? (
-        <VoteModal
-          entryId={entryId}
-          opened={true}
-          onClose={() => {
-            routes.entry({ entryId }).push();
-          }}
-        />
-      ) : null}
 
       {/* Share Modal */}
       <ShareModal
