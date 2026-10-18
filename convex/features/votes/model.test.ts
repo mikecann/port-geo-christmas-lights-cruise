@@ -22,6 +22,7 @@ import { aggregateVotes, voteNamespace, type VoteTally } from "./lib";
 import { OWN_ENTRY_VOTE_MESSAGE, SAME_INBOX_VOTE_MESSAGE } from "./model";
 import { canonicalEmail } from "../../../shared/auth";
 import {
+  LOCATION_RETRY_MESSAGE,
   MOST_JOLLY_IN_PERSON_MESSAGE,
   SEEN_IN_PERSON_REQUIRED_MESSAGE,
 } from "../../../shared/voting";
@@ -273,7 +274,7 @@ describe("no self-votes", () => {
     await t.mutation(api.my.votes.vote, {
       entryId: other._id,
       category: "best_display",
-      sawInPerson: true,
+      sawInPerson: false,
     });
     expect(
       await t.query(api.my.votes.getForEntry, { entryId: other._id }),
@@ -542,28 +543,26 @@ describe("in-person votes", () => {
     });
   });
 
-  it("doesn't trust a missing, expired or forged token", async () => {
-    expect(await vote({ sawInPerson: true })).toEqual({
-      inPerson: false,
-      locationCheck: "no_location",
-    });
-
+  it("asks them to try again with a missing, expired or forged token", async () => {
     const stale = await geoToken(
       busselton,
       Date.now() - GEO_TOKEN_LIFETIME_MS - 60_000,
     );
-    expect(await vote({ sawInPerson: true, geoToken: stale })).toEqual({
-      inPerson: false,
-      locationCheck: "expired",
-    });
-
     const forged = await signGeoToken(
       { ...busselton, issuedAt: Date.now(), nonce: crypto.randomUUID() },
       "a-guessed-secret",
     );
-    expect(await vote({ sawInPerson: true, geoToken: forged })).toEqual({
+    for (const token of [undefined, stale, forged])
+      await expect(
+        vote({ sawInPerson: true, ...(token ? { geoToken: token } : {}) }),
+      ).rejects.toThrow(LOCATION_RETRY_MESSAGE);
+    // Rather than quietly counting for People's Choice
+    expect(await storedVotes(t)).toHaveLength(0);
+
+    // Not seen it doesn't need a location, so it still counts there
+    expect(await vote({ sawInPerson: false, geoToken: stale })).toEqual({
       inPerson: false,
-      locationCheck: "invalid",
+      locationCheck: "expired",
     });
     expect((await theVote()).location).toBeUndefined();
   });
@@ -627,15 +626,18 @@ describe("in-person votes", () => {
 
     // Passed on to someone else, or sent again
     const friend = await signInAs(base, { name: "Friend" });
-    expect(
-      await friend.mutation(api.my.votes.vote, {
+    await expect(
+      friend.mutation(api.my.votes.vote, {
         entryId,
         category: "best_display",
         sawInPerson: true,
         geoToken: token,
       }),
-    ).toEqual({ inPerson: false, locationCheck: "reused" });
-    expect(await vote({ sawInPerson: true, geoToken: token })).toEqual({
+    ).rejects.toThrow(LOCATION_RETRY_MESSAGE);
+    await expect(vote({ sawInPerson: true, geoToken: token })).rejects.toThrow(
+      LOCATION_RETRY_MESSAGE,
+    );
+    expect(await vote({ sawInPerson: false, geoToken: token })).toEqual({
       inPerson: false,
       locationCheck: "reused",
     });
@@ -774,12 +776,17 @@ describe("best display and Most Jolly", () => {
     const attempts = [
       { sawInPerson: false },
       { sawInPerson: true, geoToken: await geoToken(london) },
-      { sawInPerson: true, geoToken: "not-a-token" },
     ];
     for (const attempt of attempts)
       await expect(voteFor(first, "most_jolly", attempt)).rejects.toThrow(
         MOST_JOLLY_IN_PERSON_MESSAGE,
       );
+    await expect(
+      voteFor(first, "most_jolly", {
+        sawInPerson: true,
+        geoToken: "not-a-token",
+      }),
+    ).rejects.toThrow(LOCATION_RETRY_MESSAGE);
     await expect(
       voteFor(first, "most_jolly", { sawInPerson: undefined }),
     ).rejects.toThrow(SEEN_IN_PERSON_REQUIRED_MESSAGE);

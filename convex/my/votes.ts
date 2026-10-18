@@ -17,6 +17,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { votingClosedMessage } from "../../shared/eventStatus";
 import {
+  LOCATION_RETRY_MESSAGE,
   MOST_JOLLY_IN_PERSON_MESSAGE,
   SEEN_IN_PERSON_REQUIRED_MESSAGE,
 } from "../../shared/voting";
@@ -154,6 +155,15 @@ export const vote = userMutation
     );
     if (locationCheck === "ok" && input.sawInPerson === undefined)
       throw new ConvexError(SEEN_IN_PERSON_REQUIRED_MESSAGE);
+    // A dropout or an old token says nothing about where they are, so they
+    // try again rather than have an in-person vote land in People's Choice
+    const isTransient =
+      (locationCheck === "no_location" && input.geoToken === undefined) ||
+      locationCheck === "expired" ||
+      locationCheck === "invalid" ||
+      locationCheck === "reused";
+    if (input.sawInPerson === true && isTransient)
+      throw new ConvexError(LOCATION_RETRY_MESSAGE);
     const sawInPerson = input.sawInPerson ?? false;
     const inPerson = locationCheck === "ok" && sawInPerson;
     // Throwing undoes claiming the token too, so they can try again with it

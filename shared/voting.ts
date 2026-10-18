@@ -8,6 +8,11 @@ import type {
 export const SEEN_IN_PERSON_REQUIRED_MESSAGE =
   "Tell us whether you've seen it in person first.";
 
+// When an in-person vote comes without a fresh location token, from either
+// end, as storing it would put it in People's Choice
+export const LOCATION_RETRY_MESSAGE =
+  "We couldn't confirm your location. Please try again.";
+
 // Most Jolly is about the dancing and dressing up, so only people who were
 // there can vote for it
 export const MOST_JOLLY_IN_PERSON_MESSAGE =
