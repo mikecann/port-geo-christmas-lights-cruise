@@ -95,6 +95,14 @@ export const competitions = {
         await ctx.db.patch(competitionId, { entriesOpen });
       },
 
+      async setVotingOpen(
+        competitionId: Id<"competitions">,
+        votingOpen: boolean,
+      ) {
+        await competitions.query(ctx).forCompetition(competitionId).get();
+        await ctx.db.patch(competitionId, { votingOpen });
+      },
+
       async setEntryNumberRange(
         competitionId: Id<"competitions">,
         range: EntryNumberRange,

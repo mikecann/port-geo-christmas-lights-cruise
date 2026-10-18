@@ -14,4 +14,8 @@ export const usersTable = defineTable({
   isTestUser: v.optional(v.boolean()),
 })
   .index("email", ["email"])
-  .index("by_isCompetitionAdmin", ["isCompetitionAdmin"]);
+  .index("by_isCompetitionAdmin", ["isCompetitionAdmin"])
+  .index("by_isSystemAdmin", ["isSystemAdmin"])
+  // For finding someone on the admin People page
+  .searchIndex("search_name", { searchField: "name" })
+  .searchIndex("search_email", { searchField: "email" });

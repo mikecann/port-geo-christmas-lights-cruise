@@ -212,6 +212,26 @@ export const entries = {
         return entryNumber;
       },
 
+      // This year's entry using the number, rejected ones aside
+      async findHolderOfNumber(
+        competitionId: Id<"competitions">,
+        entryNumber: number,
+        excludeEntryId?: Id<"entries">,
+      ) {
+        const withNumber = await db
+          .query("entries")
+          .withIndex("by_competitionId_and_entryNumber", (q) =>
+            q.eq("competitionId", competitionId).eq("entryNumber", entryNumber),
+          )
+          .take(10);
+        return (
+          withNumber.find(
+            (entry) =>
+              entry._id !== excludeEntryId && entry.status !== "rejected",
+          ) ?? null
+        );
+      },
+
       async ensureNumberIsFree(
         competitionId: Id<"competitions">,
         entryNumber: number,
@@ -286,6 +306,11 @@ export const entries = {
             .length,
           totalApprovedEntries: allEntries.filter(isStatus("approved")).length,
           totalRejectedEntries: allEntries.filter(isStatus("rejected")).length,
+          // Started but not sent in for review yet
+          totalUnsentEntries: allEntries.filter(
+            (entry) =>
+              entry.status === "draft" || entry.status === "submitting",
+          ).length,
         };
       },
 
@@ -391,6 +416,27 @@ export const entries = {
                 MAX_REJECTED_REASON_LENGTH,
                 "The rejection reason",
               ),
+            });
+          },
+
+          // Undoes a rejection, so it's back in the review queue. Its old
+          // number may have gone to someone else, so approval picks again.
+          async reopen() {
+            const entry = await query.get();
+            if (entry.status !== "rejected")
+              throw new ConvexError(
+                "Only rejected entries can be sent back for review.",
+              );
+            await db.replace(entryId, {
+              competitionId: entry.competitionId,
+              submittedByUserId: entry.submittedByUserId,
+              ...(entry.previousEntryId === undefined
+                ? {}
+                : { previousEntryId: entry.previousEntryId }),
+              status: "submitted",
+              submittedAt: entry.submittedAt,
+              houseAddress: entry.houseAddress,
+              name: entry.name,
             });
           },
 

@@ -68,7 +68,7 @@ describe("auth builders", () => {
 
     const asCompetitionAdmin = await signedInAs({ isCompetitionAdmin: true });
     await expectConvexError(
-      asCompetitionAdmin.query(api.admin.system.users.count, {}),
+      asCompetitionAdmin.query(api.admin.system.data.wipesAllowed, {}),
       NOT_ALLOWED_MESSAGE,
     );
   });

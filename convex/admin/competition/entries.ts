@@ -11,7 +11,10 @@ import type { api } from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { QueryCtx } from "../../_generated/server";
 import { competitions } from "../../features/competitions/model";
-import { isOutsideRange } from "../../features/entries/numbers";
+import {
+  isOutsideRange,
+  type EntryNumberRange,
+} from "../../features/entries/numbers";
 import { isWithinBoundary } from "../../../shared/geo";
 
 const reviewableStatusValidator = v.union(
@@ -23,6 +26,14 @@ const reviewableStatusValidator = v.union(
 export type AdminEntry = FunctionReturnType<
   typeof api.admin.competition.entries.list
 >[number];
+
+export type AdminEntryRow = FunctionReturnType<
+  typeof api.admin.competition.entries.listAll
+>[number];
+
+export type AdminEntryDetail = NonNullable<
+  FunctionReturnType<typeof api.admin.competition.entries.get>
+>;
 
 const describePreviousEntry = async (
   context: QueryCtx,
@@ -42,6 +53,76 @@ const describePreviousEntry = async (
   };
 };
 
+const describeSubmitter = async (context: QueryCtx, entry: Doc<"entries">) => {
+  const submitter = await context.db.get(entry.submittedByUserId);
+  return (
+    submitter && {
+      _id: submitter._id,
+      name: submitter.name,
+      email: submitter.email,
+      image: submitter.image,
+    }
+  );
+};
+
+const isNumberOutsideRange = (entry: Doc<"entries">, range: EntryNumberRange) =>
+  entry.status !== "rejected" &&
+  entry.entryNumber !== undefined &&
+  isOutsideRange(entry.entryNumber, range);
+
+// What a reviewer should look at before approving
+const describeChecks = async (
+  context: QueryCtx,
+  entry: Doc<"entries">,
+  previous: { entryNumber: number } | null,
+) => {
+  const { houseAddress } = entry;
+  // Same rule as submitting: drafts and rejected entries don't block an address
+  const sameAddress = houseAddress
+    ? (
+        await entries
+          .query(context)
+          .findEntriesByPlaceId(entry.competitionId, houseAddress.placeId)
+      ).filter(
+        (other) =>
+          other._id !== entry._id &&
+          other.status !== "draft" &&
+          other.status !== "rejected",
+      )
+    : [];
+  const previousNumberHolder =
+    previous &&
+    entry.status !== "rejected" &&
+    entry.entryNumber !== previous.entryNumber
+      ? await entries
+          .query(context)
+          .findHolderOfNumber(
+            entry.competitionId,
+            previous.entryNumber,
+            entry._id,
+          )
+      : null;
+  return {
+    // Drafts haven't been geocoded yet, so there's nothing to check
+    isWithinBoundary:
+      houseAddress && "lat" in houseAddress
+        ? isWithinBoundary(houseAddress)
+        : null,
+    location:
+      houseAddress && "lat" in houseAddress
+        ? { lat: houseAddress.lat, lng: houseAddress.lng }
+        : null,
+    sameAddress: sameAddress.map((other) => ({
+      _id: other._id,
+      name: other.name ?? "",
+    })),
+    previousNumberHeldBy: previousNumberHolder && {
+      _id: previousNumberHolder._id,
+      name: previousNumberHolder.name ?? "",
+    },
+  };
+};
+
 // Past competitions are kept as history
 const getCurrentEntry = async (context: QueryCtx, entryId: Id<"entries">) => {
   const entry = await entries.query(context).forEntry(entryId).get();
@@ -55,8 +136,8 @@ const getCurrentEntry = async (context: QueryCtx, entryId: Id<"entries">) => {
 
 // Queries
 
-// What the admin entry cards and tables show, including the photos and the
-// person who entered, so each card doesn't have to fetch them again
+// The review queue cards, with everything a reviewer needs on one card so
+// each doesn't have to fetch it again
 export const list = competitionAdminQuery
   .input({ status: reviewableStatusValidator })
   .handler(async (context, input) => {
@@ -68,22 +149,92 @@ export const list = competitionAdminQuery
 
     return await Promise.all(
       statusEntries.map(async (entry) => {
-        const submitter = await context.db.get(entry.submittedByUserId);
+        const previous = await describePreviousEntry(context, entry);
         return {
           ...entry,
           photos: await photos.forEntry(entry._id).list(context.db),
-          submitter: submitter && {
-            name: submitter.name,
-            email: submitter.email,
-          },
-          previous: await describePreviousEntry(context, entry),
-          isNumberOutsideRange:
-            entry.status !== "rejected" &&
-            entry.entryNumber !== undefined &&
-            isOutsideRange(entry.entryNumber, range),
+          submitter: await describeSubmitter(context, entry),
+          previous,
+          isNumberOutsideRange: isNumberOutsideRange(entry, range),
+          checks: await describeChecks(context, entry, previous),
         };
       }),
     );
+  })
+  .public();
+
+// One row per entry this year, whatever its status, for searching
+export const listAll = competitionAdminQuery
+  .input({})
+  .handler(async (context) => {
+    const competition = await competitions.query(context).current();
+    const range = competitions.entryNumberRange(competition);
+    const allEntries = await context.db
+      .query("entries")
+      .withIndex("by_competitionId_and_status", (q) =>
+        q.eq("competitionId", competition._id),
+      )
+      .collect();
+    return await Promise.all(
+      allEntries.map(async (entry) => {
+        const submitter = await describeSubmitter(context, entry);
+        const previous = await describePreviousEntry(context, entry);
+        return {
+          _id: entry._id,
+          status: entry.status,
+          name: entry.name ?? "",
+          address: entry.houseAddress?.address ?? "",
+          entryNumber:
+            entry.status === "rejected" ? undefined : entry.entryNumber,
+          submitterName: submitter?.name,
+          submitterEmail: submitter?.email,
+          previous: previous && {
+            year: previous.year,
+            entryNumber: previous.entryNumber,
+          },
+          isNumberOutsideRange: isNumberOutsideRange(entry, range),
+        };
+      }),
+    );
+  })
+  .public();
+
+// Everything about one entry, including the person's entries in earlier years
+export const get = competitionAdminQuery
+  .input({ entryId: v.id("entries") })
+  .handler(async (context, input) => {
+    const entry = await entries.query(context).forEntry(input.entryId).find();
+    if (!entry) return null;
+    const competition = await competitions
+      .query(context)
+      .forCompetition(entry.competitionId)
+      .get();
+    const current = await competitions.query(context).current();
+    const previous = await describePreviousEntry(context, entry);
+    const earlier = await entries
+      .query(context)
+      .forUser(entry.competitionId, entry.submittedByUserId)
+      .listPrevious();
+    return {
+      entry,
+      year: competition.year,
+      isCurrent: competition._id === current._id,
+      submitter: await describeSubmitter(context, entry),
+      previous,
+      isNumberOutsideRange: isNumberOutsideRange(
+        entry,
+        competitions.entryNumberRange(competition),
+      ),
+      checks: await describeChecks(context, entry, previous),
+      earlierEntries: earlier.map((row) => ({
+        _id: row.entry._id,
+        year: row.competition.year,
+        name: row.entry.name ?? "",
+        status: row.entry.status,
+        entryNumber:
+          row.entry.status === "approved" ? row.entry.entryNumber : undefined,
+      })),
+    };
   })
   .public();
 
@@ -92,66 +243,6 @@ export const getStats = competitionAdminQuery
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
     return await entries.query(context).getStats(competition._id);
-  })
-  .public();
-
-export const getUserDetails = competitionAdminQuery
-  .input({ userId: v.id("users") })
-  .handler(async (context, input) => {
-    const user = await context.db.get(input.userId);
-    if (!user) return null;
-
-    return {
-      _id: user._id,
-      _creationTime: user._creationTime,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      image: user.image,
-      emailVerificationTime: user.emailVerificationTime,
-      phoneVerificationTime: user.phoneVerificationTime,
-    };
-  })
-  .public();
-
-export const getEntryValidationStatus = competitionAdminQuery
-  .input({ entryId: v.id("entries") })
-  .returns(
-    v.object({
-      hasConflicts: v.boolean(),
-      isWithinBoundary: v.union(v.boolean(), v.null()),
-      isReturningEntrant: v.boolean(),
-    }),
-  )
-  .handler(async (context, input) => {
-    const entry = await entries.query(context).forEntry(input.entryId).get();
-    if (!entry.houseAddress)
-      return {
-        hasConflicts: false,
-        isWithinBoundary: null,
-        isReturningEntrant: false,
-      };
-
-    const hasConflicts = await entries
-      .query(context)
-      .hasEntryWithPlaceIdAlreadyBeenSubmitted(
-        entry.competitionId,
-        entry.houseAddress.placeId,
-        input.entryId,
-      );
-
-    const isReturningEntrant =
-      (await entries.query(context).findPreviousOf(entry)) !== null;
-
-    return {
-      hasConflicts,
-      // Drafts haven't been geocoded yet, so there's nothing to check
-      isWithinBoundary:
-        "lat" in entry.houseAddress
-          ? isWithinBoundary(entry.houseAddress)
-          : null,
-      isReturningEntrant,
-    };
   })
   .public();
 
@@ -274,6 +365,17 @@ export const setEntryNumber = competitionAdminMutation
       .mutate(context)
       .forEntry(input.entryId)
       .overrideEntryNumber(input.entryNumber);
+    return null;
+  })
+  .public();
+
+// For a rejection made by mistake. They get an email again when it's reviewed.
+export const reopen = competitionAdminMutation
+  .input({ entryId: v.id("entries") })
+  .returns(v.null())
+  .handler(async (context, input) => {
+    await getCurrentEntry(context, input.entryId);
+    await entries.mutate(context).forEntry(input.entryId).reopen();
     return null;
   })
   .public();

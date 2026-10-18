@@ -625,13 +625,8 @@ describe("admin number tools", () => {
       entryNumber: 26,
     });
     expect(
-      await admin.query(
-        api.admin.competition.entries.getEntryValidationStatus,
-        {
-          entryId,
-        },
-      ),
-    ).toMatchObject({ isReturningEntrant: true });
+      await admin.query(api.admin.competition.entries.get, { entryId }),
+    ).toMatchObject({ previous: { _id: previousEntryId, entryNumber: 26 } });
     expect(await approve(t, entryId)).toBe(26);
   });
 

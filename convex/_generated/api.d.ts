@@ -10,7 +10,9 @@
 
 import type * as admin_competition_competitions from "../admin/competition/competitions.js";
 import type * as admin_competition_entries from "../admin/competition/entries.js";
+import type * as admin_competition_numbers from "../admin/competition/numbers.js";
 import type * as admin_competition_photos from "../admin/competition/photos.js";
+import type * as admin_competition_users from "../admin/competition/users.js";
 import type * as admin_competition_votes from "../admin/competition/votes.js";
 import type * as admin_system_data from "../admin/system/data.js";
 import type * as admin_system_email from "../admin/system/email.js";
@@ -61,7 +63,9 @@ import type {
 declare const fullApi: ApiFromModules<{
   "admin/competition/competitions": typeof admin_competition_competitions;
   "admin/competition/entries": typeof admin_competition_entries;
+  "admin/competition/numbers": typeof admin_competition_numbers;
   "admin/competition/photos": typeof admin_competition_photos;
+  "admin/competition/users": typeof admin_competition_users;
   "admin/competition/votes": typeof admin_competition_votes;
   "admin/system/data": typeof admin_system_data;
   "admin/system/email": typeof admin_system_email;

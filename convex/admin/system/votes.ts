@@ -102,15 +102,31 @@ export const generateMock = systemAdminMutation
 
       const randomEntry =
         approvedEntries[Math.floor(Math.random() * approvedEntries.length)];
-      const inPerson = Math.random() < 0.5;
+      // Every tenth is from overseas, so the flagged list has some too
+      const isOverseas = i % 10 === 9;
+      const inPerson = !isOverseas && Math.random() < 0.5;
 
       await context.db.insert("votes", {
         competitionId: competition._id,
         entryId: randomEntry._id,
         votingUserId: userId,
         inPerson,
-        sawInPerson: inPerson,
-        locationCheck: "ok",
+        sawInPerson: inPerson || isOverseas,
+        locationCheck: isOverseas ? "outside_area" : "ok",
+        location: isOverseas
+          ? {
+              country: "US",
+              region: "California",
+              city: "Los Angeles",
+              issuedAt: Date.now(),
+            }
+          : {
+              country: "AU",
+              region: "Western Australia",
+              regionCode: "WA",
+              city: "Busselton",
+              issuedAt: Date.now(),
+            },
         castAt: Date.now(),
       });
 

@@ -32,10 +32,11 @@ const submitCurrentEntry = (t: ConvexTest, userId: Id<"users">) =>
 
 const validationFor = async (t: ConvexTest, entryId: Id<"entries">) => {
   const admin = await createTestUser(t, { user: { isCompetitionAdmin: true } });
-  return await signInAsTestUser(t, admin).query(
-    api.admin.competition.entries.getEntryValidationStatus,
+  const detail = await signInAsTestUser(t, admin).query(
+    api.admin.competition.entries.get,
     { entryId },
   );
+  return { isReturningEntrant: detail?.previous != null };
 };
 
 describe("returning entrant flag", () => {

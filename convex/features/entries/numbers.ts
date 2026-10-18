@@ -45,3 +45,40 @@ export function ensureValidEntryNumberRange(range: EntryNumberRange) {
     );
   return range;
 }
+
+export type NumberRow<THolder, TReservation> = {
+  entryNumber: number;
+  // This year's entry using the number
+  holder?: THolder;
+  // Last year's entrant it's kept for, while nobody this year has it
+  reservedFor?: TReservation;
+  // No sign is printed for numbers outside the range
+  isOutsideRange: boolean;
+};
+
+// Every number in the range, plus any outside it that are used or kept
+export function describeNumbers<THolder, TReservation>({
+  range,
+  holders,
+  reserved,
+}: {
+  range: EntryNumberRange;
+  holders: Map<number, THolder>;
+  reserved: Map<number, TReservation>;
+}): NumberRow<THolder, TReservation>[] {
+  const numbers = new Set<number>([...holders.keys(), ...reserved.keys()]);
+  for (let n = range.min; n <= range.max; n++) numbers.add(n);
+  return [...numbers]
+    .sort((a, b) => a - b)
+    .map((entryNumber) => {
+      const holder = holders.get(entryNumber);
+      const reservedFor =
+        holder === undefined ? reserved.get(entryNumber) : undefined;
+      return {
+        entryNumber,
+        ...(holder === undefined ? {} : { holder }),
+        ...(reservedFor === undefined ? {} : { reservedFor }),
+        isOutsideRange: isOutsideRange(entryNumber, range),
+      };
+    });
+}
