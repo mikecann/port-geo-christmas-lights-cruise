@@ -29,6 +29,27 @@ export function entryIdFromPath(pathname: string): string | null {
   return id;
 }
 
+// The short links on house signs' QR codes: /v/<number>
+export function entryNumberFromPath(pathname: string): number | null {
+  const match = pathname.match(/^\/v\/(\d{1,4})$/);
+  return match ? Number(match[1]) : null;
+}
+
+// Which entry a page shows, by id or by this year's number
+export type EntryLookup = { entryId: string } | { entryNumber: number };
+
+export function entryLookupFromPath(pathname: string): EntryLookup | null {
+  const entryId = entryIdFromPath(pathname);
+  if (entryId) return { entryId };
+  const entryNumber = entryNumberFromPath(pathname);
+  return entryNumber === null ? null : { entryNumber };
+}
+
+export const ogCachePath = (lookup: EntryLookup) =>
+  "entryId" in lookup
+    ? `/__og/entries/${lookup.entryId}`
+    : `/__og/v/${lookup.entryNumber}`;
+
 // Keyed like the cache, since each origin (apex, www) has its own entry
 const refreshing = new Map<string, Promise<OgMeta | null>>();
 
@@ -37,14 +58,14 @@ const refreshing = new Map<string, Promise<OgMeta | null>>();
 export async function loadEntryOg({
   env,
   ctx,
-  entryId,
+  lookup,
   cache,
   cacheKey,
   now = Date.now(),
 }: {
   env: Env;
   ctx: Pick<ExecutionContext, "waitUntil">;
-  entryId: string;
+  lookup: EntryLookup;
   cache: Pick<Cache, "match" | "put">;
   cacheKey: string;
   now?: number;
@@ -52,7 +73,7 @@ export async function loadEntryOg({
   const refresh = () => {
     const inFlight = refreshing.get(cacheKey);
     if (inFlight) return inFlight;
-    const next = fetchEntryOg(env, entryId)
+    const next = fetchEntryOg(env, lookup)
       .then(async (meta) => {
         const value: CachedOg = { meta, fetchedAt: Date.now() };
         await cache.put(
@@ -67,7 +88,7 @@ export async function loadEntryOg({
         return meta;
       })
       .catch((error) => {
-        console.warn(`Couldn't load OG data for ${entryId}:`, error);
+        console.warn(`Couldn't load OG data for ${cacheKey}:`, error);
         return null;
       })
       .finally(() => refreshing.delete(cacheKey));
@@ -89,11 +110,15 @@ export async function loadEntryOg({
   return cached.meta;
 }
 
-// null means Convex says there's no public entry with this id
-async function fetchEntryOg(env: Env, entryId: string): Promise<OgMeta | null> {
+// null means Convex says there's no public entry with this id or number
+async function fetchEntryOg(
+  env: Env,
+  lookup: EntryLookup,
+): Promise<OgMeta | null> {
   if (!env.CONVEX_SITE_URL) throw new Error("CONVEX_SITE_URL not set");
   const url = new URL("/api/og/entry", env.CONVEX_SITE_URL);
-  url.searchParams.set("entryId", entryId);
+  if ("entryId" in lookup) url.searchParams.set("entryId", lookup.entryId);
+  else url.searchParams.set("entryNumber", String(lookup.entryNumber));
   const res = await fetch(url);
   if (res.status === 404) return null;
   if (!res.ok)

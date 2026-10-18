@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildOgTags,
   entryIdFromPath,
+  entryLookupFromPath,
   loadEntryOg,
   OG_TIMEOUT_MS,
   withTimeout,
@@ -36,7 +37,14 @@ let fetchMock: ReturnType<typeof vi.fn>;
 let waiting: Array<Promise<unknown>>;
 const ctx = { waitUntil: (p: Promise<unknown>) => void waiting.push(p) };
 const load = (cache: Cache, now?: number) =>
-  loadEntryOg({ env, ctx, entryId: id, cache, cacheKey: "og", now });
+  loadEntryOg({
+    env,
+    ctx,
+    lookup: { entryId: id },
+    cache,
+    cacheKey: "og",
+    now,
+  });
 
 beforeEach(() => {
   waiting = [];
@@ -61,6 +69,18 @@ describe("entryIdFromPath", () => {
   });
 });
 
+describe("entryLookupFromPath", () => {
+  it("finds this year's entry number on the short QR links", () => {
+    expect(entryLookupFromPath("/v/26")).toEqual({ entryNumber: 26 });
+    expect(entryLookupFromPath("/v/007")).toEqual({ entryNumber: 7 });
+    expect(entryLookupFromPath(`/entries/${id}`)).toEqual({ entryId: id });
+    expect(entryLookupFromPath("/v/")).toBe(null);
+    expect(entryLookupFromPath("/v/abc")).toBe(null);
+    expect(entryLookupFromPath("/v/26/extra")).toBe(null);
+    expect(entryLookupFromPath("/vote")).toBe(null);
+  });
+});
+
 describe("loadEntryOg", () => {
   it("fetches once from Convex and then serves from the cache", async () => {
     const cache = memoryCache();
@@ -73,6 +93,19 @@ describe("loadEntryOg", () => {
 
     expect(await load(cache)).toEqual(meta);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("looks entries up by number for the short QR links", async () => {
+    await loadEntryOg({
+      env,
+      ctx,
+      lookup: { entryNumber: 26 },
+      cache: memoryCache(),
+      cacheKey: "og-26",
+    });
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      "https://convex.example/api/og/entry?entryNumber=26",
+    );
   });
 
   it("serves stale data straight away and refreshes in the background", async () => {
@@ -103,7 +136,7 @@ describe("loadEntryOg", () => {
   it("shares a refresh only between requests for the same cache key", async () => {
     const cache = memoryCache();
     const loadFor = (cacheKey: string) =>
-      loadEntryOg({ env, ctx, entryId: id, cache, cacheKey });
+      loadEntryOg({ env, ctx, lookup: { entryId: id }, cache, cacheKey });
 
     await Promise.all([
       loadFor("https://apex/og"),
