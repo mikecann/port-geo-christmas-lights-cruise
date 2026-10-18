@@ -18,6 +18,7 @@ import { Breadcrumbs } from "../../../common/components/Breadcrumbs";
 import { routes } from "../../../routes";
 import PendingEntriesSection from "./PendingEntriesSection";
 import ReviewedEntries from "./ReviewedEntries";
+import EntryNumberRangeCard from "./EntryNumberRangeCard";
 
 export default function EntryManagementPage() {
   const me = useMe();
@@ -180,6 +181,8 @@ export default function EntryManagementPage() {
             </Tabs>
           </Stack>
         </Card>
+
+        <EntryNumberRangeCard />
       </Stack>
     </Container>
   );

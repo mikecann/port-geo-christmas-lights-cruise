@@ -1,4 +1,13 @@
-import { Stack, Text, Center, Loader, Card, Table } from "@mantine/core";
+import {
+  Stack,
+  Text,
+  Center,
+  Loader,
+  Card,
+  Table,
+  Badge,
+  Group,
+} from "@mantine/core";
 import { IconTrophy, IconX } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
@@ -36,7 +45,12 @@ export default function ReviewedEntries({
     status,
   });
   const [modalOpened, setModalOpened] = useState(false);
-  const [selectedEntry, setSelectedEntry] = useState<AdminEntry | null>(null);
+  // Looked up from the live list so the modal shows changes made in it
+  const [selectedEntryId, setSelectedEntryId] = useState<
+    AdminEntry["_id"] | null
+  >(null);
+  const selectedEntry =
+    reviewedEntries?.find((entry) => entry._id === selectedEntryId) ?? null;
   const isApproved = status === "approved";
   const emptyState = EMPTY_STATES[status];
 
@@ -68,6 +82,7 @@ export default function ReviewedEntries({
                 {isApproved && <Table.Th>Entry #</Table.Th>}
                 <Table.Th>Name</Table.Th>
                 <Table.Th>Address</Table.Th>
+                <Table.Th>Returning</Table.Th>
                 <Table.Th>{isApproved ? "Approved" : "Rejected"} Date</Table.Th>
               </Table.Tr>
             </Table.Thead>
@@ -79,17 +94,31 @@ export default function ReviewedEntries({
                     key={entry._id}
                     style={{ cursor: "pointer" }}
                     onClick={() => {
-                      setSelectedEntry(entry);
+                      setSelectedEntryId(entry._id);
                       setModalOpened(true);
                     }}
                   >
                     {isApproved && (
                       <Table.Td>
-                        {entry.status === "approved" ? entry.entryNumber : "-"}
+                        <Group gap={4} wrap="nowrap">
+                          {entry.status === "approved"
+                            ? entry.entryNumber
+                            : "-"}
+                          {entry.isNumberOutsideRange && (
+                            <Badge color="orange" variant="light" size="xs">
+                              Outside range
+                            </Badge>
+                          )}
+                        </Group>
                       </Table.Td>
                     )}
                     <Table.Td>{entry.name}</Table.Td>
                     <Table.Td>{entry.houseAddress?.address}</Table.Td>
+                    <Table.Td>
+                      {entry.previous
+                        ? `${entry.previous.year} #${entry.previous.entryNumber}`
+                        : "New"}
+                    </Table.Td>
                     <Table.Td>
                       {date ? new Date(date).toLocaleDateString() : "-"}
                     </Table.Td>

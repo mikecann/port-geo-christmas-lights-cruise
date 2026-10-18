@@ -17,7 +17,6 @@ import {
   IconMail,
   IconShieldCheck,
   IconAlertCircle,
-  IconAlertTriangle,
 } from "@tabler/icons-react";
 import React from "react";
 import { useDisclosure } from "@mantine/hooks";
@@ -28,6 +27,7 @@ import PhotoLightbox from "../../myEntries/photos/PhotoLightbox";
 import { PhotoImage } from "./PhotoImage";
 import { useQuery } from "convex/react";
 import RejectEntryModal from "./RejectEntryModal";
+import EntryNumberSection from "./EntryNumberSection";
 
 export default function EntryCard({ entry }: { entry: AdminEntry }) {
   const [modalOpened, { open: openModal, close: closeModal }] =
@@ -161,25 +161,13 @@ export default function EntryCard({ entry }: { entry: AdminEntry }) {
                   )}
                 </Group>
               )}
-              <Group gap="xs">
-                {validationStatus.isReturningEntrant ? (
-                  <>
-                    <IconShieldCheck size={14} color="green" />
-                    <Text size="sm" c="dimmed">
-                      Returning entrant: approved in an earlier year
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <IconAlertTriangle size={14} style={{ color: "#FFB800" }} />
-                    <Text size="sm" c="dimmed">
-                      New entrant: no approved entry in earlier years
-                    </Text>
-                  </>
-                )}
-              </Group>
             </>
           )}
+
+          <EntryNumberSection
+            key={`${entry._id}-${entry.entryNumber}`}
+            entry={entry}
+          />
 
           {/* Admin Action Buttons */}
           <Group gap="sm" mt="md">
