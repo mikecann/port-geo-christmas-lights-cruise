@@ -11,6 +11,7 @@ import {
   ENTRY_PHOTO,
   resizedPhotoSrcSet,
   VOTE_PHOTO,
+  PHOTO_RESIZING_ENABLED,
 } from "../shared/photoUrls";
 
 const id = "j970pq0asyav77fekdj08grwan6npmh1";
@@ -189,7 +190,9 @@ describe("buildOgTags", () => {
       `<meta property="og:image" content="${meta.imageUrl}" />`,
     );
     expect(tags).not.toContain("preconnect");
-    expect(tags).not.toContain(`href="${meta.imageUrl}"`);
+    // With resizing off the preload is the original photo itself
+    if (PHOTO_RESIZING_ENABLED)
+      expect(tags).not.toContain(`href="${meta.imageUrl}"`);
   });
 
   it("preloads the vote page's smaller photo on the vote pages", () => {
