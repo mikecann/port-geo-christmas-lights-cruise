@@ -69,6 +69,7 @@ describe("errors a user can hit", () => {
     await expectConvexError(
       t.mutation(api.my.votes.vote, {
         entryId: entry._id,
+        category: "best_display",
         sawInPerson: true,
       }),
       votingClosedMessage(2026),
@@ -83,7 +84,11 @@ describe("errors a user can hit", () => {
     await moveEntryToStatus(t, { entryId: entry._id, status: "approved" });
 
     await expectConvexError(
-      t.mutation(api.my.votes.vote, { entryId: entry._id, sawInPerson: true }),
+      t.mutation(api.my.votes.vote, {
+        entryId: entry._id,
+        category: "best_display",
+        sawInPerson: true,
+      }),
       OWN_ENTRY_VOTE_MESSAGE,
     );
   });
@@ -108,6 +113,7 @@ describe("errors a user can hit", () => {
     const vote = () =>
       t.mutation(api.my.votes.vote, {
         entryId: entry._id,
+        category: "best_display",
         sawInPerson: false,
       });
 
@@ -134,9 +140,10 @@ describe("errors a user can hit", () => {
     const entry = await createApprovedTestEntryToVoteFor(t);
     await t.mutation(api.my.votes.vote, {
       entryId: entry._id,
+      category: "best_display",
       sawInPerson: false,
     });
-    const vote = await t.query(api.my.votes.mine, {});
+    const vote = (await t.query(api.my.votes.mine, {})).best_display;
     if (!vote) throw new Error("Expected a vote");
     await t.mutation(api.my.votes.cancel, { voteId: vote._id });
 

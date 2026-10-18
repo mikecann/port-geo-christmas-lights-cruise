@@ -46,7 +46,7 @@ const getCompetition = (t: ConvexTest) =>
   t.run(async (ctx) => await competitions.query(ctx).current());
 
 describe("admin overview", () => {
-  it("counts entries by status and votes in person and in total", async () => {
+  it("counts entries by status and votes for each ranking", async () => {
     const t = createConvexTest();
     const { asAdmin: admin } = await asAdmin(t);
     await t.run(async (ctx) => {
@@ -70,11 +70,18 @@ describe("admin overview", () => {
         submittedByUserId: await user(),
         status: "draft",
       });
-      for (const inPerson of [true, false, false])
+      const ballots = [
+        { category: "best_display", inPerson: true },
+        { category: "best_display", inPerson: false },
+        { category: "best_display", inPerson: false },
+        { category: "most_jolly", inPerson: true },
+      ] as const;
+      for (const { category, inPerson } of ballots)
         await insertTestVote(ctx, {
           competitionId: current._id,
           entryId: approvedId,
           votingUserId: await user(),
+          category,
           inPerson,
           sawInPerson: inPerson,
           locationCheck: "ok",
@@ -94,7 +101,7 @@ describe("admin overview", () => {
         totalRejectedEntries: 0,
         totalUnsentEntries: 1,
       },
-      votes: { inPerson: 1, total: 3 },
+      votes: { inPerson: 1, online: 2, mostJolly: 1 },
     });
   });
 

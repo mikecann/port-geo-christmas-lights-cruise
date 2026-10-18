@@ -28,13 +28,14 @@ export function GenerateMockVotesButton({
           content: (
             <>
               <Text size="sm" mb="md">
-                This will create {voteCount} mock votes with random fake users
-                for testing and demonstration purposes.
+                This will create {voteCount} fake people with mock votes for
+                testing and demonstration purposes.
               </Text>
               <Text size="sm" c="dimmed">
-                Each fake person votes once for a random approved entry. About
-                half count as in person, and one in ten comes from overseas so
-                there are flagged votes to look at.
+                Each fake person votes best display for a random approved entry.
+                About half count as in person, and most of those vote Most Jolly
+                too. One in ten comes from overseas so there are flagged votes
+                to look at.
               </Text>
             </>
           ),

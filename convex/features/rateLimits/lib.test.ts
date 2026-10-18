@@ -63,6 +63,7 @@ describe("rate limits", () => {
     const vote = () =>
       t.mutation(api.my.votes.vote, {
         entryId: entry._id,
+        category: "best_display",
         sawInPerson: false,
       });
     for (let i = 0; i < 15; i++) {

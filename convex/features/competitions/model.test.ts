@@ -157,6 +157,7 @@ describe("competition seasons", () => {
         voter.cast(ctx.db, {
           competitionId,
           entryId,
+          category: "best_display",
           inPerson: false,
           sawInPerson: false,
           locationCheck: "no_location",
@@ -174,12 +175,12 @@ describe("competition seasons", () => {
       await voteFor(current._id, firstEntryId);
       await voteFor(current._id, secondEntryId);
 
-      expect((await voter.find(ctx.db, current._id))?.entryId).toBe(
-        secondEntryId,
-      );
-      expect((await voter.find(ctx.db, legacy._id))?.entryId).toBe(
-        legacyEntryId,
-      );
+      expect(
+        (await voter.find(ctx.db, current._id, "best_display"))?.entryId,
+      ).toBe(secondEntryId);
+      expect(
+        (await voter.find(ctx.db, legacy._id, "best_display"))?.entryId,
+      ).toBe(legacyEntryId);
       const allVotes = await ctx.db.query("votes").collect();
       expect(allVotes).toHaveLength(3);
     });

@@ -1,9 +1,26 @@
-import type { LocationCheck } from "../convex/features/votes/schema";
+import type {
+  LocationCheck,
+  VoteCategory,
+} from "../convex/features/votes/schema";
 
 // Shown by the greyed out vote button, and by the vote mutation if the answer
 // is missing
 export const SEEN_IN_PERSON_REQUIRED_MESSAGE =
   "Tell us whether you've seen it in person first.";
+
+// Most Jolly is about the dancing and dressing up, so only people who were
+// there can vote for it
+export const MOST_JOLLY_IN_PERSON_MESSAGE =
+  "Most Jolly votes are just for displays you've seen in person. You can still vote for best display.";
+
+// The prize a 2026 vote counts for
+export const awardName = (vote: {
+  category: VoteCategory;
+  inPerson: boolean;
+}) => {
+  if (vote.category === "most_jolly") return "Most Jolly";
+  return vote.inPerson ? "In-Person Favourites" : "People's Choice";
+};
 
 export type InPersonAreaSummary = { countries: string[]; waOnly: boolean };
 

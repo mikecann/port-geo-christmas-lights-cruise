@@ -2,7 +2,6 @@ import type { Id } from "../../_generated/dataModel";
 import type { QueryCtx } from "../../_generated/server";
 import { entries } from "../entries/model";
 import { aggregateVotes, voteNamespace, type VoteTally } from "./lib";
-import { VOTE_CATEGORIES, type VoteCategory } from "./schema";
 
 export type RankedEntry = {
   rank: number;
@@ -33,7 +32,12 @@ export async function competitionResults(
   competitionId: Id<"competitions">,
 ) {
   const approved = await entries.query(ctx).listApproved(competitionId);
-  const tallies: VoteTally[] = ["in_person", "online", ...VOTE_CATEGORIES];
+  const tallies: VoteTally[] = [
+    "in_person",
+    "online",
+    "most_jolly",
+    "best_display",
+  ];
   const counts =
     approved.length === 0
       ? []
@@ -61,14 +65,9 @@ export async function competitionResults(
 
   return {
     inPersonFavourites: rankBy((i) => countFor("in_person", i)),
-    peoplesChoice: rankBy(
-      (i) => countFor("in_person", i) + countFor("online", i),
-    ),
-    legacyCategories: Object.fromEntries(
-      VOTE_CATEGORIES.map((category) => [
-        category,
-        rankBy((i) => countFor(category, i)),
-      ]),
-    ) as Record<VoteCategory, RankedEntry[]>,
+    peoplesChoice: rankBy((i) => countFor("online", i)),
+    mostJolly: rankBy((i) => countFor("most_jolly", i)),
+    // 2025 voted for best display without the in-person check
+    legacyBestDisplay: rankBy((i) => countFor("best_display", i)),
   };
 }
