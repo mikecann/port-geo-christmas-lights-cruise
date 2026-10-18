@@ -41,6 +41,7 @@ describe("lookUpPlace", () => {
 
   describe("API request construction", () => {
     it("should ask Place Details for the given place id", async () => {
+      delete process.env.SITE_URL;
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -59,7 +60,24 @@ describe("lookUpPlace", () => {
       expect(options.headers).toEqual({
         "X-Goog-Api-Key": "test-api-key",
         "X-Goog-FieldMask": "id,location,formattedAddress",
+        Referer: "https://portgeochristmascruise.com.au/",
       });
+    });
+
+    it("should send SITE_URL as the Referer so a website-restricted key works", async () => {
+      process.env.SITE_URL = "http://localhost:5173/";
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: "ChIJ123",
+          location: { latitude: -33.6, longitude: 115.3 },
+        }),
+      });
+
+      await lookUpPlace("ChIJ123");
+
+      const [, options] = mockFetch.mock.calls[0];
+      expect(options.headers.Referer).toBe("http://localhost:5173/");
     });
 
     it("should encode the place id into the path", async () => {
