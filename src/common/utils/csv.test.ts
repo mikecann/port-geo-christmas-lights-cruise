@@ -9,14 +9,14 @@ describe("escapeCSV", () => {
   });
 
   it("stops a spreadsheet running a cell as a formula", () => {
-    expect(escapeCSV("=HYPERLINK(\"http://evil.example\")")).toBe(
+    expect(escapeCSV('=HYPERLINK("http://evil.example")')).toBe(
       '"\'=HYPERLINK(""http://evil.example"")"',
     );
     expect(escapeCSV("+61 400 000 000")).toBe("'+61 400 000 000");
     expect(escapeCSV("-2+3")).toBe("'-2+3");
     expect(escapeCSV("@SUM(A1)")).toBe("'@SUM(A1)");
     expect(escapeCSV("\t=1")).toBe("'\t=1");
-    expect(escapeCSV("\r=1")).toBe("\"'\r=1\"");
+    expect(escapeCSV("\r=1")).toBe('"\'\r=1"');
   });
 
   it("leaves numbers and ordinary text alone", () => {

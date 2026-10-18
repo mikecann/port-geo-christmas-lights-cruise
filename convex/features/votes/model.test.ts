@@ -485,25 +485,25 @@ describe("in-person votes", () => {
   });
 
   it("forgets used tokens once they'd have expired anyway", async () => {
-    await vote({ sawInPerson: true, geoToken: await geoToken(busselton) });
-    const old = await geoToken(busselton, Date.now() - GEO_TOKEN_LIFETIME_MS);
-    await vote({ sawInPerson: true, geoToken: old });
-    expect(
-      await t.run((ctx) => ctx.db.query("usedGeoTokens").collect()),
-    ).toHaveLength(2);
-
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(Date.now() + 1);
     try {
+      await vote({ sawInPerson: true, geoToken: await geoToken(busselton) });
+      const old = await geoToken(busselton, Date.now() - GEO_TOKEN_LIFETIME_MS);
+      await vote({ sawInPerson: true, geoToken: old });
+      expect(
+        await t.run((ctx) => ctx.db.query("usedGeoTokens").collect()),
+      ).toHaveLength(2);
+
+      vi.setSystemTime(Date.now() + 1);
       expect(
         await t.mutation(internal.internal.cleanup.cleanupUsedGeoTokens, {}),
       ).toEqual({ deleted: 1 });
+      expect(
+        await t.run((ctx) => ctx.db.query("usedGeoTokens").collect()),
+      ).toHaveLength(1);
     } finally {
       vi.useRealTimers();
     }
-    expect(
-      await t.run((ctx) => ctx.db.query("usedGeoTokens").collect()),
-    ).toHaveLength(1);
   });
 
   it("moves the count when a vote changes to in person", async () => {
