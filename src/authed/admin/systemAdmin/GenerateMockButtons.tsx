@@ -1,6 +1,5 @@
 import { Button, Text } from "@mantine/core";
 import { IconPlus, IconCheck } from "@tabler/icons-react";
-import { useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { useConfirmation } from "../../../common/components/confirmation/useConfirmation";
 import { useErrorCatchingMutation } from "../../../common/errors";
@@ -13,8 +12,7 @@ interface GenerateMockVotesButtonProps {
 export function GenerateMockVotesButton({
   voteCount,
 }: GenerateMockVotesButtonProps) {
-  const [isGeneratingVotes, setIsGeneratingVotes] = useState(false);
-  const [generateMockVotes] = useErrorCatchingMutation(
+  const [generateMockVotes, isGeneratingVotes] = useErrorCatchingMutation(
     api.admin.system.votes.generateMock,
   );
   const { confirm } = useConfirmation();
@@ -45,23 +43,13 @@ export function GenerateMockVotesButton({
         });
         if (!confirmed) return;
 
-        setIsGeneratingVotes(true);
-        try {
-          await generateMockVotes({
-            count: voteCount,
-          });
-
-          notifications.show({
-            title: "Success!",
-            message: "Mock votes generated successfully",
-            color: "green",
-            icon: <IconCheck size={16} />,
-          });
-        } catch {
-          // Error already handled by useErrorCatchingMutation
-        } finally {
-          setIsGeneratingVotes(false);
-        }
+        if (!(await generateMockVotes({ count: voteCount }))) return;
+        notifications.show({
+          title: "Success!",
+          message: "Mock votes generated successfully",
+          color: "green",
+          icon: <IconCheck size={16} />,
+        });
       }}
       loading={isGeneratingVotes}
     >

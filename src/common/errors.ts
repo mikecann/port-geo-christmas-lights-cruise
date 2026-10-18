@@ -36,29 +36,35 @@ export const useErrorHandler = () => {
   }, []);
 };
 
-type VoidReactMutation<M extends FunctionReference<"mutation">> = {
-  (...args: OptionalRestArgs<M>): void;
+// Resolves once the mutation settles: true if it worked, false if it failed
+// (the error has already been shown). It never rejects.
+type CatchingReactMutation<M extends FunctionReference<"mutation">> = {
+  (...args: OptionalRestArgs<M>): Promise<boolean>;
   withOptimisticUpdate: (
     update: Parameters<ReactMutation<M>["withOptimisticUpdate"]>[0],
-  ) => VoidReactMutation<M>;
+  ) => CatchingReactMutation<M>;
 };
 
 export const useErrorCatchingMutation = <
   Mutation extends FunctionReference<"mutation">,
 >(
   mutation: Mutation,
-): [VoidReactMutation<Mutation>, boolean] => {
+): [CatchingReactMutation<Mutation>, boolean] => {
   const callback = useMutation(mutation);
   const onError = useErrorHandler();
   const [inFlightCount, setInFlightCount] = useState(0);
 
   const handler = useMemo(() => {
-    const wrap = (m: ReactMutation<Mutation>): VoidReactMutation<Mutation> => {
-      const invoke = (...args: OptionalRestArgs<Mutation>): void => {
+    const wrap = (
+      m: ReactMutation<Mutation>,
+    ): CatchingReactMutation<Mutation> => {
+      const invoke = (...args: OptionalRestArgs<Mutation>) => {
         setInFlightCount((prev) => prev + 1);
-        void m(...args)
+        return m(...args)
+          .then(() => true)
           .catch((err: unknown) => {
             onError(err);
+            return false;
           })
           .finally(() => {
             setInFlightCount((prev) => prev - 1);
