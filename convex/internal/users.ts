@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { convex } from "../schema";
 import { mutation } from "../features/common/lib";
 import { ROLES, users } from "../features/users/model";
-import { normalizeEmail } from "../../shared/auth";
+import { canonicalEmail, normalizeEmail } from "../../shared/auth";
 
 export const hasRole = convex
   .query()
@@ -17,8 +17,9 @@ export const hasRole = convex
   })
   .internal();
 
-// Sign-in matches emails in lower case. Users saved before that may have
-// capitals, so run this once on each deployment to lower-case them.
+// Sign-in matches emails in lower case, and voting checks the canonical
+// email. Users saved before that may have capitals and no canonical email, so
+// run this once on each deployment to fill them in.
 export const normalizeEmails = mutation
   .input({})
   .handler(async (context) => {
@@ -26,8 +27,9 @@ export const normalizeEmails = mutation
     for (const user of await context.db.query("users").collect()) {
       if (user.email === undefined) continue;
       const email = normalizeEmail(user.email);
-      if (email === user.email) continue;
-      await context.db.patch(user._id, { email });
+      const canonical = canonicalEmail(email);
+      if (email === user.email && canonical === user.canonicalEmail) continue;
+      await context.db.patch(user._id, { email, canonicalEmail: canonical });
       updated++;
     }
     return { updated };

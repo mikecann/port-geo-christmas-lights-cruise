@@ -5,13 +5,17 @@ import {
   type ConvexTest,
 } from "./features/common/tests/testingHelpers.vitest";
 import {
+  DUPLICATE_EMAIL_MESSAGE,
+  googleProvider,
   INVALID_EMAIL_MESSAGE,
   SIGNUPS_CLOSED_MESSAGE,
   signInAccess,
+  UNVERIFIED_EMAIL_IN_USE_MESSAGE,
 } from "./features/auth/model";
 import { email } from "./features/email/model";
 import { RATE_LIMITED_MESSAGE } from "./features/rateLimits/lib";
 import { EMAIL_CODE_PROVIDER_ID } from "../shared/auth";
+import { ensure } from "../shared/ensure";
 
 // Drives the same internal mutation Convex Auth's Google callback calls once
 // Google has handed back a profile, so the real account-linking code runs.
@@ -19,6 +23,7 @@ const signInWithGoogle = async (
   t: ConvexTest,
   googleAccountId: string,
   email: string,
+  emailVerified = true,
 ) => {
   const signature = `signature-${googleAccountId}`;
   await t.run((ctx) => ctx.db.insert("authVerifiers", { signature }));
@@ -27,11 +32,22 @@ const signInWithGoogle = async (
       type: "userOAuth",
       provider: "google",
       providerAccountId: googleAccountId,
-      profile: { email, emailVerified: true, name: "Test Person" },
+      profile: { email, emailVerified, name: "Test Person" },
       signature,
     },
   });
 };
+
+const googleUserId = (t: ConvexTest, googleAccountId: string) =>
+  t.run(async (ctx) => {
+    const account = await ctx.db
+      .query("authAccounts")
+      .withIndex("providerAndAccountId", (q) =>
+        q.eq("provider", "google").eq("providerAccountId", googleAccountId),
+      )
+      .unique();
+    return account?.userId;
+  });
 
 // The same action the sign-in page calls. AUTH_LOG_SIGNIN_CODES is on in
 // these tests, so the code comes back from the log rather than an email.
@@ -299,6 +315,177 @@ describe("one user per email, whichever way they sign in", () => {
       testUserId,
     );
     expect(await countRows(t)).toEqual({ users: 2, accounts: 1 });
+  });
+});
+
+describe("only a verified email links to an existing user", () => {
+  const insertVerifiedUser = (t: ConvexTest, email: string) =>
+    t.run((ctx) =>
+      ctx.db.insert("users", {
+        email,
+        emailVerificationTime: Date.now(),
+        name: "Resident",
+      }),
+    );
+
+  it("passes on Google's email_verified rather than assuming it", () => {
+    const profile = googleProvider.profile?.(
+      {
+        sub: "google-id",
+        email: "resident@example.com",
+        email_verified: false,
+        name: "Resident",
+        picture: "https://example.com/me.png",
+      } as never,
+      {} as never,
+    );
+    expect(profile).toMatchObject({
+      id: "google-id",
+      email: "resident@example.com",
+      emailVerified: false,
+    });
+  });
+
+  it("asking for a code leaves the existing user alone until the code is used", async () => {
+    const t = createConvexTest();
+    const userId = await insertVerifiedUser(t, "resident@example.com");
+    const before = await t.run((ctx) => ctx.db.get(userId));
+
+    const code = await requestCode(t, "resident@example.com");
+
+    expect(await t.run((ctx) => ctx.db.get(userId))).toEqual(before);
+    const [account] = await t.run((ctx) =>
+      ctx.db.query("authAccounts").collect(),
+    );
+    expect(account?.userId).not.toBe(userId);
+
+    await enterCode(t, "resident@example.com", code);
+    expect((await allUsers(t)).map((user) => user._id)).toEqual([userId]);
+    const [linked] = await t.run((ctx) =>
+      ctx.db.query("authAccounts").collect(),
+    );
+    expect(linked?.userId).toBe(userId);
+  });
+
+  it("won't link a Google account whose email Google hasn't verified", async () => {
+    const t = createConvexTest();
+    const userId = await insertVerifiedUser(t, "resident@example.com");
+
+    await expect(
+      signInWithGoogle(t, "google-id", "resident@example.com", false),
+    ).rejects.toThrow(UNVERIFIED_EMAIL_IN_USE_MESSAGE);
+
+    expect(await countRows(t)).toEqual({ users: 1, accounts: 0 });
+    expect((await t.run((ctx) => ctx.db.get(userId)))?.name).toBe("Resident");
+  });
+
+  it("gives an unverified Google email its own user, which a code never links into", async () => {
+    const t = createConvexTest();
+    await signInWithGoogle(t, "google-id", "resident@example.com", false);
+    const unverifiedId = await googleUserId(t, "google-id");
+    expect(
+      (await t.run((ctx) => ctx.db.get(ensure(unverifiedId))))
+        ?.emailVerificationTime,
+    ).toBeUndefined();
+
+    const codeUserId = await signInWithCode(t, "resident@example.com");
+
+    expect(codeUserId).not.toBe(unverifiedId);
+    expect(await countRows(t)).toEqual({ users: 2, accounts: 2 });
+  });
+
+  it("won't link a verified Google sign-in into a user nobody has verified", async () => {
+    const t = createConvexTest();
+    await signInWithGoogle(t, "unverified-id", "resident@example.com", false);
+
+    await signInWithGoogle(t, "verified-id", "resident@example.com");
+
+    expect(await googleUserId(t, "verified-id")).not.toBe(
+      await googleUserId(t, "unverified-id"),
+    );
+  });
+
+  it("refuses to pick when more than one user has the email", async () => {
+    const t = createConvexTest();
+    await insertVerifiedUser(t, "resident@example.com");
+    await insertVerifiedUser(t, "resident@example.com");
+
+    await expect(signInWithCode(t, "resident@example.com")).rejects.toThrow(
+      DUPLICATE_EMAIL_MESSAGE,
+    );
+    await expect(
+      signInWithGoogle(t, "google-id", "resident@example.com"),
+    ).rejects.toThrow(DUPLICATE_EMAIL_MESSAGE);
+  });
+
+  it("still signs in through an account that's already linked when the email is shared", async () => {
+    const t = createConvexTest();
+    await signInWithGoogle(t, "google-id", "resident@example.com");
+    const userId = await googleUserId(t, "google-id");
+    await insertVerifiedUser(t, "resident@example.com");
+
+    await signInWithGoogle(t, "google-id", "resident@example.com");
+
+    expect(await googleUserId(t, "google-id")).toBe(userId);
+  });
+});
+
+describe("emails are compared ignoring case", () => {
+  it("finds last year's Google user with capitals when they sign in with a code", async () => {
+    const t = createConvexTest();
+    const userId = await t.run((ctx) =>
+      ctx.db.insert("users", {
+        email: "Mike@Gmail.com",
+        emailVerificationTime: Date.now(),
+      }),
+    );
+    await t.mutation(internal.internal.users.normalizeEmails, {});
+
+    expect(await signInWithCode(t, "mike@gmail.com")).toBe(userId);
+    expect(await countRows(t)).toEqual({ users: 1, accounts: 1 });
+  });
+
+  it("fills in the lower-case and canonical email for older users, once", async () => {
+    const t = createConvexTest();
+    const userId = await t.run((ctx) =>
+      ctx.db.insert("users", { email: "Mike.Cann+2025@Gmail.com" }),
+    );
+
+    expect(
+      await t.mutation(internal.internal.users.normalizeEmails, {}),
+    ).toEqual({ updated: 1 });
+    expect(await t.run((ctx) => ctx.db.get(userId))).toMatchObject({
+      email: "mike.cann+2025@gmail.com",
+      canonicalEmail: "mikecann@gmail.com",
+    });
+    expect(
+      await t.mutation(internal.internal.users.normalizeEmails, {}),
+    ).toEqual({ updated: 0 });
+  });
+
+  it("saves the normalised and canonical email on every sign-in", async () => {
+    const t = createConvexTest();
+    await signInWithGoogle(t, "google-id", " John.Smith+Lights@GoogleMail.com");
+    const codeUserId = await signInWithCode(t, "jane.doe+cruise@outlook.com");
+
+    const googleId = ensure(await googleUserId(t, "google-id"));
+    const google = await t.run((ctx) => ctx.db.get(googleId));
+    expect(google).toMatchObject({
+      email: "john.smith+lights@googlemail.com",
+      canonicalEmail: "johnsmith@gmail.com",
+    });
+    expect(await t.run((ctx) => ctx.db.get(codeUserId))).toMatchObject({
+      email: "jane.doe+cruise@outlook.com",
+      canonicalEmail: "jane.doe@outlook.com",
+    });
+  });
+
+  it("keeps different spellings of one Gmail inbox as separate sign-ins", async () => {
+    const t = createConvexTest();
+    const dotted = await signInWithCode(t, "john.smith@gmail.com");
+    const plain = await signInWithCode(t, "johnsmith@gmail.com");
+
+    expect(plain).not.toBe(dotted);
   });
 });
 

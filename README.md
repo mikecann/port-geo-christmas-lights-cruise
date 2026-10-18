@@ -58,7 +58,9 @@ For Google, follow the steps here to set up a Google project and add `AUTH_GOOGL
 
 Email codes go out through Resend like the other emails, so the deployment needs `RESEND_API_KEY`. A code lasts 10 minutes, and each email can ask for 5 in a row, then one every 6 minutes.
 
-Emails saved before this were matched exactly, so run this once on each deployment after deploying it, to lower-case them:
+An email only links to an existing user once it's verified, by Google or by using the code, If two users already share an email, a new way of signing in with it is turned away until an admin sorts that out by hand.
+
+Emails saved before this were matched exactly and have no canonical email (used to stop one person voting from several spellings of the same inbox), so run this once on each deployment after deploying it, before voting opens:
 
 ```bash
 bunx convex run internal/users:normalizeEmails

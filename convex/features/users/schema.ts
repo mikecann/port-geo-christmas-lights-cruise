@@ -5,6 +5,8 @@ export const usersTable = defineTable({
   name: v.optional(v.string()),
   image: v.optional(v.string()),
   email: v.optional(v.string()),
+  // See canonicalEmail in shared/auth.ts. Set at sign-in.
+  canonicalEmail: v.optional(v.string()),
   emailVerificationTime: v.optional(v.number()),
   phone: v.optional(v.string()),
   phoneVerificationTime: v.optional(v.number()),
@@ -14,6 +16,7 @@ export const usersTable = defineTable({
   isTestUser: v.optional(v.boolean()),
 })
   .index("email", ["email"])
+  .index("by_canonicalEmail", ["canonicalEmail"])
   .index("by_isCompetitionAdmin", ["isCompetitionAdmin"])
   .index("by_isSystemAdmin", ["isSystemAdmin"])
   // For finding someone on the admin People page
