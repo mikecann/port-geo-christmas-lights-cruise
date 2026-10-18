@@ -1,22 +1,30 @@
-/* One screen under the site header, keys at the bottom under your thumb */
+/* One screen under the site header, keys at the bottom under your thumb.
+   On short phones (old iPhone SEs) the number box and spacing shrink with the
+   screen's height so the keys don't have to. */
 .pad {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--mantine-spacing-md);
+  gap: clamp(0.5rem, 1.75dvh, 1rem);
   height: calc(100vh - 60px);
   height: calc(100dvh - 60px);
   max-width: 36em;
   margin-inline: auto;
   padding: var(--mantine-spacing-lg) var(--mantine-spacing-md)
     calc(var(--mantine-spacing-md) + env(safe-area-inset-bottom));
+  padding: clamp(0.5rem, 2dvh, 1.25rem) var(--mantine-spacing-md)
+    calc(clamp(0.5rem, 2dvh, 1rem) + env(safe-area-inset-bottom));
 }
 
 .title {
   margin: 0;
   font-size: 1.5rem;
+  font-size: clamp(1.25rem, 3.5dvh, 1.5rem);
   font-weight: 800;
+  line-height: 1.2;
   text-align: center;
+  text-wrap: balance;
 }
 
 /* Styled like the number on the house sign */
@@ -24,13 +32,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: none;
   min-width: 10rem;
   height: 6.5rem;
+  height: clamp(3.5rem, 12dvh, 6.5rem);
   padding-inline: var(--mantine-spacing-lg);
   border-radius: var(--mantine-radius-lg);
   background-color: var(--mantine-color-white);
   color: var(--mantine-color-dark-9);
   font-size: 4.5rem;
+  font-size: clamp(2.5rem, 8.5dvh, 4.5rem);
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -48,6 +59,7 @@
   gap: var(--mantine-spacing-sm);
   width: 100%;
   min-height: 3.5rem;
+  min-height: clamp(3rem, 7dvh, 3.5rem);
 }
 
 .thumbnail {
@@ -65,4 +77,10 @@
   gap: var(--mantine-spacing-xs);
   width: 100%;
   margin-top: auto;
+}
+
+/* Still a comfortable thumb's width (44px) on the shortest screens */
+.keys .key {
+  height: 4rem;
+  height: clamp(2.75rem, 9dvh, 4rem);
 }

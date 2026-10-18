@@ -92,7 +92,9 @@ export function MainAppShell({ children }: MobileNavbarProps) {
       <AppShell.Main
         p={0}
         style={{
-          minHeight: "calc(100vh)",
+          // 100vh is taller than the screen while a phone's browser bars
+          // show, which would let the one-screen vote pages scroll
+          minHeight: isVoteScreen ? "100dvh" : "calc(100vh)",
           display: "flex",
           flexDirection: "column",
         }}

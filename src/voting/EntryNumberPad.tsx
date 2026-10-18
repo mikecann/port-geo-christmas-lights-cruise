@@ -90,7 +90,9 @@ export default function EntryNumberPad({
         <Key onClick={() => setValue((v) => typeDigit(v, "0"))}>0</Key>
         <Button
           data-testid="entry-number-go"
-          h={64}
+          className={classes.key}
+          // Mantine's xl padding leaves "Go" no room in a third of a 320px phone
+          px={0}
           size="xl"
           color="yellow"
           autoContrast
@@ -111,7 +113,15 @@ function Key(props: {
   disabled?: boolean;
   "aria-label"?: string;
 }) {
-  return <Button variant="default" h={64} fz={28} fw={600} {...props} />;
+  return (
+    <Button
+      variant="default"
+      className={classes.key}
+      fz={28}
+      fw={600}
+      {...props}
+    />
+  );
 }
 
 function MatchedEntry({

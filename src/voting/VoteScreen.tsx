@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { IconInfoCircle, IconPhoto } from "@tabler/icons-react";
 import type { PublicPhoto } from "../../convex/features/photos/schema";
 import { usePhotoSrcSet, usePhotoUrl } from "../common/hooks/usePhotoUrl";
@@ -44,7 +44,8 @@ function VotePhoto({
   const thumbnail = usePhotoUrl(photo, { size: "xs" });
 
   return (
-    <div className={classes.photo}>
+    <div className={classes.photo} data-empty={(entry && !photo) || undefined}>
+      {entry && !photo && <NoPhotoLights />}
       {thumbnail && thumbnail !== image?.src && (
         <img className={classes.placeholder} src={thumbnail} alt="" />
       )}
@@ -77,6 +78,79 @@ function VotePhoto({
         {entryNumber !== undefined && <SignNumber entryNumber={entryNumber} />}
         {entry && <span className={classes.name}>{entry.name}</span>}
       </h1>
+    </div>
+  );
+}
+
+const BULB_COLORS = ["red-6", "green-6", "yellow-5", "blue-5"];
+
+// Bulbs spaced along a drooping string, from one side of the screen to the other
+function lightString(y: number, droop: number, count: number, offset: number) {
+  const bulbs = Array.from({ length: count }, (_, i) => {
+    const t = (i + 0.5) / count;
+    return {
+      x: -10 + 380 * t,
+      y: y + 2 * (1 - t) * t * droop,
+      color: BULB_COLORS[(i + offset) % BULB_COLORS.length],
+    };
+  });
+  return { path: `M -10 ${y} Q 180 ${y + droop} 370 ${y}`, bulbs };
+}
+
+const LIGHT_STRINGS = [lightString(10, 70, 9, 0), lightString(60, 80, 8, 2)];
+
+// Strings of lights in place of a photo, so an entry without one still looks
+// meant. Drawn rather than an image, to keep the page light on mobile data.
+function NoPhotoLights() {
+  const id = useId();
+  return (
+    <div className={classes.noPhoto}>
+      <svg className={classes.lights} viewBox="0 0 360 150" aria-hidden>
+        <defs>
+          {BULB_COLORS.map((color) => (
+            <radialGradient key={color} id={`${id}-${color}`}>
+              <stop
+                offset="0%"
+                style={{ stopColor: `var(--mantine-color-${color})` }}
+                stopOpacity={0.45}
+              />
+              <stop
+                offset="100%"
+                style={{ stopColor: `var(--mantine-color-${color})` }}
+                stopOpacity={0}
+              />
+            </radialGradient>
+          ))}
+        </defs>
+        {LIGHT_STRINGS.map(({ path, bulbs }) => (
+          <g key={path}>
+            <path d={path} className={classes.wire} />
+            {bulbs.map(({ x, y, color }) => (
+              <g
+                key={x}
+                style={{ color: `var(--mantine-color-${color})` }}
+                fill="currentColor"
+              >
+                <circle
+                  cx={x}
+                  cy={y + 9}
+                  r={18}
+                  fill={`url(#${id}-${color})`}
+                />
+                <rect
+                  x={x - 2.5}
+                  y={y - 1}
+                  width={5}
+                  height={4}
+                  rx={1}
+                  className={classes.cap}
+                />
+                <ellipse cx={x} cy={y + 9} rx={4.5} ry={7} />
+              </g>
+            ))}
+          </g>
+        ))}
+      </svg>
     </div>
   );
 }
