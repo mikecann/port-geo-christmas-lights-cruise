@@ -46,7 +46,7 @@ export function UserAvatarDropdown() {
           My Entry
         </Menu.Item>
         <Menu.Item component="a" {...routes.myVotes().link}>
-          My Votes
+          My Vote
         </Menu.Item>
         {isAdmin && (
           <Menu.Item component="a" {...routes.admin().link}>

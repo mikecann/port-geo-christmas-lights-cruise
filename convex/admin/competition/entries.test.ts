@@ -32,10 +32,11 @@ const submitCurrentEntry = (t: ConvexTest, userId: Id<"users">) =>
 
 const validationFor = async (t: ConvexTest, entryId: Id<"entries">) => {
   const admin = await createTestUser(t, { user: { isCompetitionAdmin: true } });
-  return await signInAsTestUser(t, admin).query(
-    api.admin.competition.entries.getEntryValidationStatus,
+  const detail = await signInAsTestUser(t, admin).query(
+    api.admin.competition.entries.get,
     { entryId },
   );
+  return { isReturningEntrant: detail?.previous != null };
 };
 
 describe("returning entrant flag", () => {
@@ -135,5 +136,39 @@ describe("admin entry list", () => {
       submitter: { name: "Holly Ivy", email: "holly@example.com" },
     });
     expect(pending[0].photos.map((photo) => photo._id)).toEqual([photoId]);
+  });
+});
+
+describe("reviewing past entries", () => {
+  it("won't approve or reject an entry still waiting from a past competition", async () => {
+    const t = createConvexTest();
+    const entrant = await createTestUser(t);
+    const admin = await createTestUser(t, {
+      user: { isCompetitionAdmin: true },
+    });
+    const entryId = await t.run(async (ctx) =>
+      ctx.db.insert("entries", {
+        competitionId: (await ensureTestCompetitions(ctx)).past._id,
+        submittedByUserId: entrant._id,
+        status: "submitted",
+        submittedAt: Date.now(),
+        name: "Last year",
+        houseAddress,
+      }),
+    );
+    const asAdmin = signInAsTestUser(t, admin);
+
+    await expect(
+      asAdmin.mutation(api.admin.competition.entries.approve, { entryId }),
+    ).rejects.toThrow("Entries from past competitions");
+    await expect(
+      asAdmin.mutation(api.admin.competition.entries.reject, {
+        entryId,
+        rejectedReason: "Too late",
+      }),
+    ).rejects.toThrow("Entries from past competitions");
+    expect(await t.run((ctx) => ctx.db.get(entryId))).toMatchObject({
+      status: "submitted",
+    });
   });
 });

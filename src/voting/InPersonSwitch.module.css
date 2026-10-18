@@ -1,0 +1,24 @@
+.label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding-inline: 0.5rem;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+/* The middle "not answered" stop is just a narrow knob between the answers */
+.control:has(input[value="unset"]) {
+  flex: 0 0 3.25rem;
+}
+
+/* No fill while unanswered, so the middle doesn't look like a choice */
+.root[data-unset] .indicator {
+  background-color: transparent;
+  border: 1px dashed var(--mantine-color-dark-2);
+}
+
+.root[data-unset] .label[data-active] {
+  color: var(--mantine-color-dark-2);
+}

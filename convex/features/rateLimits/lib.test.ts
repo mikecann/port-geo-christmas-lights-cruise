@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { api } from "../../_generated/api";
 import {
+  createApprovedTestEntryToVoteFor,
   createConvexTestWithUser,
   createTestEntry,
-  moveEntryToStatus,
 } from "../common/tests/testingHelpers.vitest";
 import { competitions } from "../competitions/model";
 import { RATE_LIMITED_MESSAGE } from "./lib";
@@ -54,9 +54,7 @@ describe("rate limits", () => {
 
   it("limits voting and cancelling to 30 changes per 10 minutes", async () => {
     const { t } = await createConvexTestWithUser();
-    const entry = await createTestEntry(t);
-    if (!entry) throw new Error("Failed to create entry");
-    await moveEntryToStatus(t, { entryId: entry._id, status: "approved" });
+    const entry = await createApprovedTestEntryToVoteFor(t);
     await t.run(async (ctx) => {
       const competition = await competitions.query(ctx).current();
       await ctx.db.patch(competition._id, { votingOpen: true });
@@ -65,7 +63,7 @@ describe("rate limits", () => {
     const vote = () =>
       t.mutation(api.my.votes.vote, {
         entryId: entry._id,
-        category: "best_display",
+        sawInPerson: false,
       });
     for (let i = 0; i < 15; i++) {
       await vote();

@@ -3,7 +3,6 @@ import { systemAdminMutation } from "../../features/common/auth";
 import { votes } from "../../features/votes/model";
 import { v } from "convex/values";
 import { competitions } from "../../features/competitions/model";
-import { VOTE_CATEGORIES } from "../../features/votes/schema";
 
 // Mutations
 
@@ -86,7 +85,8 @@ export const generateMock = systemAdminMutation
       "mock.io",
     ];
 
-    for (let i = 0; i < Math.ceil(input.count / 2); i++) {
+    // One vote per person, about half of them in person
+    for (let i = 0; i < input.count; i++) {
       const firstName = firstNames[i % firstNames.length];
       const lastName = lastNames[(i + 3) % lastNames.length];
       const domain = domains[i % domains.length];
@@ -100,23 +100,37 @@ export const generateMock = systemAdminMutation
 
       mockUsers.push(userId);
 
-      for (const category of VOTE_CATEGORIES) {
-        if (totalVotesCreated >= input.count) break;
+      const randomEntry =
+        approvedEntries[Math.floor(Math.random() * approvedEntries.length)];
+      // Every tenth is from overseas, so the flagged list has some too
+      const isOverseas = i % 10 === 9;
+      const inPerson = !isOverseas && Math.random() < 0.5;
 
-        const randomEntry =
-          approvedEntries[Math.floor(Math.random() * approvedEntries.length)];
+      await context.db.insert("votes", {
+        competitionId: competition._id,
+        entryId: randomEntry._id,
+        votingUserId: userId,
+        inPerson,
+        sawInPerson: inPerson || isOverseas,
+        locationCheck: isOverseas ? "outside_area" : "ok",
+        location: isOverseas
+          ? {
+              country: "US",
+              region: "California",
+              city: "Los Angeles",
+              issuedAt: Date.now(),
+            }
+          : {
+              country: "AU",
+              region: "Western Australia",
+              regionCode: "WA",
+              city: "Busselton",
+              issuedAt: Date.now(),
+            },
+        castAt: Date.now(),
+      });
 
-        await context.db.insert("votes", {
-          competitionId: competition._id,
-          entryId: randomEntry._id,
-          votingUserId: userId,
-          category,
-        });
-
-        totalVotesCreated++;
-      }
-
-      if (totalVotesCreated >= input.count) break;
+      totalVotesCreated++;
     }
 
     return {

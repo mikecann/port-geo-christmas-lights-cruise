@@ -29,6 +29,13 @@ export function AppRoutes() {
   if (routeGroups.entry.has(route))
     return <LazyPages.EntryPage route={route} />;
 
+  if (route.name === "voteByNumber")
+    return (
+      <LazyPages.VoteByNumberPage entryNumber={route.params.entryNumber} />
+    );
+
+  if (route.name === "voteLanding") return <LazyPages.VoteLandingPage />;
+
   if (route.name == "map") return <LazyPages.MapPage />;
 
   if (route.name == "mapEntry")
@@ -67,11 +74,26 @@ function AuthedRoutes({ route }: { route: Route<typeof routeGroups.authed> }) {
 }
 
 function AdminRoutes({ route }: { route: Route<typeof routeGroups.admin> }) {
-  if (route.name === "admin") return <LazyPages.AdminPage />;
-  if (route.name === "adminEntries") return <LazyPages.EntryManagementPage />;
-  if (route.name === "adminVotes") return <LazyPages.VoteManagementPage />;
-  if (route.name === "adminSystem") return <LazyPages.SystemAdminPage />;
-  if (route.name === "adminUsers") return <LazyPages.UserManagementPage />;
+  return (
+    <LazyPages.AdminLayout route={route}>
+      <AdminPage route={route} />
+    </LazyPages.AdminLayout>
+  );
+}
+
+function AdminPage({ route }: { route: Route<typeof routeGroups.admin> }) {
+  if (route.name === "admin") return <LazyPages.AdminOverviewPage />;
+  if (route.name === "adminEntries") return <LazyPages.AdminEntriesPage />;
+  if (route.name === "adminEntry")
+    return (
+      <LazyPages.AdminEntryPage
+        entryId={route.params.entryId as Id<"entries">}
+      />
+    );
+  if (route.name === "adminNumbers") return <LazyPages.AdminNumbersPage />;
+  if (route.name === "adminVotes") return <LazyPages.AdminVotesPage />;
+  if (route.name === "adminPeople") return <LazyPages.AdminPeoplePage />;
+  if (route.name === "adminSystem") return <LazyPages.AdminDangerZonePage />;
 
   exhaustiveCheck(route);
 }

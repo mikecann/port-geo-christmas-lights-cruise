@@ -11,4 +11,18 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "cleanup expired sign-in codes",
+  { hours: 1 },
+  internal.internal.cleanup.cleanupExpiredSignInCodes,
+  {},
+);
+
+crons.interval(
+  "cleanup used location tokens",
+  { hours: 1 },
+  internal.internal.cleanup.cleanupUsedGeoTokens,
+  {},
+);
+
 export default crons;

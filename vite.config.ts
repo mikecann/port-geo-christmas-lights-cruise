@@ -9,6 +9,9 @@ const PRELOAD_PAGES = [
   { path: "^/$", module: "src/home/HomePage.tsx" },
   // /entries/<id> and /entries/<id>/vote, where the QR codes on house signs go
   { path: "^/entries/[^/]+(/vote)?/?$", module: "src/entries/EntryPage.tsx" },
+  // The short QR links: /v/<number> on house signs, /vote on the boat
+  { path: "^/v/[^/]+/?$", module: "src/voting/VoteByNumberPage.tsx" },
+  { path: "^/vote/?$", module: "src/voting/VoteLandingPage.tsx" },
 ];
 
 function preloadFirstPages(): Plugin {

@@ -5,7 +5,6 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { routes } from "../../routes";
 import { votingClosedMessage } from "../../../shared/eventStatus";
-import { VOTE_CATEGORIES } from "../../../convex/features/votes/schema";
 
 type Props = {
   entryId: Id<"entries">;
@@ -57,16 +56,8 @@ export default function EntryVoting({ entryId, competitionId }: Props) {
 
 function VotingControls({ entryId }: { entryId: Id<"entries"> }) {
   const { isAuthenticated } = useConvexAuth();
-
-  const votingStatus = useQuery(
-    api.my.votes.getStatus,
-    isAuthenticated ? {} : "skip",
-  );
-
-  // Count how many votes the user has cast
-  const votesCount = votingStatus
-    ? Object.values(votingStatus).filter((vote) => vote != null).length
-    : 0;
+  const myVote = useQuery(api.my.votes.mine, isAuthenticated ? {} : "skip");
+  const votedHere = myVote?.entry._id === entryId;
 
   return (
     <Card withBorder radius="md" p="lg">
@@ -76,45 +67,28 @@ function VotingControls({ entryId }: { entryId: Id<"entries"> }) {
           <Text fw={600} size="lg">
             Public Vote
           </Text>
-          {isAuthenticated && votesCount > 0 && (
+          {votedHere && (
             <Badge color="green" variant="light" size="sm">
-              {votesCount}/{VOTE_CATEGORIES.length} votes cast
+              Your vote
             </Badge>
           )}
         </Group>
 
         <Text c="dimmed" size="sm" ta="center">
-          {isAuthenticated
-            ? "Help choose the best Christmas light displays in Port Geographe!"
-            : "Sign in to cast your vote and help choose the best displays!"}
+          Everyone gets one vote. If you've seen the display in person it counts
+          for In-Person Favourites as well as People's Choice.
         </Text>
 
         <Center>
-          {isAuthenticated ? (
-            <Button
-              data-testid="vote-entry"
-              size="md"
-              color="yellow"
-              variant="filled"
-              onClick={() => routes.entryVote({ entryId }).push()}
-            >
-              Vote for this Entry
-            </Button>
-          ) : (
-            <Button
-              size="md"
-              variant="light"
-              onClick={() =>
-                routes
-                  .signin({
-                    returnTo: window.location.pathname + window.location.search,
-                  })
-                  .push()
-              }
-            >
-              Sign in to Vote
-            </Button>
-          )}
+          <Button
+            data-testid="vote-entry"
+            size="md"
+            color="yellow"
+            variant="filled"
+            onClick={() => routes.entryVote({ entryId }).push()}
+          >
+            {votedHere ? "See my vote" : "Vote for this Entry"}
+          </Button>
         </Center>
       </Stack>
     </Card>

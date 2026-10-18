@@ -9,21 +9,27 @@ const http = httpRouter();
 
 auth.addHttpRoutes(http);
 
-// Public OG metadata endpoint used by the Cloudflare Worker to fetch share data
+// Public OG metadata endpoint used by the Cloudflare Worker to fetch share
+// data, by entry id or by this year's entry number (the /v/<number> links)
 http.route({
   path: "/api/og/entry",
   method: "GET",
   handler: httpAction(async (ctx, req) => {
     const url = new URL(req.url);
     const entryId = url.searchParams.get("entryId");
-    if (!entryId)
+    const entryNumber = url.searchParams.get("entryNumber");
+    if (!entryId && !(entryNumber && /^\d{1,4}$/.test(entryNumber)))
       return new Response(
-        JSON.stringify({ error: "Missing entryId query param" }),
+        JSON.stringify({ error: "Missing entryId or entryNumber query param" }),
         { status: 400, headers: { "content-type": "application/json" } },
       );
 
     // Load entry
-    const entry = await ctx.runQuery(api.public.entries.find, { entryId });
+    const entry = entryId
+      ? await ctx.runQuery(api.public.entries.find, { entryId })
+      : await ctx.runQuery(api.public.entries.findByNumber, {
+          entryNumber: Number(entryNumber),
+        });
 
     if (!entry)
       return new Response(JSON.stringify({ error: "Entry not found" }), {

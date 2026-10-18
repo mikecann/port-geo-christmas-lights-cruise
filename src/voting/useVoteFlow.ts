@@ -1,0 +1,174 @@
+import { useEffect, useRef, useState } from "react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
+import { DEFAULT_IN_PERSON_AREA } from "../../shared/constants";
+import { peoplesChoiceOnlyReason } from "../../shared/voting";
+import { measured, track } from "../analytics/client";
+import { useErrorHandler } from "../common/errors";
+import { useGeoToken } from "./useGeoToken";
+
+export type VoteFlowEntry = {
+  _id: Id<"entries">;
+  competitionId: Id<"competitions">;
+  entryNumber: number;
+  name: string;
+};
+
+export type MyVote = NonNullable<FunctionReturnType<typeof api.my.votes.mine>>;
+
+// Each step is one screen of the vote flow, so the look can change without
+// touching the rules
+export type VoteFlowStep =
+  | { step: "loading" }
+  | { step: "closed"; year: number }
+  | { step: "signedOut" }
+  | { step: "ownEntry" }
+  | { step: "voted"; vote: MyVote; reason: string | null }
+  | {
+      step: "choose";
+      // Their vote for a different entry, which this one would replace
+      otherVote: MyVote | null;
+      // Set when they're changing their vote for this entry
+      currentVote: MyVote | null;
+      // null while the location check runs, retries included
+      inPersonAllowed: boolean | null;
+      // Why it can only count for People's Choice, when it can't be in person
+      reason: string | null;
+      // Every try at the location check failed, so they can have another go
+      canRetryLocation: boolean;
+    };
+
+const LOCATION_FAILED_REASON =
+  "We couldn't check where you're voting from, which can happen on a patchy connection. Try again, or vote now and it will count for People's Choice only.";
+
+export function useVoteFlow(entry: VoteFlowEntry) {
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+  const competition = useQuery(api.public.competitions.current, {});
+  const mine = useQuery(
+    api.my.votes.getForEntry,
+    isAuthenticated ? { entryId: entry._id } : "skip",
+  );
+  const geo = useGeoToken();
+  const check = useQuery(
+    api.public.votes.inPersonCheck,
+    geo.status === "checking" ? "skip" : { geoToken: geo.token ?? undefined },
+  );
+  const voteMutation = useMutation(api.my.votes.vote);
+  const cancelMutation = useMutation(api.my.votes.cancel);
+  const onApiError = useErrorHandler();
+
+  // Their answer to "have you seen it in person?", for this entry only, so
+  // moving to another entry starts unanswered again
+  const [seen, setSeen] = useState<{
+    entryId: Id<"entries">;
+    answer: boolean;
+  } | null>(null);
+  const sawInPerson = seen?.entryId === entry._id ? seen.answer : null;
+  const setSawInPerson = (answer: boolean | null) =>
+    setSeen(answer === null ? null : { entryId: entry._id, answer });
+  const [isChanging, setIsChanging] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
+
+  const analytics = {
+    entry_id: entry._id,
+    competition_id: entry.competitionId,
+  };
+
+  const observed = useRef("");
+  useEffect(() => {
+    if (isAuthLoading || !competition?.votingOpen) return;
+    const state = `${entry._id}:${isAuthenticated}`;
+    if (observed.current === state) return;
+    observed.current = state;
+    track(isAuthenticated ? "vote_opened" : "vote_auth_required", {
+      entry_id: entry._id,
+      competition_id: entry.competitionId,
+    });
+  }, [isAuthLoading, isAuthenticated, competition, entry]);
+
+  const area = check?.area ?? DEFAULT_IN_PERSON_AREA;
+  const inPersonAllowed =
+    geo.status === "checking" || !check ? null : check.locationCheck === "ok";
+
+  const state = ((): VoteFlowStep => {
+    if (competition === undefined || isAuthLoading) return { step: "loading" };
+    if (!competition.votingOpen || competition._id !== entry.competitionId)
+      return { step: "closed", year: competition.year };
+    if (!isAuthenticated) return { step: "signedOut" };
+    if (mine === undefined) return { step: "loading" };
+    if (mine.isOwnEntry) return { step: "ownEntry" };
+
+    const vote = mine.vote;
+    const isForThisEntry = vote?.entry._id === entry._id;
+    if (vote && isForThisEntry && !isChanging)
+      return {
+        step: "voted",
+        vote,
+        reason:
+          peoplesChoiceOnlyReason(vote.locationCheck, area) ??
+          (vote.inPerson
+            ? null
+            : "You said you haven't seen it in person, so it counts for People's Choice only."),
+      };
+    return {
+      step: "choose",
+      otherVote: vote && !isForThisEntry ? vote : null,
+      currentVote: isForThisEntry ? vote : null,
+      inPersonAllowed,
+      reason:
+        inPersonAllowed === null || !check
+          ? null
+          : geo.status === "failed" && check.locationCheck === "no_location"
+            ? LOCATION_FAILED_REASON
+            : peoplesChoiceOnlyReason(check.locationCheck, area),
+      canRetryLocation: geo.status === "failed",
+    };
+  })();
+
+  const vote = () => {
+    setIsBusy(true);
+    void measured(
+      async () =>
+        await voteMutation({
+          entryId: entry._id,
+          // Only asked once the location check passes. Otherwise it can't be
+          // in person, so it goes as "not seen".
+          sawInPerson: inPersonAllowed ? (sawInPerson ?? undefined) : false,
+          geoToken: (await geo.forVote()) ?? undefined,
+        }),
+      "vote",
+      analytics,
+    )
+      .then(() => setIsChanging(false))
+      .catch(onApiError)
+      .finally(() => setIsBusy(false));
+  };
+
+  const remove = (myVote: MyVote) => {
+    setIsBusy(true);
+    void cancelMutation({ voteId: myVote._id })
+      .then(() => {
+        setIsChanging(false);
+        track("vote_cancelled", analytics);
+      })
+      .catch(onApiError)
+      .finally(() => setIsBusy(false));
+  };
+
+  return {
+    state,
+    sawInPerson,
+    setSawInPerson,
+    isBusy,
+    vote,
+    remove,
+    retryLocation: geo.retry,
+    startChanging: () => {
+      setSeen(null);
+      setIsChanging(true);
+    },
+    stopChanging: () => setIsChanging(false),
+  };
+}

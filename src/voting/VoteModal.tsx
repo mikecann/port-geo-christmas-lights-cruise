@@ -1,11 +1,8 @@
-import { useEffect, useRef } from "react";
-import { track } from "../analytics/client";
 import { Modal } from "@mantine/core";
 import type { Id } from "../../convex/_generated/dataModel";
-import { useConvexAuth, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import VoteCategories from "./VoteCategories";
-import VoteAuthPrompt from "./VoteAuthPrompt";
+import VoteFlow from "./VoteFlow";
 
 type Props = {
   entryId: Id<"entries">;
@@ -14,24 +11,7 @@ type Props = {
 };
 
 export default function VoteModal({ entryId, opened, onClose }: Props) {
-  const { isAuthenticated, isLoading } = useConvexAuth();
   const entry = useQuery(api.public.entries.get, { entryId });
-
-  const observed = useRef("");
-  useEffect(() => {
-    if (!opened) {
-      observed.current = "";
-      return;
-    }
-    if (isLoading || !entry) return;
-    const state = `${entryId}:${isAuthenticated}`;
-    if (observed.current === state) return;
-    observed.current = state;
-    track(isAuthenticated ? "vote_opened" : "vote_auth_required", {
-      entry_id: entryId,
-      competition_id: entry.competitionId,
-    });
-  }, [opened, isLoading, isAuthenticated, entryId, entry]);
 
   return (
     <Modal
@@ -40,20 +20,9 @@ export default function VoteModal({ entryId, opened, onClose }: Props) {
       size="md"
       padding="md"
       centered
-      title={`Vote for ${entry?.name} #${entry?.entryNumber}`}
+      title={entry ? `Vote for ${entry.name} #${entry.entryNumber}` : "Vote"}
     >
-      <div>
-        {/* Content */}
-        {isAuthenticated ? (
-          <VoteCategories
-            entryId={entryId}
-            competitionId={entry?.competitionId}
-            onClose={onClose}
-          />
-        ) : (
-          <VoteAuthPrompt />
-        )}
-      </div>
+      {entry && <VoteFlow entry={entry} />}
     </Modal>
   );
 }

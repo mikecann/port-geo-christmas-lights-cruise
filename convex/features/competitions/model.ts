@@ -1,8 +1,34 @@
-import type { Id } from "../../_generated/dataModel";
+import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../../_generated/server";
 import { ensure } from "../../../shared/ensure";
+import { ConvexError } from "convex/values";
+import {
+  DEFAULT_ENTRY_NUMBER_RANGE,
+  DEFAULT_IN_PERSON_AREA,
+} from "../../../shared/constants";
+import {
+  ensureValidEntryNumberRange,
+  type EntryNumberRange,
+} from "../entries/numbers";
+
+export type InPersonArea = { countries: string[]; waOnly: boolean };
 
 export const competitions = {
+  inPersonArea(competition: Doc<"competitions">): InPersonArea {
+    return {
+      countries:
+        competition.inPersonCountries ?? DEFAULT_IN_PERSON_AREA.countries,
+      waOnly: competition.inPersonWaOnly ?? DEFAULT_IN_PERSON_AREA.waOnly,
+    };
+  },
+
+  entryNumberRange(competition: Doc<"competitions">): EntryNumberRange {
+    return {
+      min: competition.entryNumberMin ?? DEFAULT_ENTRY_NUMBER_RANGE.min,
+      max: competition.entryNumberMax ?? DEFAULT_ENTRY_NUMBER_RANGE.max,
+    };
+  },
+
   query(ctx: QueryCtx) {
     return {
       forYear(year: number) {
@@ -67,6 +93,48 @@ export const competitions = {
       ) {
         await competitions.query(ctx).forCompetition(competitionId).get();
         await ctx.db.patch(competitionId, { entriesOpen });
+      },
+
+      async setVotingOpen(
+        competitionId: Id<"competitions">,
+        votingOpen: boolean,
+      ) {
+        await competitions.query(ctx).forCompetition(competitionId).get();
+        await ctx.db.patch(competitionId, { votingOpen });
+      },
+
+      async setEntryNumberRange(
+        competitionId: Id<"competitions">,
+        range: EntryNumberRange,
+      ) {
+        await competitions.query(ctx).forCompetition(competitionId).get();
+        const { min, max } = ensureValidEntryNumberRange(range);
+        await ctx.db.patch(competitionId, {
+          entryNumberMin: min,
+          entryNumberMax: max,
+        });
+      },
+
+      async setInPersonArea(
+        competitionId: Id<"competitions">,
+        area: InPersonArea,
+      ) {
+        await competitions.query(ctx).forCompetition(competitionId).get();
+        // Two-letter codes like Cloudflare reports, e.g. AU
+        const countries = [
+          ...new Set(area.countries.map((c) => c.trim().toUpperCase())),
+        ];
+        if (countries.length === 0)
+          throw new ConvexError("Add at least one country, like AU.");
+        const badCode = countries.find((c) => !/^[A-Z]{2}$/.test(c));
+        if (badCode !== undefined)
+          throw new ConvexError(
+            `"${badCode}" isn't a two-letter country code, like AU.`,
+          );
+        await ctx.db.patch(competitionId, {
+          inPersonCountries: countries,
+          inPersonWaOnly: area.waOnly,
+        });
       },
     };
   },

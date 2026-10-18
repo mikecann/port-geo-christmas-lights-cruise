@@ -4,6 +4,7 @@
 import { convexTest } from "convex-test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import aggregate from "@convex-dev/aggregate/test";
+import resend from "@convex-dev/resend/test";
 import schema from "../../../schema";
 import type { Doc, Id } from "../../../_generated/dataModel";
 import type { MutationCtx } from "../../../_generated/server";
@@ -18,6 +19,7 @@ export const createConvexTest = () => {
   const t = convexTest(schema);
   rateLimiter.register(t);
   aggregate.register(t, "aggregateVotes");
+  resend.register(t);
 
   return t;
 };
@@ -268,4 +270,24 @@ export const insertTestVote = async (
   const voteId = await ctx.db.insert("votes", vote);
   await aggregateVotes.insert(ctx, ensure(await ctx.db.get(voteId)));
   return voteId;
+};
+
+// An approved entry this year from someone other than the signed in user, so
+// they're allowed to vote for it
+export const createApprovedTestEntryToVoteFor = async (
+  t: TestOrAuthenticatedConvexTest,
+  entrant: Partial<Doc<"users">> = { name: "Another Entrant" },
+) => {
+  const entryId = await t.run(async (ctx) => {
+    const { current } = await ensureTestCompetitions(ctx);
+    return await ctx.db.insert("entries", {
+      competitionId: current._id,
+      submittedByUserId: await ctx.db.insert("users", entrant),
+      status: "draft",
+    });
+  });
+  await moveEntryToStatus(t, { entryId, status: "approved" });
+  return await t.run(async (ctx) =>
+    ensure(await ctx.db.get(entryId), "Test entry wasn't created"),
+  );
 };

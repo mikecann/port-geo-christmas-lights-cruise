@@ -52,16 +52,65 @@ bunx @convex-dev/auth
 
 Accept the defaults, this will add a few needed environment variables.
 
-Then because this project is using GoogleAuth only you will need to follow the steps here to setup a Google Project and add the required environment variables (AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET) to the convex deployment: https://labs.convex.dev/auth/config/oauth/google.
+People can sign in two ways: with Google, or with a 6-digit code sent to their email (handy for ARG staff, whose Outlook addresses aren't Google accounts). Both end up as the same user if the email matches, ignoring case.
+
+For Google, follow the steps here to set up a Google project and add `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` to the Convex deployment: https://labs.convex.dev/auth/config/oauth/google.
+
+Email codes go out through Resend like the other emails, so the deployment needs `RESEND_API_KEY`. A code lasts 10 minutes, and each email can ask for 5 in a row, then one every 6 minutes.
+
+An email only links to an existing user once it's verified, by Google or by using the code, If two users already share an email, a new way of signing in with it is turned away until an admin sorts that out by hand.
+
+Emails saved before this were matched exactly and have no canonical email (used to stop one person voting from several spellings of the same inbox), and this year's votes from before then don't have the voter's canonical email saved on them, so run this once on each deployment after deploying it, before voting opens:
+
+```bash
+bunx convex run internal/users:normalizeEmails
+```
+
+#### Seeing codes on dev
+
+Resend won't send from dev, so set `AUTH_LOG_SIGNIN_CODES=true` on the dev deployment and the codes appear in the Convex logs (`bunx convex logs`) instead of being emailed. Never set it on production. It only works when `SITE_URL` is `localhost` or `127.0.0.1`; anywhere else it's ignored and the code is emailed as usual.
 
 #### Off-season sign-up lock
 
 Outside the season two flags close sign-ups:
 
-- `IS_SIGNUP_DISABLED=true` on the Convex deployment. This is the actual lock: Google sign-in still works for existing accounts (admins included) but can't create new ones.
-- `VITE_IS_SIGNUP_DISABLED=true` in the frontend build. This only swaps the sign-in page for an "under construction" message. Admins can still reach the sign-in button at `/signin?returnTo=/admin&unlock=true`.
+- `IS_SIGNUP_DISABLED=true` on the Convex deployment. This is the actual lock: existing accounts (admins included) can still sign in with Google or an email code, but neither can create new ones.
+- `VITE_IS_SIGNUP_DISABLED=true` in the frontend build. This only swaps the sign-in page for an "under construction" message. Admins can still reach the sign-in options at `/signin?returnTo=/admin&unlock=true`.
 
 Turn both off when sign-ups open.
+
+#### Letting named people in, and making admins
+
+Two more Convex env vars, each a comma-separated list of emails. Case and spaces around each email don't matter.
+
+- `SIGNUP_ALLOWED_EMAILS`: these people can create an account even while `IS_SIGNUP_DISABLED` is on.
+- `COMPETITION_ADMIN_EMAILS`: these people are made competition admins when they sign in, with Google or a code. They can create an account while sign-ups are closed too, so there's no need to list them twice. Taking someone off the list doesn't remove the role; do that on the admin People page (`/admin/people`), where competition admins can also add each other once that person has signed in.
+
+For example: `COMPETITION_ADMIN_EMAILS=ZOliver@aigleroyal.com.au, TJulian@aigleroyal.com.au`. Send them to `/signin?returnTo=/admin&unlock=true` while the sign-in page is switched off.
+
+### Voting
+
+Everyone gets one vote per competition, which they can change or remove until voting closes. That's one per inbox too: accounts whose emails only differ by a `+tag`, or by dots for Gmail, share a vote. Entrants can't vote for their own entry. A vote counts for In-Person Favourites and People's Choice when it's in person, and People's Choice only when it isn't.
+
+The QR code on each house sign goes to `/v/<number>`, which opens this year's entry with that number. The QR code on the boat goes to `/vote`, where people type the number on the sign.
+
+#### The in-person check
+
+Convex can't see a voter's IP address, but the Cloudflare Worker can. `GET /api/geo` on the worker returns a token with Cloudflare's guess at where the visitor is (country, region, city, coordinates, timezone), signed with `GEO_TOKEN_SECRET` and good for 10 minutes. Each token has a random nonce and only works for one vote, so the vote page fetches a fresh one each time someone votes. The vote mutation checks the signature and the age, and records the nonce (an hourly cron clears old ones) so a token passed round or sent again counts for People's Choice only. A vote is in person only when the token is genuine, the country is in the competition's list (AU by default, and admins can narrow it to WA on the admin Votes page) and the voter answers "I've seen it" on the vote page's three-way switch (the vote button stays greyed out until they pick "I've seen it" or "I haven't seen it"). The location is saved on the vote so admins can review it.
+
+The worker and Convex need the same secret. If either is missing, nobody's vote counts as in person and the vote page says so. Generate one with `openssl rand -base64 32`, then:
+
+```bash
+# Production: the worker secret, then the Convex env var
+bunx wrangler secret put GEO_TOKEN_SECRET
+npx convex env set GEO_TOKEN_SECRET '<the same secret>' --prod
+```
+
+For local dev, put `GEO_TOKEN_SECRET=<secret>` in `.dev.vars` (gitignored, read by the Vite Cloudflare plugin) and set the same value on your dev deployment with `npx convex env set GEO_TOKEN_SECRET '<secret>'`. Locally, Cloudflare's location is a guess from your own connection.
+
+### Admin area
+
+`/admin` is for competition admins (ARG) and system admins. It opens on an overview with the competition's status, switches to open and close entries and voting, and how many entries are waiting for review. The other pages are Entries (the review queue, then every entry), Numbers (the number range and which numbers are taken, kept for returning entrants or free), Votes (both rankings, flagged votes and the CSV), and People (finding people and making them admins). System admins also get a Danger zone page with the testing tools and wipes.
 
 ### Testing
 

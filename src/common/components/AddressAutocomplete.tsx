@@ -122,7 +122,8 @@ export default function AddressAutocomplete({
     onDropdownClose: () => combobox.resetSelectedOption(),
   });
 
-  const [isAPILoaded, setIsAPILoaded] = useState(false);
+  // null while the Google Maps script loads
+  const [isAPILoaded, setIsAPILoaded] = useState<boolean | null>(null);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [debouncedValue] = useDebouncedValue(value, 300);
@@ -185,21 +186,8 @@ export default function AddressAutocomplete({
     </Combobox.Option>
   ));
 
-  if (!isAPILoaded)
-    // Fallback to regular TextInput if API fails to load
-    return (
-      <TextInput
-        label={label}
-        placeholder={placeholder}
-        required={required}
-        value={value}
-        onChange={(e) => onChange(e.currentTarget.value)}
-        error={error}
-        disabled={disabled}
-        maxLength={maxLength}
-      />
-    );
-
+  // One input whether or not the script has loaded, so someone who starts
+  // typing early doesn't lose focus (and their phone keyboard) when it does
   return (
     <Combobox
       store={combobox}
@@ -257,11 +245,15 @@ export default function AddressAutocomplete({
               options
             ) : (
               <Combobox.Empty>
-                {isLoading
-                  ? "Searching..."
-                  : value.trim().length < 3
-                    ? "Type at least 3 characters"
-                    : "No addresses found"}
+                {isAPILoaded === null
+                  ? "Loading address search..."
+                  : isAPILoaded === false
+                    ? "Address search didn't load. Check your connection and reload the page."
+                    : isLoading
+                      ? "Searching..."
+                      : value.trim().length < 3
+                        ? "Type at least 3 characters"
+                        : "No addresses found"}
               </Combobox.Empty>
             )}
           </ScrollArea.Autosize>

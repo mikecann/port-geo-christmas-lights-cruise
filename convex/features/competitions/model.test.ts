@@ -126,16 +126,12 @@ describe("competition seasons", () => {
       ).toEqual([olderEntryId]);
       expect((await fromPast.findPreviousApproved())?._id).toBe(olderEntryId);
       expect(
-        await entries
-          .query(ctx)
-          .forUser(older, userId)
-          .hasApprovedEntryBefore(),
-      ).toBe(false);
-      expect(await fromPast.hasApprovedEntryBefore()).toBe(true);
+        await entries.query(ctx).forUser(older, userId).findPreviousApproved(),
+      ).toBeNull();
     });
   });
 
-  it("allows one vote per category in each season", async () => {
+  it("keeps one vote per person in each season", async () => {
     const t = createConvexTest();
 
     await t.run(async (ctx) => {
@@ -144,46 +140,48 @@ describe("competition seasons", () => {
         name: "Seasonal Voter",
       });
       const entrantId = await ctx.db.insert("users", { name: "Entrant" });
-      const legacyEntryId = await ctx.db.insert("entries", {
-        competitionId: legacy._id,
-        submittedByUserId: entrantId,
-        status: "draft",
-      });
-      const currentEntryId = await ctx.db.insert("entries", {
-        competitionId: current._id,
-        submittedByUserId: entrantId,
-        status: "draft",
-      });
+      const insertEntry = (competitionId: typeof current._id) =>
+        ctx.db.insert("entries", {
+          competitionId,
+          submittedByUserId: entrantId,
+          status: "draft",
+        });
+      const legacyEntryId = await insertEntry(legacy._id);
+      const firstEntryId = await insertEntry(current._id);
+      const secondEntryId = await insertEntry(current._id);
+      const voter = votes.forUser(votingUserId);
+      const voteFor = (
+        competitionId: typeof current._id,
+        entryId: typeof firstEntryId,
+      ) =>
+        voter.cast(ctx.db, {
+          competitionId,
+          entryId,
+          inPerson: false,
+          sawInPerson: false,
+          locationCheck: "no_location",
+          castAt: Date.now(),
+        });
 
-      await votes.forUser(votingUserId).voteForEntry(ctx.db, {
-        competitionId: legacy._id,
+      // 2025's per-category votes don't stop a 2026 vote
+      await ctx.db.insert("votes", {
+        competitionId: current._id,
         entryId: legacyEntryId,
+        votingUserId,
         category: "best_display",
       });
-      await votes.forUser(votingUserId).voteForEntry(ctx.db, {
-        competitionId: current._id,
-        entryId: currentEntryId,
-        category: "best_display",
-      });
+      await voteFor(legacy._id, legacyEntryId);
+      await voteFor(current._id, firstEntryId);
+      await voteFor(current._id, secondEntryId);
 
-      await expect(
-        votes.forUser(votingUserId).voteForEntry(ctx.db, {
-          competitionId: current._id,
-          entryId: currentEntryId,
-          category: "best_display",
-        }),
-      ).rejects.toThrow("already voted in this category");
-
-      expect(
-        await votes
-          .forUser(votingUserId)
-          .findVoteForCategory(ctx.db, legacy._id, "best_display"),
-      ).not.toBeNull();
-      expect(
-        await votes
-          .forUser(votingUserId)
-          .findVoteForCategory(ctx.db, current._id, "best_display"),
-      ).not.toBeNull();
+      expect((await voter.find(ctx.db, current._id))?.entryId).toBe(
+        secondEntryId,
+      );
+      expect((await voter.find(ctx.db, legacy._id))?.entryId).toBe(
+        legacyEntryId,
+      );
+      const allVotes = await ctx.db.query("votes").collect();
+      expect(allVotes).toHaveLength(3);
     });
   });
 });

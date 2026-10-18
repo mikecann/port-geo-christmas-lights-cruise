@@ -140,6 +140,38 @@ export const getWithPhotos = convex
   })
   .public();
 
+// This year's entry with the number on its sign, for the short QR links
+const findApprovedByNumber = async (ctx: QueryCtx, entryNumber: number) => {
+  const competition = await competitions.query(ctx).current();
+  return await entries
+    .query(ctx)
+    .findApprovedByNumber(competition._id, entryNumber);
+};
+
+export const findByNumber = convex
+  .query()
+  .input({ entryNumber: v.number() })
+  .returns(v.union(publicEntryValidator, v.null()))
+  .handler(async (context, input) => {
+    const entry = await findApprovedByNumber(context, input.entryNumber);
+    return entry ? entries.toPublic(entry) : null;
+  })
+  .public();
+
+export const findByNumberWithPhotos = convex
+  .query()
+  .input({ entryNumber: v.number() })
+  .returns(v.union(entryWithPhotosValidator, v.null()))
+  .handler(async (context, input) => {
+    const entry = await findApprovedByNumber(context, input.entryNumber);
+    if (!entry) return null;
+    return {
+      entry: entries.toPublic(entry),
+      photos: await photos.forEntry(entry._id).listPublic(context.db),
+    };
+  })
+  .public();
+
 export type EntryWithFirstPhoto = FunctionReturnType<
   typeof api.public.entries.listWithFirstPhoto
 >[number];

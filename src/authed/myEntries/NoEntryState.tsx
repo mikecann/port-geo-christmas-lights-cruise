@@ -5,8 +5,13 @@ import { api } from "../../../convex/_generated/api";
 import { useErrorHandler } from "../../common/errors";
 import { useMutation, useQuery } from "convex/react";
 import EntrySignupUnavailableButton from "../../competition/EntrySignupUnavailableButton";
+import type { PreviousEntry } from "./PreviousEntrySection";
 
-export default function NoEntryState() {
+export default function NoEntryState({
+  previous,
+}: {
+  previous: PreviousEntry | null | undefined;
+}) {
   const enterCompetition = useMutation(api.my.entries.enter);
   const [isEntering, setIsEntering] = useState(false);
   const onApiError = useErrorHandler();
@@ -17,11 +22,17 @@ export default function NoEntryState() {
     <Card shadow="sm" padding="lg" radius="md" withBorder>
       <Stack gap="md" align="center" py="xl">
         <Text size="lg" fw={500} c="dimmed">
-          {entriesOpen ? "No entries yet" : "Competition entries are closed"}
+          {entriesOpen
+            ? previous
+              ? "Welcome back!"
+              : "No entries yet"
+            : "Competition entries are closed"}
         </Text>
         <Text size="sm" c="dimmed" ta="center" maw={400}>
           {entriesOpen
-            ? "Enter your house in the Christmas lights competition to showcase your festive decorations and compete for prizes!"
+            ? previous
+              ? `Start this year's entry and we'll fill in your name and address from ${previous.year}.`
+              : "Enter your house in the Christmas lights competition to showcase your festive decorations and compete for prizes!"
             : "Signup details for the next competition will be announced here."}
         </Text>
         {entriesOpen ? (

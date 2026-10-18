@@ -14,6 +14,13 @@ export const { RouteProvider, useRoute, routes } = createRouter({
   entries: defineRoute("/entries"),
   entry,
   entryVote: entry.extend("/vote"),
+  // The short link on each house sign's QR code
+  voteByNumber: defineRoute(
+    { entryNumber: param.path.string },
+    (q) => `/v/${q.entryNumber}`,
+  ),
+  // The QR code on the boat: type the number on the sign
+  voteLanding: defineRoute("/vote"),
   map: mapBase,
   mapEntry: mapBase.extend(
     { entryId: param.path.string },
@@ -40,10 +47,20 @@ export const { RouteProvider, useRoute, routes } = createRouter({
   myEntries: defineRoute("/my-entries"),
   myVotes: defineRoute("/my-votes"),
   admin,
-  adminEntries: admin.extend("/entries"),
+  adminEntries: admin.extend(
+    // Which entries the list starts on, e.g. "approved"
+    { show: param.query.optional.string },
+    () => "/entries",
+  ),
+  adminEntry: admin.extend(
+    { entryId: param.path.string },
+    (q) => `/entries/${q.entryId}`,
+  ),
+  adminNumbers: admin.extend("/numbers"),
   adminVotes: admin.extend("/votes"),
+  adminPeople: admin.extend("/people"),
+  // System admins only: testing tools and wipes
   adminSystem: admin.extend("/system"),
-  adminUsers: admin.extend("/users"),
 });
 
 export const routeGroups = {
@@ -53,17 +70,21 @@ export const routeGroups = {
     routes.myVotes,
     routes.admin,
     routes.adminEntries,
+    routes.adminEntry,
+    routes.adminNumbers,
     routes.adminVotes,
+    routes.adminPeople,
     routes.adminSystem,
-    routes.adminUsers,
   ]),
   map: createGroup([routes.map, routes.mapEntry]),
   entry: createGroup([routes.entry, routes.entryVote]),
   admin: createGroup([
     routes.admin,
     routes.adminEntries,
+    routes.adminEntry,
+    routes.adminNumbers,
     routes.adminVotes,
+    routes.adminPeople,
     routes.adminSystem,
-    routes.adminUsers,
   ]),
 };

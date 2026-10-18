@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation } from "../features/common/lib";
+import { usedGeoTokenCutoff } from "../features/votes/location";
 
 // Photos stuck uploading for more than 5 minutes are considered abandoned
 const UPLOAD_TIMEOUT_MS = 5 * 60 * 1000;
@@ -104,5 +105,37 @@ export const cleanupStuckUploads = mutation
       deletedPhotos,
       timeoutMs,
     };
+  })
+  .internal();
+
+// Convex Auth finds a sign-in code by its value and leaves expired ones
+// behind. Codes are only 6 digits, so clearing them stops a new code clashing
+// with an old one.
+export const cleanupExpiredSignInCodes = mutation
+  .input({})
+  .handler(async (ctx) => {
+    const now = Date.now();
+    let deleted = 0;
+    for (const code of await ctx.db.query("authVerificationCodes").take(1000))
+      if (code.expirationTime < now) {
+        await ctx.db.delete(code._id);
+        deleted++;
+      }
+    return { deleted };
+  })
+  .internal();
+
+// A used location token's nonce only matters until the token expires
+export const cleanupUsedGeoTokens = mutation
+  .input({})
+  .handler(async (ctx) => {
+    const old = await ctx.db
+      .query("usedGeoTokens")
+      .withIndex("by_issuedAt", (q) =>
+        q.lt("issuedAt", usedGeoTokenCutoff(Date.now())),
+      )
+      .take(1000);
+    for (const row of old) await ctx.db.delete(row._id);
+    return { deleted: old.length };
   })
   .internal();
