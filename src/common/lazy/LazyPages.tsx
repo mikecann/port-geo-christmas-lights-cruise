@@ -25,6 +25,13 @@ export const EntriesGalleryPage = lazy(
 );
 export const EntryPage = lazy(() => import("../../entries/EntryPage"));
 
+export const VoteByNumberPage = lazy(
+  () => import("../../voting/VoteByNumberPage"),
+);
+export const VoteLandingPage = lazy(
+  () => import("../../voting/VoteLandingPage"),
+);
+
 export const MapPage = lazy(() => import("../../map/MapPage"));
 
 export const SettingsPage = lazy(

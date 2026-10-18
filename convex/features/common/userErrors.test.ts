@@ -3,10 +3,12 @@ import { ConvexError } from "convex/values";
 import { api } from "../../_generated/api";
 import {
   createConvexTest,
+  createApprovedTestEntryToVoteFor,
   createConvexTestWithUser,
   createTestEntry,
   moveEntryToStatus,
 } from "./tests/testingHelpers.vitest";
+import { OWN_ENTRY_VOTE_MESSAGE } from "../votes/model";
 import { competitions } from "../competitions/model";
 import { NOT_SIGNED_IN_MESSAGE } from "./lib";
 import { votingClosedMessage } from "../../../shared/eventStatus";
@@ -67,26 +69,23 @@ describe("errors a user can hit", () => {
     await expectConvexError(
       t.mutation(api.my.votes.vote, {
         entryId: entry._id,
-        category: "best_display",
+        sawInPerson: true,
       }),
       votingClosedMessage(2026),
     );
   });
 
-  it("says when someone has already voted in a category", async () => {
+  it("says when someone tries to vote for their own entry", async () => {
     const { t } = await createConvexTestWithUser();
     await setCurrentCompetition(t, { votingOpen: true });
     const entry = await createTestEntry(t);
     if (!entry) throw new Error("Failed to create entry");
     await moveEntryToStatus(t, { entryId: entry._id, status: "approved" });
-    const vote = () =>
-      t.mutation(api.my.votes.vote, {
-        entryId: entry._id,
-        category: "best_display",
-      });
 
-    await vote();
-    await expectConvexError(vote(), "already voted in this category");
+    await expectConvexError(
+      t.mutation(api.my.votes.vote, { entryId: entry._id, sawInPerson: true }),
+      OWN_ENTRY_VOTE_MESSAGE,
+    );
   });
 
   it("says when an entry can't be changed", async () => {
@@ -109,7 +108,7 @@ describe("errors a user can hit", () => {
     const vote = () =>
       t.mutation(api.my.votes.vote, {
         entryId: entry._id,
-        category: "best_display",
+        sawInPerson: false,
       });
 
     await expectConvexError(vote(), "that entry isn't available");
@@ -132,14 +131,13 @@ describe("errors a user can hit", () => {
   it("says when a vote has already been removed", async () => {
     const { t } = await createConvexTestWithUser();
     await setCurrentCompetition(t, { votingOpen: true });
-    const entry = await createTestEntry(t);
-    if (!entry) throw new Error("Failed to create entry");
-    await moveEntryToStatus(t, { entryId: entry._id, status: "approved" });
+    const entry = await createApprovedTestEntryToVoteFor(t);
     await t.mutation(api.my.votes.vote, {
       entryId: entry._id,
-      category: "best_display",
+      sawInPerson: false,
     });
-    const [vote] = await t.query(api.my.votes.list, {});
+    const vote = await t.query(api.my.votes.mine, {});
+    if (!vote) throw new Error("Expected a vote");
     await t.mutation(api.my.votes.cancel, { voteId: vote._id });
 
     await expectConvexError(

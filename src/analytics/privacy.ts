@@ -148,6 +148,8 @@ export function sanitize(
         "entries",
         "entry",
         "entryVote",
+        "voteByNumber",
+        "voteLanding",
         "map",
         "mapEntry",
         "signin",

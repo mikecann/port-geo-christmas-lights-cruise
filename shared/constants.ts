@@ -21,6 +21,14 @@ export const MAX_REJECTED_REASON_LENGTH = 1000;
 // A sign is printed per number, so admins can change it per competition.
 export const DEFAULT_ENTRY_NUMBER_RANGE = { min: 1, max: 60 };
 
+// Where a voter's IP has to be for their vote to count as in person. Mobile
+// carriers sometimes place WA phones in other states, so it's Australia-wide
+// unless an admin narrows it to WA.
+export const DEFAULT_IN_PERSON_AREA = {
+  countries: ["AU"],
+  waOnly: false,
+};
+
 // The biggest number an admin can give an entry or a range
 export const MAX_ENTRY_NUMBER = 9999;
 

@@ -224,6 +224,25 @@ export const entries = {
           );
       },
 
+      // The number on a house sign. Reserved numbers on entries that aren't
+      // approved yet don't count.
+      async findApprovedByNumber(
+        competitionId: Id<"competitions">,
+        entryNumber: number,
+      ) {
+        const withNumber = await db
+          .query("entries")
+          .withIndex("by_competitionId_and_entryNumber", (q) =>
+            q.eq("competitionId", competitionId).eq("entryNumber", entryNumber),
+          )
+          .take(10);
+        return (
+          withNumber.find(
+            (entry): entry is ApprovedEntryDoc => entry.status === "approved",
+          ) ?? null
+        );
+      },
+
       async listApproved(competitionId?: Id<"competitions">) {
         const resolvedCompetitionId =
           competitionId ?? (await competitions.query(context).current())._id;

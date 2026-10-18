@@ -101,14 +101,14 @@ export default function AdminPage() {
                       Vote Management
                     </Text>
                     <Text size="sm" c="dimmed">
-                      Review public votes by category and voter
+                      Results, every vote and where it came from
                     </Text>
                   </div>
                 </Group>
 
                 <Text size="sm">
-                  View votes across categories, see which users voted for each
-                  entry, and audit voting activity.
+                  See In-Person Favourites and People's Choice, check flagged
+                  votes and download them all.
                 </Text>
 
                 <Button

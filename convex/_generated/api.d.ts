@@ -34,7 +34,9 @@ import type * as features_photos_model from "../features/photos/model.js";
 import type * as features_rateLimits_lib from "../features/rateLimits/lib.js";
 import type * as features_users_model from "../features/users/model.js";
 import type * as features_votes_lib from "../features/votes/lib.js";
+import type * as features_votes_location from "../features/votes/location.js";
 import type * as features_votes_model from "../features/votes/model.js";
+import type * as features_votes_results from "../features/votes/results.js";
 import type * as http from "../http.js";
 import type * as internal_cleanup from "../internal/cleanup.js";
 import type * as internal_competitions from "../internal/competitions.js";
@@ -48,6 +50,7 @@ import type * as public_competitions from "../public/competitions.js";
 import type * as public_entries from "../public/entries.js";
 import type * as public_photos from "../public/photos.js";
 import type * as public_user from "../public/user.js";
+import type * as public_votes from "../public/votes.js";
 
 import type {
   ApiFromModules,
@@ -82,7 +85,9 @@ declare const fullApi: ApiFromModules<{
   "features/rateLimits/lib": typeof features_rateLimits_lib;
   "features/users/model": typeof features_users_model;
   "features/votes/lib": typeof features_votes_lib;
+  "features/votes/location": typeof features_votes_location;
   "features/votes/model": typeof features_votes_model;
+  "features/votes/results": typeof features_votes_results;
   http: typeof http;
   "internal/cleanup": typeof internal_cleanup;
   "internal/competitions": typeof internal_competitions;
@@ -96,6 +101,7 @@ declare const fullApi: ApiFromModules<{
   "public/entries": typeof public_entries;
   "public/photos": typeof public_photos;
   "public/user": typeof public_user;
+  "public/votes": typeof public_votes;
 }>;
 
 /**

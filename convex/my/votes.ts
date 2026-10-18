@@ -1,60 +1,90 @@
 import { userMutation, userQuery } from "../features/common/auth";
-import { votes } from "../features/votes/model";
+import { OWN_ENTRY_VOTE_MESSAGE, votes } from "../features/votes/model";
 import { ConvexError, v } from "convex/values";
-import {
-  VOTE_CATEGORIES,
-  voteCategoryValidator,
-} from "../features/votes/schema";
-import type { VoteCategory } from "../features/votes/schema";
+import { locationCheckValidator } from "../features/votes/schema";
+import type { CurrentVoteDoc } from "../features/votes/schema";
 import { entries } from "../features/entries/model";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
+import type { QueryCtx } from "../_generated/server";
 import { votingClosedMessage } from "../../shared/eventStatus";
 import { competitions } from "../features/competitions/model";
 import { enforceUserRateLimit } from "../features/rateLimits/lib";
 import { VOTE_ALREADY_REMOVED_MESSAGE } from "../features/votes/model";
+import { checkVoterLocation } from "../features/votes/location";
+import { publicEntryValidator } from "../features/entries/schema";
 
 function requireVotingToBeOpen(competition: Doc<"competitions">) {
   if (!competition.votingOpen)
     throw new ConvexError(votingClosedMessage(competition.year));
 }
 
-export const list = userQuery
+const myVoteValidator = v.object({
+  _id: v.id("votes"),
+  entry: publicEntryValidator,
+  inPerson: v.boolean(),
+  sawInPerson: v.boolean(),
+  locationCheck: locationCheckValidator,
+});
+
+const toMyVote = async (ctx: QueryCtx, vote: CurrentVoteDoc | null) => {
+  if (!vote) return null;
+  // Deleting an entry deletes its votes, so this only misses mid-review
+  const entry = await entries.query(ctx).forEntry(vote.entryId).findApproved();
+  if (!entry) return null;
+  return {
+    _id: vote._id,
+    entry: entries.toPublic(entry),
+    inPerson: vote.inPerson,
+    sawInPerson: vote.sawInPerson,
+    locationCheck: vote.locationCheck,
+  };
+};
+
+const findMyVote = async (ctx: QueryCtx, userId: Id<"users">) => {
+  const competition = await competitions.query(ctx).current();
+  return await toMyVote(
+    ctx,
+    await votes.forUser(userId).find(ctx.db, competition._id),
+  );
+};
+
+// Their one vote this year, whichever entry it's for
+export const mine = userQuery
   .input({})
-  .handler(async (context) => {
-    const competition = await competitions.query(context).current();
-    return await votes
-      .forUser(context.userId)
-      .list(context.db, competition._id);
-  })
+  .returns(v.union(myVoteValidator, v.null()))
+  .handler(async (context) => await findMyVote(context, context.userId))
   .public();
 
-export const getStatus = userQuery
-  .input({})
-  .handler(async (context) => {
-    const competition = await competitions.query(context).current();
-    const votingStatus: Record<VoteCategory, Doc<"votes"> | null> = {
-      best_display: null,
-      most_jolly: null,
+// What the vote page for one entry needs to know about the signed in person
+export const getForEntry = userQuery
+  .input({ entryId: v.id("entries") })
+  .returns(
+    v.object({
+      isOwnEntry: v.boolean(),
+      vote: v.union(myVoteValidator, v.null()),
+    }),
+  )
+  .handler(async (context, input) => {
+    const entry = await context.db.get(input.entryId);
+    return {
+      isOwnEntry: entry?.submittedByUserId === context.userId,
+      vote: await findMyVote(context, context.userId),
     };
-
-    for (const category of VOTE_CATEGORIES) {
-      const vote = await votes
-        .forUser(context.userId)
-        .findVoteForCategory(context.db, competition._id, category);
-
-      votingStatus[category] = vote;
-    }
-
-    return votingStatus;
   })
   .public();
 
+// Votes for this entry, replacing any vote they already had this year
 export const vote = userMutation
   .input({
     entryId: v.id("entries"),
-    category: voteCategoryValidator,
+    // The "I've seen this display in person" tick
+    sawInPerson: v.boolean(),
+    // From the worker's /api/geo
+    geoToken: v.optional(v.string()),
   })
-  .returns(v.null())
+  .returns(
+    v.object({ inPerson: v.boolean(), locationCheck: locationCheckValidator }),
+  )
   .handler(async (context, input) => {
     await enforceUserRateLimit(context, "changeVote", context.userId);
     const competition = await competitions.query(context).current();
@@ -68,14 +98,27 @@ export const vote = userMutation
       throw new ConvexError(
         "Sorry, that entry is from a past competition, so it can't be voted for.",
       );
+    if (entry.submittedByUserId === context.userId)
+      throw new ConvexError(OWN_ENTRY_VOTE_MESSAGE);
 
-    await votes.forUser(context.userId).voteForEntry(context.db, {
+    const { locationCheck, location } = await checkVoterLocation(
+      competitions.inPersonArea(competition),
+      input.geoToken,
+      Date.now(),
+    );
+    const inPerson = locationCheck === "ok" && input.sawInPerson;
+
+    await votes.forUser(context.userId).cast(context.db, {
       competitionId: competition._id,
-      entryId: input.entryId,
-      category: input.category,
+      entryId: entry._id,
+      inPerson,
+      sawInPerson: input.sawInPerson,
+      locationCheck,
+      ...(location ? { location } : {}),
+      castAt: Date.now(),
     });
 
-    return null;
+    return { inPerson, locationCheck };
   })
   .public();
 

@@ -14,6 +14,13 @@ export const { RouteProvider, useRoute, routes } = createRouter({
   entries: defineRoute("/entries"),
   entry,
   entryVote: entry.extend("/vote"),
+  // The short link on each house sign's QR code
+  voteByNumber: defineRoute(
+    { entryNumber: param.path.string },
+    (q) => `/v/${q.entryNumber}`,
+  ),
+  // The QR code on the boat: type the number on the sign
+  voteLanding: defineRoute("/vote"),
   map: mapBase,
   mapEntry: mapBase.extend(
     { entryId: param.path.string },

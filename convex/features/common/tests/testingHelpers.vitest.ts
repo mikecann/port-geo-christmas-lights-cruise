@@ -271,3 +271,23 @@ export const insertTestVote = async (
   await aggregateVotes.insert(ctx, ensure(await ctx.db.get(voteId)));
   return voteId;
 };
+
+// An approved entry this year from someone other than the signed in user, so
+// they're allowed to vote for it
+export const createApprovedTestEntryToVoteFor = async (
+  t: TestOrAuthenticatedConvexTest,
+  entrant: Partial<Doc<"users">> = { name: "Another Entrant" },
+) => {
+  const entryId = await t.run(async (ctx) => {
+    const { current } = await ensureTestCompetitions(ctx);
+    return await ctx.db.insert("entries", {
+      competitionId: current._id,
+      submittedByUserId: await ctx.db.insert("users", entrant),
+      status: "draft",
+    });
+  });
+  await moveEntryToStatus(t, { entryId, status: "approved" });
+  return await t.run(async (ctx) =>
+    ensure(await ctx.db.get(entryId), "Test entry wasn't created"),
+  );
+};

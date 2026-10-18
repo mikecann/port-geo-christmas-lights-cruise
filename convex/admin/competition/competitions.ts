@@ -29,3 +29,26 @@ export const setEntryNumberRange = competitionAdminMutation
     return null;
   })
   .public();
+
+const inPersonAreaValidator = v.object({
+  countries: v.array(v.string()),
+  waOnly: v.boolean(),
+});
+
+export const getInPersonArea = competitionAdminQuery
+  .input({})
+  .returns(inPersonAreaValidator)
+  .handler(async (context) =>
+    competitions.inPersonArea(await competitions.query(context).current()),
+  )
+  .public();
+
+export const setInPersonArea = competitionAdminMutation
+  .input(inPersonAreaValidator.fields)
+  .returns(v.null())
+  .handler(async (context, input) => {
+    const competition = await competitions.query(context).current();
+    await competitions.mutate(context).setInPersonArea(competition._id, input);
+    return null;
+  })
+  .public();

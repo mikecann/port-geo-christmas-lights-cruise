@@ -5,47 +5,33 @@ import {
   Card,
   Text,
   Group,
-  Divider,
-  Badge,
-  Tabs,
   Button,
+  Select,
 } from "@mantine/core";
 import { IconListCheck, IconDownload } from "@tabler/icons-react";
 import { useQuery, useAction } from "convex/react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import { useMe } from "../../../auth/useMeHooks";
 import { Breadcrumbs } from "../../../common/components/Breadcrumbs";
+import { useErrorHandler } from "../../../common/errors";
 import { routes } from "../../../routes";
-import VoteCategoryTab from "./VoteCategoryTab";
-import type { VoteCategory } from "../../../../convex/features/votes/schema";
-import {
-  VOTE_CATEGORIES,
-  VOTE_CATEGORY_DETAILS,
-} from "../../../../convex/features/votes/schema";
-import { VOTE_CATEGORY_STYLES } from "../../../voting/voteCategoryStyles";
-
-function CategoryCountBadge({ category }: { category: VoteCategory }) {
-  const count = useQuery(api.admin.competition.votes.countForCategory, {
-    category,
-  });
-  return (
-    <Badge
-      variant="light"
-      color={VOTE_CATEGORY_STYLES[category].color}
-      size="sm"
-    >
-      {count}
-    </Badge>
-  );
-}
+import InPersonAreaSettings from "./InPersonAreaSettings";
+import VoteList from "./VoteList";
+import VoteResults from "./VoteResults";
+import { downloadCsv, votesToCsv } from "./votesCsv";
 
 export default function VoteManagementPage() {
   const me = useMe();
-  const [activeTab, setActiveTab] = useState<string | null>(VOTE_CATEGORIES[0]);
+  const competitionList = useQuery(api.public.competitions.list, {});
+  // Unset means the current competition
+  const [competitionId, setCompetitionId] = useState<Id<"competitions">>();
+  const [isExporting, setIsExporting] = useState(false);
   const getAllVotes = useAction(
     api.admin.competition.votes.getAllVotesForExport,
   );
+  const onApiError = useErrorHandler();
 
   const breadcrumbItems = [
     {
@@ -68,8 +54,12 @@ export default function VoteManagementPage() {
       </Container>
     );
 
+  const currentId = competitionList?.[0]?._id;
+  const selectedId = competitionId ?? currentId;
+  const year = competitionList?.find((c) => c._id === selectedId)?.year;
+
   return (
-    <Container size="md" py="xl">
+    <Container size="lg" py="xl">
       <Title order={1} mb="sm">
         Vote Management
       </Title>
@@ -78,110 +68,57 @@ export default function VoteManagementPage() {
 
       <Stack gap="xl">
         <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Stack gap="lg">
-            <Group justify="space-between">
-              <Group>
-                <IconListCheck size={32} color="var(--mantine-color-blue-6)" />
-                <div>
-                  <Text size="lg" fw={500}>
-                    Public Voting Overview
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    Review votes by category and see who voted for each entry
-                  </Text>
-                </div>
-              </Group>
+          <Group justify="space-between">
+            <Group>
+              <IconListCheck size={32} color="var(--mantine-color-blue-6)" />
+              <div>
+                <Text size="lg" fw={500}>
+                  Public voting results
+                </Text>
+                <Text size="sm" c="dimmed">
+                  Who's ahead, and every vote with where it came from
+                </Text>
+              </div>
+            </Group>
+            <Group>
+              <Select
+                aria-label="Competition year"
+                w={110}
+                data={(competitionList ?? []).map((c) => ({
+                  value: c._id,
+                  label: String(c.year),
+                }))}
+                value={selectedId ?? null}
+                onChange={(value) =>
+                  setCompetitionId(
+                    (value ?? undefined) as Id<"competitions"> | undefined,
+                  )
+                }
+                allowDeselect={false}
+              />
               <Button
                 leftSection={<IconDownload size={16} />}
                 variant="light"
-                onClick={async () => {
-                  const allVotes = await getAllVotes();
-
-                  const csvHeaders = [
-                    "vote category",
-                    "date and time of vote",
-                    "entry number",
-                    "voter email",
-                    "voter name",
-                  ];
-
-                  const csvRows = allVotes.map((vote) => {
-                    const escapeCSV = (value: string | number | undefined) => {
-                      if (value === undefined || value === null) return "";
-                      const str = String(value);
-                      if (
-                        str.includes(",") ||
-                        str.includes('"') ||
-                        str.includes("\n")
-                      )
-                        return `"${str.replace(/"/g, '""')}"`;
-                      return str;
-                    };
-
-                    const dateTime = new Date(vote.dateTime).toISOString();
-
-                    return [
-                      escapeCSV(vote.voteCategory),
-                      escapeCSV(dateTime),
-                      escapeCSV(vote.entryNumber),
-                      escapeCSV(vote.voterEmail),
-                      escapeCSV(vote.voterName),
-                    ].join(",");
-                  });
-
-                  const csvContent = [csvHeaders.join(","), ...csvRows].join(
-                    "\n",
-                  );
-                  const blob = new Blob([csvContent], {
-                    type: "text/csv;charset=utf-8;",
-                  });
-                  const link = document.createElement("a");
-                  const url = URL.createObjectURL(blob);
-
-                  const now = new Date();
-                  const dateTimeStr = now
-                    .toISOString()
-                    .replace(/[:.]/g, "-")
-                    .slice(0, -5);
-                  const filename = `votes-${dateTimeStr}.csv`;
-
-                  link.setAttribute("href", url);
-                  link.setAttribute("download", filename);
-                  link.style.visibility = "hidden";
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
+                loading={isExporting}
+                onClick={() => {
+                  setIsExporting(true);
+                  getAllVotes({ competitionId: selectedId })
+                    .then((votes) =>
+                      downloadCsv(votesToCsv(votes), `votes-${year ?? ""}`),
+                    )
+                    .catch(onApiError)
+                    .finally(() => setIsExporting(false));
                 }}
               >
                 Download CSV
               </Button>
             </Group>
-
-            <Divider />
-
-            <Tabs value={activeTab} onChange={setActiveTab} pt="md">
-              <Tabs.List>
-                {VOTE_CATEGORIES.map((category) => (
-                  <Tabs.Tab
-                    key={category}
-                    value={category}
-                    rightSection={<CategoryCountBadge category={category} />}
-                  >
-                    {VOTE_CATEGORY_DETAILS[category].title}
-                  </Tabs.Tab>
-                ))}
-              </Tabs.List>
-
-              {VOTE_CATEGORIES.map((category) => (
-                <Tabs.Panel key={category} value={category} pt="lg">
-                  {activeTab === category && (
-                    <VoteCategoryTab category={category} />
-                  )}
-                </Tabs.Panel>
-              ))}
-            </Tabs>
-          </Stack>
+          </Group>
         </Card>
+
+        <VoteResults competitionId={selectedId} />
+        <VoteList competitionId={selectedId} />
+        {selectedId === currentId && <InPersonAreaSettings />}
       </Stack>
     </Container>
   );

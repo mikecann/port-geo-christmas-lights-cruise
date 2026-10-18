@@ -31,7 +31,7 @@ describe("auth builders", () => {
   it("asks signed out people to sign in", async () => {
     const t = createConvexTest();
     await expectConvexError(
-      t.query(api.my.votes.list, {}),
+      t.query(api.my.votes.mine, {}),
       NOT_SIGNED_IN_MESSAGE,
     );
     await expectConvexError(
@@ -50,7 +50,7 @@ describe("auth builders", () => {
     await t.run((ctx) => ctx.db.delete(user._id));
 
     await expectConvexError(
-      signInAsTestUser(t, user).query(api.my.votes.list, {}),
+      signInAsTestUser(t, user).query(api.my.votes.mine, {}),
       NOT_SIGNED_IN_MESSAGE,
     );
   });

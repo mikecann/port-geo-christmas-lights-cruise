@@ -7,34 +7,28 @@ import {
   Group,
   Text,
   Badge,
-  SimpleGrid,
   Button,
   Alert,
 } from "@mantine/core";
 import { useQuery } from "convex/react";
 import { IconTrophy } from "@tabler/icons-react";
 import { api } from "../../../convex/_generated/api";
-import {
-  VOTE_CATEGORIES,
-  VOTE_CATEGORY_DETAILS,
-} from "../../../convex/features/votes/schema";
 import { AuthRequired } from "../../auth/AuthRequired";
 import MyVoteEntryCard from "./MyVoteEntryCard";
 import { routes } from "../../routes";
 import { votingClosedMessage } from "../../../shared/eventStatus";
-import { VOTE_CATEGORY_STYLES } from "../../voting/voteCategoryStyles";
 
 export default function MyVotesPage() {
-  const votes = useQuery(api.my.votes.list, {});
+  const vote = useQuery(api.my.votes.mine, {});
   const competition = useQuery(api.public.competitions.current, {});
 
-  if (votes === undefined || competition === undefined)
+  if (vote === undefined || competition === undefined)
     return (
       <AuthRequired>
         <Container size="md" py="xl">
           <Stack align="center">
             <Loader size="lg" />
-            <Text c="dimmed">Loading your votes...</Text>
+            <Text c="dimmed">Loading your vote...</Text>
           </Stack>
         </Container>
       </AuthRequired>
@@ -44,7 +38,7 @@ export default function MyVotesPage() {
     <AuthRequired>
       <Container size="md" py="xl">
         <Group justify="space-between" mb="xl">
-          <Title order={1}>My Votes</Title>
+          <Title order={1}>My Vote</Title>
           <Button
             component="a"
             {...routes.competitionDetails().link}
@@ -59,58 +53,46 @@ export default function MyVotesPage() {
         <Stack gap="md">
           {competition.votingOpen ? (
             <Alert color="green" variant="light" title="Voting is open">
-              Your votes for the {competition.year} competition are shown below.
+              You get one vote for the {competition.year} competition, and you
+              can change it until voting closes.
             </Alert>
           ) : (
             <Alert color="yellow" variant="light" title="Voting is closed">
-              {votes.length > 0
-                ? "Your previous votes are preserved here as a read-only record."
+              {vote
+                ? "Your vote is kept here as a read-only record."
                 : votingClosedMessage(competition.year)}
             </Alert>
           )}
-          {VOTE_CATEGORIES.map((category) => {
-            const { title, description } = VOTE_CATEGORY_DETAILS[category];
-            const { Icon } = VOTE_CATEGORY_STYLES[category];
-            const categoryVotes = votes.filter(
-              (vote) => vote.category === category,
-            );
 
-            return (
-              <Card key={category} withBorder>
-                <Group justify="space-between" align="center">
-                  <Group>
-                    <Icon size={18} />
-                    <Text fw={600}>{title}</Text>
-                    <Badge color="blue" variant="light">
-                      {categoryVotes.length} vote
-                      {categoryVotes.length === 1 ? "" : "s"}
-                    </Badge>
-                  </Group>
+          <Card withBorder>
+            {vote ? (
+              <Stack gap="sm">
+                <Group gap="xs">
+                  <Text fw={600}>Your vote</Text>
+                  <Badge
+                    color={vote.inPerson ? "green" : "blue"}
+                    variant="light"
+                  >
+                    {vote.inPerson
+                      ? "In-Person Favourites and People's Choice"
+                      : "People's Choice"}
+                  </Badge>
                 </Group>
-
-                <Text c="dimmed" size="sm" mt={4}>
-                  {description}
+                <MyVoteEntryCard entryId={vote.entry._id} />
+              </Stack>
+            ) : (
+              <Stack gap="sm" align="flex-start">
+                <Text c="dimmed" size="sm">
+                  You haven't voted yet.
                 </Text>
-
-                <Stack gap="sm" mt="sm">
-                  {categoryVotes.length === 0 ? (
-                    <Text c="dimmed" size="sm">
-                      You have not voted in this category yet.
-                    </Text>
-                  ) : (
-                    <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-                      {categoryVotes.map((vote) => (
-                        <MyVoteEntryCard
-                          key={vote._id}
-                          entryId={vote.entryId}
-                        />
-                      ))}
-                    </SimpleGrid>
-                  )}
-                </Stack>
-              </Card>
-            );
-          })}
+                {competition.votingOpen && (
+                  <Button component="a" {...routes.voteLanding().link}>
+                    Type the number on a sign
+                  </Button>
+                )}
+              </Stack>
+            )}
+          </Card>
         </Stack>
       </Container>
     </AuthRequired>

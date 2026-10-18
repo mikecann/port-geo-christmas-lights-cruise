@@ -1,6 +1,9 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
+import type { Doc } from "../../_generated/dataModel";
 
+// 2025's votes were one per category. From 2026 each person has one vote, and
+// these are only kept so the old votes stay valid and viewable.
 export const VOTE_CATEGORIES = ["best_display", "most_jolly"] as const;
 
 export const voteCategoryValidator = v.union(
@@ -30,13 +33,63 @@ export const VOTE_CATEGORY_DETAILS: Record<
   },
 };
 
-// Votes link a user to an entry they've voted for
-export const voteTable = defineTable({
+// Why a vote did or didn't pass the IP location check. Only "ok" lets the
+// voter's honesty tick make it count as in person.
+export const LOCATION_CHECKS = [
+  "ok",
+  "outside_area",
+  "no_location",
+  "invalid",
+  "expired",
+  "not_configured",
+] as const;
+
+export type LocationCheck = (typeof LOCATION_CHECKS)[number];
+
+export const locationCheckValidator = v.union(
+  ...LOCATION_CHECKS.map((check) => v.literal(check)),
+);
+
+// Where the worker's signed token said the voter was, for admins to review
+export const voterLocationValidator = v.object({
+  country: v.optional(v.string()),
+  region: v.optional(v.string()),
+  regionCode: v.optional(v.string()),
+  city: v.optional(v.string()),
+  latitude: v.optional(v.number()),
+  longitude: v.optional(v.number()),
+  timezone: v.optional(v.string()),
+  issuedAt: v.number(),
+});
+
+export type VoterLocation = typeof voterLocationValidator.type;
+
+const commonVoteFields = {
   competitionId: v.id("competitions"),
   entryId: v.id("entries"),
   votingUserId: v.id("users"),
+};
+
+export const legacyVoteSchema = v.object({
+  ...commonVoteFields,
   category: voteCategoryValidator,
-})
+});
+
+export const voteSchema = v.object({
+  ...commonVoteFields,
+  // Counts for In-Person Favourites as well as People's Choice
+  inPerson: v.boolean(),
+  // The "I've seen this display in person" tick
+  sawInPerson: v.boolean(),
+  locationCheck: locationCheckValidator,
+  // Only set when the token was genuine
+  location: v.optional(voterLocationValidator),
+  // When they last voted or changed their vote
+  castAt: v.number(),
+});
+
+// Votes link a user to an entry they've voted for
+export const voteTable = defineTable(v.union(legacyVoteSchema, voteSchema))
   .index("by_competitionId", ["competitionId"])
   .index("by_entryId", ["entryId"])
   .index("by_votingUserId_and_competitionId_and_category", [
@@ -44,3 +97,9 @@ export const voteTable = defineTable({
     "competitionId",
     "category",
   ]);
+
+export type LegacyVoteDoc = Doc<"votes"> & { category: VoteCategory };
+export type CurrentVoteDoc = Exclude<Doc<"votes">, { category: VoteCategory }>;
+
+export const isLegacyVote = (vote: Doc<"votes">): vote is LegacyVoteDoc =>
+  "category" in vote;
