@@ -46,3 +46,60 @@ export const removeNonImage = mutation
     return null;
   })
   .internal();
+
+// Uploaded photos save their full file URL, which names the deployment's
+// host. After moving the data to a new deployment, run this once to point
+// them at the new host. It pages through the table and reschedules itself,
+// and only patches URLs that changed, so it's safe to run again.
+export const refreshPhotoUrls = mutation
+  .input({
+    cursor: v.optional(v.union(v.string(), v.null())),
+    batchSize: v.optional(v.number()),
+    updated: v.optional(v.number()),
+    missing: v.optional(v.number()),
+  })
+  .returns(v.null())
+  .handler(async (context, input) => {
+    const batchSize = input.batchSize ?? 100;
+    let updated = input.updated ?? 0;
+    let missing = input.missing ?? 0;
+    const page = await context.db
+      .query("photos")
+      .paginate({ cursor: input.cursor ?? null, numItems: batchSize });
+
+    for (const photo of page.page) {
+      if (photo.kind !== "convex_stored") continue;
+      if (photo.uploadState.status !== "uploaded") continue;
+      const { storageId } = photo.uploadState;
+      const url = await context.storage.getUrl(storageId);
+      // Left as is so nothing is lost if the file turns up later
+      if (!url) {
+        console.warn(
+          `Photo '${photo._id}' has no stored file '${storageId}', leaving it alone`,
+        );
+        missing++;
+        continue;
+      }
+      if (url === photo.uploadState.url) continue;
+      await context.db.patch(photo._id, {
+        uploadState: { ...photo.uploadState, url },
+      });
+      updated++;
+    }
+
+    if (!page.isDone) {
+      await context.scheduler.runAfter(0, internal.photos.refreshPhotoUrls, {
+        cursor: page.continueCursor,
+        batchSize,
+        updated,
+        missing,
+      });
+      return null;
+    }
+
+    console.log(
+      `Refreshed photo URLs: ${updated} updated, ${missing} with no stored file`,
+    );
+    return null;
+  })
+  .internal();
