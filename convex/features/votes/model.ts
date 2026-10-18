@@ -54,9 +54,17 @@ export const votes = {
       // Pass the trigger-wrapped db so the counts move with the vote
       async cast(
         db: DatabaseWriter,
-        args: Omit<WithoutSystemFields<CurrentVoteDoc>, "votingUserId">,
+        args: Omit<
+          WithoutSystemFields<CurrentVoteDoc>,
+          "votingUserId" | "voterCanonicalEmail"
+        >,
       ) {
-        const vote = { ...args, votingUserId: userId };
+        const email = canonicalEmailOf(await db.get(userId));
+        const vote = {
+          ...args,
+          votingUserId: userId,
+          ...(email === undefined ? {} : { voterCanonicalEmail: email }),
+        };
         const existing = await this.find(db, args.competitionId);
         if (!existing) return await db.insert("votes", vote);
         await db.replace(existing._id, vote);
@@ -64,23 +72,23 @@ export const votes = {
       },
 
       // One person can have an account for each spelling of their email (see
-      // canonicalEmail), so a vote from any of the others counts as theirs
+      // canonicalEmail), so a vote from any of the others counts as theirs.
+      // Each account has one vote at most, so this only reads a few rows.
       async findFromSameInbox(
         db: DatabaseReader,
         competitionId: Id<"competitions">,
       ) {
         const email = canonicalEmailOf(await db.get(userId));
         if (email === undefined) return null;
-        const others = await db
-          .query("users")
-          .withIndex("by_canonicalEmail", (q) => q.eq("canonicalEmail", email))
-          .take(20);
-        for (const other of others) {
-          if (other._id === userId || other.isTestUser === true) continue;
-          const vote = await votes.forUser(other._id).find(db, competitionId);
-          if (vote) return vote;
-        }
-        return null;
+        const inboxVotes = await db
+          .query("votes")
+          .withIndex("by_competitionId_and_voterCanonicalEmail", (q) =>
+            q
+              .eq("competitionId", competitionId)
+              .eq("voterCanonicalEmail", email),
+          )
+          .collect();
+        return inboxVotes.find((vote) => vote.votingUserId !== userId) ?? null;
       },
     };
   },

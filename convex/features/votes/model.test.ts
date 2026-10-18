@@ -292,6 +292,90 @@ describe("one vote per inbox", () => {
     ).rejects.toThrow(SAME_INBOX_VOTE_MESSAGE);
   });
 
+  it("saves the voter's canonical email on the vote, even without one on the user", async () => {
+    const { base, t } = await setup();
+    await openVoting(t);
+    const entry = await createApprovedTestEntryToVoteFor(t);
+    const unfilled = await signInAs(base, { email: "John.Smith+x@Gmail.com" });
+
+    await unfilled.mutation(api.my.votes.vote, {
+      entryId: entry._id,
+      sawInPerson: false,
+    });
+
+    const [stored] = await storedVotes(t);
+    expect(stored).toMatchObject({
+      voterCanonicalEmail: "johnsmith@gmail.com",
+    });
+    await expect(
+      voteAs(base, "johnsmith@gmail.com", entry._id),
+    ).rejects.toThrow(SAME_INBOX_VOTE_MESSAGE);
+  });
+
+  it("won't take another vote however many accounts share the inbox", async () => {
+    const { base, t } = await setup();
+    await openVoting(t);
+    const entry = await createApprovedTestEntryToVoteFor(t);
+    for (let i = 0; i < 20; i++) {
+      const email = `john.smith+${i}@gmail.com`;
+      await createTestUser(base, {
+        user: { email, canonicalEmail: canonicalEmail(email) },
+      });
+    }
+
+    // The 21st account votes and the 22nd tries again
+    await voteAs(base, "john.smith+20@gmail.com", entry._id);
+    await expect(
+      voteAs(base, "john.smith+21@gmail.com", entry._id),
+    ).rejects.toThrow(SAME_INBOX_VOTE_MESSAGE);
+    expect(await storedVotes(t)).toHaveLength(1);
+  });
+
+  it("checks this year's older votes once the backfill has filled them in", async () => {
+    const { base, t } = await setup();
+    await openVoting(t);
+    const entry = await createApprovedTestEntryToVoteFor(t);
+    const earlier = await createTestUser(base, {
+      user: { email: "Jane.Doe@Outlook.com" },
+    });
+    const { voteId, legacyVoteId } = await t.run(async (ctx) => {
+      const { past, current } = await ensureTestCompetitions(ctx);
+      return {
+        voteId: await insertTestVote(ctx, {
+          competitionId: current._id,
+          entryId: entry._id,
+          votingUserId: earlier._id,
+          inPerson: false,
+          sawInPerson: false,
+          locationCheck: "no_location",
+          castAt: Date.now(),
+        }),
+        legacyVoteId: await insertTestVote(ctx, {
+          competitionId: past._id,
+          entryId: entry._id,
+          votingUserId: earlier._id,
+          category: "best_display",
+        }),
+      };
+    });
+
+    expect(
+      await t.mutation(internal.internal.users.normalizeEmails, {}),
+    ).toEqual({ updated: 1, votesUpdated: 1 });
+    expect(await t.run((ctx) => ctx.db.get(voteId))).toMatchObject({
+      voterCanonicalEmail: "jane.doe@outlook.com",
+    });
+    expect(await t.run((ctx) => ctx.db.get(legacyVoteId))).not.toHaveProperty(
+      "voterCanonicalEmail",
+    );
+    await expect(
+      voteAs(base, "jane.doe+2@outlook.com", entry._id),
+    ).rejects.toThrow(SAME_INBOX_VOTE_MESSAGE);
+    expect(
+      await t.mutation(internal.internal.users.normalizeEmails, {}),
+    ).toEqual({ updated: 0, votesUpdated: 0 });
+  });
+
   it("still lets them change their own vote", async () => {
     const { base, t } = await setup();
     await openVoting(t);

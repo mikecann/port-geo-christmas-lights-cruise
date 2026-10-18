@@ -60,7 +60,7 @@ Email codes go out through Resend like the other emails, so the deployment needs
 
 An email only links to an existing user once it's verified, by Google or by using the code, If two users already share an email, a new way of signing in with it is turned away until an admin sorts that out by hand.
 
-Emails saved before this were matched exactly and have no canonical email (used to stop one person voting from several spellings of the same inbox), so run this once on each deployment after deploying it, before voting opens:
+Emails saved before this were matched exactly and have no canonical email (used to stop one person voting from several spellings of the same inbox), and this year's votes from before then don't have the voter's canonical email saved on them, so run this once on each deployment after deploying it, before voting opens:
 
 ```bash
 bunx convex run internal/users:normalizeEmails

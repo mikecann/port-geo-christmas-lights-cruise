@@ -294,7 +294,7 @@ describe("one user per email, whichever way they sign in", () => {
     await signInWithGoogle(t, "google-id", "Resident@Example.com");
     expect(
       await t.mutation(internal.internal.users.normalizeEmails, {}),
-    ).toEqual({ updated: 1 });
+    ).toEqual({ updated: 1, votesUpdated: 0 });
     expect(await signInWithCode(t, "neighbour@example.com")).toBe(otherUserId);
 
     expect(await countRows(t)).toEqual({ users: 2, accounts: 2 });
@@ -453,14 +453,14 @@ describe("emails are compared ignoring case", () => {
 
     expect(
       await t.mutation(internal.internal.users.normalizeEmails, {}),
-    ).toEqual({ updated: 1 });
+    ).toEqual({ updated: 1, votesUpdated: 0 });
     expect(await t.run((ctx) => ctx.db.get(userId))).toMatchObject({
       email: "mike.cann+2025@gmail.com",
       canonicalEmail: "mikecann@gmail.com",
     });
     expect(
       await t.mutation(internal.internal.users.normalizeEmails, {}),
-    ).toEqual({ updated: 0 });
+    ).toEqual({ updated: 0, votesUpdated: 0 });
   });
 
   it("saves the normalised and canonical email on every sign-in", async () => {

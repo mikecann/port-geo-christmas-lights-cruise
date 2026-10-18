@@ -97,6 +97,9 @@ export const voteSchema = v.object({
   location: v.optional(voterLocationValidator),
   // When they last voted or changed their vote
   castAt: v.number(),
+  // The voter's canonicalEmail (see shared/auth.ts), so no other account for
+  // the same inbox can vote too. Missing on votes from before the backfill.
+  voterCanonicalEmail: v.optional(v.string()),
 });
 
 // Votes link a user to an entry they've voted for
@@ -107,6 +110,10 @@ export const voteTable = defineTable(v.union(legacyVoteSchema, voteSchema))
     "votingUserId",
     "competitionId",
     "category",
+  ])
+  .index("by_competitionId_and_voterCanonicalEmail", [
+    "competitionId",
+    "voterCanonicalEmail",
   ]);
 
 export type LegacyVoteDoc = Doc<"votes"> & { category: VoteCategory };
