@@ -1,13 +1,23 @@
 import { describe, expect, it } from "vitest";
 import type { VoteCategory } from "../../convex/features/votes/schema";
 import type { MyVote, MyVotes } from "./useVoteFlow";
-import { seenAnswerFromVotes, voteButtonStatus } from "./voteButtons";
+import {
+  seenAnswerFromVotes,
+  voteButtonStatus,
+  voteToSend,
+} from "./voteButtons";
 
-const voteFor = (entryId: string, category: VoteCategory, sawInPerson = true) =>
+const voteFor = (
+  entryId: string,
+  category: VoteCategory,
+  sawInPerson = true,
+  inPerson = sawInPerson,
+) =>
   ({
     _id: `vote-${entryId}-${category}`,
     category,
     entry: { _id: entryId },
+    inPerson,
     sawInPerson,
   }) as MyVote;
 const noVotes: MyVotes = { best_display: null, most_jolly: null };
@@ -59,6 +69,19 @@ describe("voteButtonStatus", () => {
     ).toBe("voted");
   });
 
+  it("updates a seen it vote that was counted for People's Choice", () => {
+    // Sent while the location check was failing, so not in person
+    const peoplesChoice = votes({
+      best_display: voteFor("entry1", "best_display", true, false),
+    });
+    expect(
+      voteButtonStatus(peoplesChoice, "best_display", "entry1", true, true),
+    ).toBe("update");
+    expect(
+      voteButtonStatus(peoplesChoice, "best_display", "entry1", false, true),
+    ).toBe("voted");
+  });
+
   it("keeps it voted when the switch isn't there or isn't answered", () => {
     const seen = votes({ best_display: voteFor("entry1", "best_display") });
     expect(voteButtonStatus(seen, "best_display", "entry1", null, true)).toBe(
@@ -94,5 +117,30 @@ describe("seenAnswerFromVotes", () => {
     });
     expect(seenAnswerFromVotes(elsewhere, "entry1")).toBe(null);
     expect(seenAnswerFromVotes(null, "entry1")).toBe(null);
+  });
+});
+
+describe("voteToSend", () => {
+  it("sends a seen it vote with its location token", () => {
+    expect(voteToSend(true, true, "token")).toEqual({
+      sawInPerson: true,
+      geoToken: "token",
+    });
+  });
+
+  it("holds back a seen it vote without a location token", () => {
+    expect(voteToSend(true, true, null)).toBeNull();
+  });
+
+  it("sends a vote that isn't in person without one", () => {
+    expect(voteToSend(false, true, null)).toEqual({
+      sawInPerson: false,
+      geoToken: undefined,
+    });
+    // The location check failed, so the answer can't count
+    expect(voteToSend(true, false, null)).toEqual({
+      sawInPerson: false,
+      geoToken: undefined,
+    });
   });
 });

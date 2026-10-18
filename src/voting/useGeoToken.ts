@@ -46,6 +46,11 @@ export function useGeoToken() {
     setAttempt((count) => count + 1);
   }, []);
   const forVote = useCallback(() => voteTokens.current.forVote(), []);
+  // A vote couldn't get a token either, so offer the retry again
+  const markFailed = useCallback(() => {
+    setToken(null);
+    setStatus("failed");
+  }, []);
 
-  return { token, status, retry, forVote };
+  return { token, status, retry, forVote, markFailed };
 }

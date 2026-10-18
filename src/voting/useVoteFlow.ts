@@ -6,18 +6,24 @@ import {
   useState,
 } from "react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { measured, track } from "../analytics/client";
 import { useErrorHandler } from "../common/errors";
+import { LOCATION_RETRY_MESSAGE } from "../../shared/voting";
 import {
   VOTE_CATEGORIES,
   type VoteCategory,
 } from "../../convex/features/votes/schema";
 import { useGeoToken } from "./useGeoToken";
 import { pendingVoteAction, pendingVotes } from "./pendingVote";
-import { seenAnswerFromVotes, voteButtonStatus } from "./voteButtons";
+import {
+  seenAnswerFromVotes,
+  voteButtonStatus,
+  voteToSend,
+} from "./voteButtons";
 import { showVoteToast } from "./voteToast";
 
 export type VoteFlowEntry = {
@@ -138,15 +144,14 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     isSending.current = true;
     setBusy(category);
     void measured(
-      async () =>
-        await voteMutation({
-          entryId: entry._id,
-          category,
-          // Only asked once the location check passes. Otherwise it can't be
-          // in person, so it goes as "not seen".
-          sawInPerson: inPersonAllowed ? (answer ?? undefined) : false,
-          geoToken: (await geo.forVote()) ?? undefined,
-        }),
+      async () => {
+        const args = voteToSend(answer, inPersonAllowed, await geo.forVote());
+        if (!args) {
+          geo.markFailed();
+          throw new ConvexError(LOCATION_RETRY_MESSAGE);
+        }
+        return await voteMutation({ entryId: entry._id, category, ...args });
+      },
       "vote",
       { ...analytics, category },
     )
