@@ -80,20 +80,22 @@ export const event: EventFacts = {
         { label: "3rd", amount: 1_000 },
       ],
       about:
-        "Voted by people who saw the display in person, from any boat or from the shore.",
+        "Best display, voted by people who saw it in person, from any boat or from the shore.",
       votedOnSite: true,
     },
     {
       name: "People's Choice",
       awards: [{ amount: 1_000 }],
-      about: "Voted online by the public.",
+      about:
+        "Best display, voted online by people who haven't seen it in person.",
       votedOnSite: true,
     },
     {
       name: "Most Jolly Award",
       awards: [{ amount: 3_000 }],
-      about: "For the best festive spirit. Picked by the judges.",
-      votedOnSite: false,
+      about:
+        "For the best festive spirit: dancing, dressing up and festive fun. Voted by people who saw the display in person.",
+      votedOnSite: true,
     },
     {
       name: "New Entrants",

@@ -38,7 +38,7 @@ const SWITCHES = {
   voting: {
     title: "Voting",
     open: {
-      now: "People can vote for approved entries, and change their vote.",
+      now: "People can vote for approved entries, and change their votes.",
       confirmTitle: "Close voting?",
       effect: [
         "Nobody will be able to vote or change their vote.",
@@ -50,8 +50,8 @@ const SWITCHES = {
       now: "Nobody can vote. Entries still show on the site and the map.",
       confirmTitle: "Open voting?",
       effect: [
-        "Anyone signed in can vote for one approved entry, and change their vote until you close voting.",
-        "Votes from people who were there in person also count for In-Person Favourites.",
+        "Anyone signed in can vote for the best display, and change their vote until you close voting. It counts for In-Person Favourites if they saw it in person, and People's Choice if not.",
+        "People who saw a display in person can vote for Most Jolly too.",
       ],
       button: "Open voting",
     },
