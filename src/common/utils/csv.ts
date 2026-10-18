@@ -1,7 +1,13 @@
+// Excel and Sheets run a cell starting with one of these as a formula, and
+// entry names are typed by the public, so those get a ' in front. Numbers
+// (like negative coordinates) are left alone.
+const FORMULA_START = /^[=+\-@\t\r]/;
+
 export const escapeCSV = (value: string | number | boolean | undefined) => {
   if (value === undefined) return "";
-  const str = String(value);
-  if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+  let str = String(value);
+  if (typeof value === "string" && FORMULA_START.test(str)) str = `'${str}`;
+  if (/[",\n\r]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
   return str;
 };
 
