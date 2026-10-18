@@ -121,6 +121,16 @@ For local dev, put `GEO_TOKEN_SECRET=<secret>` in `.dev.vars` (gitignored, read 
 
 `/admin` is for competition admins (ARG) and system admins. It opens on an overview with the competition's status, switches to open and close entries and voting, and how many entries are waiting for review. The other pages are Entries (the review queue, then every entry), Numbers (the number range and which numbers are taken, kept for returning entrants or free), Votes (the three rankings, flagged votes and the CSV), and People (finding people and making them admins). System admins also get a Danger zone page with the testing tools and wipes.
 
+### Moving to a new deployment
+
+Uploaded photos save their full file URL, which includes the deployment's host, so after importing an export (with file storage) into a new deployment they still point at the old one. Once the import is done, run this against the new deployment:
+
+```bash
+bunx convex run internal/photos:refreshPhotoUrls
+```
+
+It works through the photos 100 at a time, rescheduling itself until it's done, then logs how many it updated and how many have no stored file (each of those is logged and left alone). It only changes URLs that differ, so running it again is harmless.
+
 ### Testing
 
 To typecheck the project and run the unit tests:
