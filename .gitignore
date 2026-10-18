@@ -141,3 +141,6 @@ dist
 .wrangler
 
 .DS_Store
+
+# Local Cloudflare Worker secrets (wrangler / vite plugin)
+.dev.vars*
