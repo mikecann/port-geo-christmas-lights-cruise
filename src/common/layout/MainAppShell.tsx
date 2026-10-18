@@ -27,6 +27,7 @@ export function MainAppShell({ children }: MobileNavbarProps) {
   const isScrolled = useScrolledPast(30, isHome);
   const isTransparent = isHome && !isScrolled && !opened;
   const isMapPage = routeGroups.map.has(route);
+  const isVoteScreen = routeGroups.voteScreen.has(route);
 
   return (
     <AppShell
@@ -99,11 +100,11 @@ export function MainAppShell({ children }: MobileNavbarProps) {
         <Box
           style={{ flex: 1 }}
           mt={isHome || isMapPage ? 0 : 60}
-          pb={isHome || isMapPage ? 0 : 60}
+          pb={isHome || isMapPage || isVoteScreen ? 0 : 60}
         >
           {children}
         </Box>
-        {!isMapPage && <Footer />}
+        {!isMapPage && !isVoteScreen && <Footer />}
       </AppShell.Main>
     </AppShell>
   );

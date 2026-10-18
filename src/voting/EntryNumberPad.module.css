@@ -1,0 +1,68 @@
+/* One screen under the site header, keys at the bottom under your thumb */
+.pad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+  height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
+  max-width: 36em;
+  margin-inline: auto;
+  padding: var(--mantine-spacing-lg) var(--mantine-spacing-md)
+    calc(var(--mantine-spacing-md) + env(safe-area-inset-bottom));
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* Styled like the number on the house sign */
+.display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 10rem;
+  height: 6.5rem;
+  padding-inline: var(--mantine-spacing-lg);
+  border-radius: var(--mantine-radius-lg);
+  background-color: var(--mantine-color-white);
+  color: var(--mantine-color-dark-9);
+  font-size: 4.5rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.display[data-empty] {
+  color: var(--mantine-color-gray-4);
+}
+
+/* Holds its height so the keys never move as the name comes and goes */
+.match {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mantine-spacing-sm);
+  width: 100%;
+  min-height: 3.5rem;
+}
+
+.thumbnail {
+  width: 4rem;
+  height: 3rem;
+  flex: none;
+  border-radius: var(--mantine-radius-sm);
+  object-fit: cover;
+  background-color: var(--mantine-color-dark-6);
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--mantine-spacing-xs);
+  width: 100%;
+  margin-top: auto;
+}

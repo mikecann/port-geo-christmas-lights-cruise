@@ -1,77 +1,57 @@
-import { Center, Loader, Stack } from "@mantine/core";
-import { SEEN_IN_PERSON_REQUIRED_MESSAGE } from "../../shared/voting";
+import { Stack } from "@mantine/core";
 import { useVoteFlow, type VoteFlowEntry } from "./useVoteFlow";
 import {
   CastVoteButton,
   ChangeVoteOptions,
-  InPersonSwitch,
-  LocationCheckingNotice,
+  InPersonSlot,
   OwnEntryNotice,
-  PeoplesChoiceOnlyNotice,
-  SignInToVote,
-  VoteConfirmation,
+  SignInSheet,
+  SwitchVoteSheet,
+  VoteBarLoading,
+  VoteReceipt,
   VotedForAnotherEntry,
   VotingClosedNotice,
 } from "./VoteFlowParts";
 
-// Everything between seeing an entry and "your vote is in"
+// The vote page's bottom bar: everything between seeing an entry and "your
+// vote is in"
 export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
   const flow = useVoteFlow(entry);
   const { state } = flow;
 
-  if (state.step === "loading")
-    return (
-      <Center py="md">
-        <Loader />
-      </Center>
-    );
+  if (state.step === "loading") return <VoteBarLoading />;
   if (state.step === "closed") return <VotingClosedNotice year={state.year} />;
-  if (state.step === "signedOut")
-    return <SignInToVote entryNumber={entry.entryNumber} />;
   if (state.step === "ownEntry") return <OwnEntryNotice />;
   if (state.step === "voted")
-    return (
-      <VoteConfirmation
-        vote={state.vote}
-        reason={state.reason}
-        onChange={flow.startChanging}
-      />
-    );
+    return <VoteReceipt vote={state.vote} onChange={flow.startChanging} />;
 
-  const { otherVote, currentVote } = state;
+  const otherVote = state.step === "choose" ? state.otherVote : null;
+  const currentVote = state.step === "choose" ? state.currentVote : null;
   const needsSeenAnswer =
     state.inPersonAllowed === true && flow.sawInPerson === null;
   return (
-    <Stack gap="md">
+    <Stack gap="sm">
       {otherVote && <VotedForAnotherEntry vote={otherVote} />}
-      {state.inPersonAllowed && (
-        <InPersonSwitch
-          value={flow.sawInPerson}
-          onChange={flow.setSawInPerson}
-        />
-      )}
-      {state.inPersonAllowed === null && <LocationCheckingNotice />}
-      {state.reason && (
-        <PeoplesChoiceOnlyNotice
-          reason={state.reason}
-          onRetry={state.canRetryLocation ? flow.retryLocation : undefined}
-        />
-      )}
+      <InPersonSlot
+        inPersonAllowed={state.inPersonAllowed}
+        canRetryLocation={state.canRetryLocation}
+        value={flow.sawInPerson}
+        onChange={flow.setSawInPerson}
+        onRetry={flow.retryLocation}
+      />
       <CastVoteButton
-        entryNumber={entry.entryNumber}
         label={
           otherVote
             ? `Switch my vote to #${entry.entryNumber}`
             : currentVote
               ? `Update my vote for #${entry.entryNumber}`
-              : undefined
+              : `Vote for #${entry.entryNumber}`
         }
         isBusy={flow.isBusy}
         // Wait for the location check, so the switch shows before they vote,
         // and then for an answer, so nobody is counted as "not seen" by
         // missing it
         disabled={state.inPersonAllowed === null || needsSeenAnswer}
-        hint={needsSeenAnswer ? SEEN_IN_PERSON_REQUIRED_MESSAGE : undefined}
         onClick={flow.vote}
       />
       {currentVote && (
@@ -79,6 +59,17 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
           isBusy={flow.isBusy}
           onRemove={() => flow.remove(currentVote)}
           onKeep={flow.stopChanging}
+        />
+      )}
+      <SignInSheet opened={flow.isSigningIn} onClose={flow.cancelSignIn} />
+      {otherVote && (
+        <SwitchVoteSheet
+          opened={flow.isConfirmingSwitch}
+          from={otherVote.entry}
+          to={entry}
+          isBusy={flow.isBusy}
+          onConfirm={flow.confirmSwitch}
+          onClose={flow.cancelSwitch}
         />
       )}
     </Stack>
