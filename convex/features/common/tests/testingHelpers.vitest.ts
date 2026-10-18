@@ -4,6 +4,7 @@
 import { convexTest } from "convex-test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import aggregate from "@convex-dev/aggregate/test";
+import resend from "@convex-dev/resend/test";
 import schema from "../../../schema";
 import type { Doc, Id } from "../../../_generated/dataModel";
 import type { MutationCtx } from "../../../_generated/server";
@@ -18,6 +19,7 @@ export const createConvexTest = () => {
   const t = convexTest(schema);
   rateLimiter.register(t);
   aggregate.register(t, "aggregateVotes");
+  resend.register(t);
 
   return t;
 };

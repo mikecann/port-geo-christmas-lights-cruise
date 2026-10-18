@@ -1,8 +1,20 @@
-import type { Id } from "../../_generated/dataModel";
+import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../../_generated/server";
 import { ensure } from "../../../shared/ensure";
+import { DEFAULT_ENTRY_NUMBER_RANGE } from "../../../shared/constants";
+import {
+  ensureValidEntryNumberRange,
+  type EntryNumberRange,
+} from "../entries/numbers";
 
 export const competitions = {
+  entryNumberRange(competition: Doc<"competitions">): EntryNumberRange {
+    return {
+      min: competition.entryNumberMin ?? DEFAULT_ENTRY_NUMBER_RANGE.min,
+      max: competition.entryNumberMax ?? DEFAULT_ENTRY_NUMBER_RANGE.max,
+    };
+  },
+
   query(ctx: QueryCtx) {
     return {
       forYear(year: number) {
@@ -67,6 +79,18 @@ export const competitions = {
       ) {
         await competitions.query(ctx).forCompetition(competitionId).get();
         await ctx.db.patch(competitionId, { entriesOpen });
+      },
+
+      async setEntryNumberRange(
+        competitionId: Id<"competitions">,
+        range: EntryNumberRange,
+      ) {
+        await competitions.query(ctx).forCompetition(competitionId).get();
+        const { min, max } = ensureValidEntryNumberRange(range);
+        await ctx.db.patch(competitionId, {
+          entryNumberMin: min,
+          entryNumberMax: max,
+        });
       },
     };
   },

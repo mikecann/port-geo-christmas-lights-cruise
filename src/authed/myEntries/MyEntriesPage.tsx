@@ -22,12 +22,12 @@ import RejectedEntryState from "./RejectedEntryState";
 import EntryNameGuidelinesModal from "./EntryNameGuidelinesModal";
 import { exhaustiveCheck, iife } from "../../../shared/misc";
 import { routes } from "../../routes";
-import PreviousEntriesSection from "./PreviousEntriesSection";
+import PreviousEntrySection from "./PreviousEntrySection";
 
 export default function MyEntriesPage() {
   const me = useMe();
   const myEntry = useQuery(api.my.entries.find);
-  const previousEntries = useQuery(api.my.entries.listPrevious);
+  const previous = useQuery(api.my.entries.findPrevious);
   const [modalOpened, { open: openModal, close: closeModal }] =
     useDisclosure(false);
 
@@ -68,10 +68,10 @@ export default function MyEntriesPage() {
         {iife(() => {
           if (isLoading) return <Loader />;
 
-          if (!myEntry) return <NoEntryState />;
+          if (!myEntry) return <NoEntryState previous={previous} />;
 
           if (myEntry.status == "draft")
-            return <DraftEntryState entry={myEntry} />;
+            return <DraftEntryState entry={myEntry} previous={previous} />;
 
           if (myEntry.status == "submitting")
             return <SubmittingEntryState entry={myEntry} />;
@@ -89,7 +89,7 @@ export default function MyEntriesPage() {
         })}
       </Stack>
 
-      <PreviousEntriesSection entries={previousEntries} />
+      <PreviousEntrySection previous={previous} />
     </Container>
   );
 }

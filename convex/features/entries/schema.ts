@@ -5,7 +5,15 @@ import { defineTable } from "convex/server";
 export const commonEntryFields = {
   competitionId: v.id("competitions"),
   submittedByUserId: v.id("users"),
+  // The same person's most recent approved entry in an earlier competition.
+  // Entries started before this field existed don't have it, so read it
+  // through entries.query().forEntry().findPrevious().
+  previousEntryId: v.optional(v.id("entries")),
 };
+
+// Before approval this is a returning entrant's reserved number, kept from
+// their previous entry. New entrants only get one when they're approved.
+const reservedEntryNumber = v.optional(v.number());
 
 export const homeAddressValidator = v.object({
   address: v.string(),
@@ -28,12 +36,14 @@ export const entrySchema = v.union(
     status: v.literal("draft"),
     houseAddress: v.optional(draftHomeAddressValidator),
     name: v.optional(v.string()),
+    entryNumber: reservedEntryNumber,
   }),
   v.object({
     ...commonEntryFields,
     status: v.literal("submitting"),
     houseAddress: draftHomeAddressValidator,
     name: v.string(),
+    entryNumber: reservedEntryNumber,
   }),
   v.object({
     ...commonEntryFields,
@@ -41,6 +51,7 @@ export const entrySchema = v.union(
     submittedAt: v.number(),
     houseAddress: homeAddressValidator,
     name: v.string(),
+    entryNumber: reservedEntryNumber,
   }),
   v.object({
     ...commonEntryFields,
@@ -59,6 +70,8 @@ export const entrySchema = v.union(
     submittedAt: v.number(),
     houseAddress: homeAddressValidator,
     name: v.string(),
+    // Kept as a record, but a rejected entry doesn't hold its number
+    entryNumber: reservedEntryNumber,
   }),
 );
 

@@ -6,16 +6,15 @@ import { match } from "ts-pattern";
 import { photos } from "../photos/model";
 import { votes } from "../votes/model";
 import { isStatus } from "../../../shared/filter";
-import { randomIntRange } from "../../../shared/num";
 import { isWithinBoundary } from "../../../shared/geo";
 import {
   MAX_ENTRY_ADDRESS_LENGTH,
   MAX_ENTRY_NAME_LENGTH,
-  MAX_ENTRY_NUMBER,
   MAX_REJECTED_REASON_LENGTH,
 } from "../../../shared/constants";
 import { competitions } from "../competitions/model";
 import type { ApprovedEntryDoc, EntryStatusKinds, PublicEntry } from "./schema";
+import { ensureValidEntryNumber, pickEntryNumber } from "./numbers";
 
 function trimToLimit(value: string, maxLength: number, label: string) {
   const trimmed = value.trim();
@@ -132,23 +131,97 @@ export const entries = {
             );
           },
 
+          // Their most recent approved entry, even if they skipped a year
           async findPreviousApproved() {
-            const [previousCompetition] = await listEarlierCompetitions(1);
-            if (!previousCompetition) return null;
-            const previousEntry = await findInCompetition(
-              previousCompetition._id,
-            );
-            return previousEntry?.status === "approved" ? previousEntry : null;
-          },
-
-          async hasApprovedEntryBefore() {
             for (const earlier of await listEarlierCompetitions()) {
               const entry = await findInCompetition(earlier._id);
-              if (entry?.status === "approved") return true;
+              if (entry?.status === "approved") return entry;
             }
-            return false;
+            return null;
           },
         };
+      },
+
+      // Entries started before previousEntryId existed fall back to looking
+      // it up from the person's own earlier entries
+      async findPreviousOf(entry: Doc<"entries">) {
+        if (entry.previousEntryId === undefined)
+          return await this.forUser(
+            entry.competitionId,
+            entry.submittedByUserId,
+          ).findPreviousApproved();
+        const previous = await db.get(entry.previousEntryId);
+        return previous?.status === "approved" ? previous : null;
+      },
+
+      // Numbers held by the competition's entries, reserved ones included
+      async listHeldNumbers(
+        competitionId: Id<"competitions">,
+        excludeEntryId?: Id<"entries">,
+      ) {
+        const competitionEntries = await db
+          .query("entries")
+          .withIndex("by_competitionId_and_status", (q) =>
+            q.eq("competitionId", competitionId),
+          )
+          .collect();
+        const held = new Set<number>();
+        for (const entry of competitionEntries)
+          if (
+            entry._id !== excludeEntryId &&
+            entry.status !== "rejected" &&
+            entry.entryNumber !== undefined
+          )
+            held.add(entry.entryNumber);
+        return held;
+      },
+
+      // Last competition's numbers stay with the people who had them until
+      // entries close, whether or not they've started an entry yet
+      async listReservedNumbers(competition: Doc<"competitions">) {
+        const ownerByNumber = new Map<number, Id<"users">>();
+        if (!competition.entriesOpen) return ownerByNumber;
+        const [previousCompetition] = await competitions
+          .query(context)
+          .listBeforeYear(competition.year, 1);
+        if (!previousCompetition) return ownerByNumber;
+        for (const entry of await this.listApproved(previousCompetition._id))
+          ownerByNumber.set(entry.entryNumber, entry.submittedByUserId);
+        return ownerByNumber;
+      },
+
+      // The previous entry's number, unless another entry holds it or it's
+      // reserved for whoever had it last year
+      async findKeepableNumber(
+        competitionId: Id<"competitions">,
+        previousEntry: ApprovedEntryDoc,
+        excludeEntryId?: Id<"entries">,
+      ) {
+        const { entryNumber } = previousEntry;
+        const held = await this.listHeldNumbers(competitionId, excludeEntryId);
+        if (held.has(entryNumber)) return null;
+        const competition = await competitions
+          .query(context)
+          .forCompetition(competitionId)
+          .get();
+        const owner = (await this.listReservedNumbers(competition)).get(
+          entryNumber,
+        );
+        if (owner !== undefined && owner !== previousEntry.submittedByUserId)
+          return null;
+        return entryNumber;
+      },
+
+      async ensureNumberIsFree(
+        competitionId: Id<"competitions">,
+        entryNumber: number,
+        entryId: Id<"entries">,
+      ) {
+        const held = await this.listHeldNumbers(competitionId, entryId);
+        if (held.has(entryNumber))
+          throw new ConvexError(
+            `Number ${entryNumber} is already used by another entry this year.`,
+          );
       },
 
       async listApproved(competitionId?: Id<"competitions">) {
@@ -242,11 +315,25 @@ export const entries = {
   mutate(context: MutationCtx) {
     const { db } = context;
     const query = entries.query(context);
+
+    // A number they couldn't keep when they started may have been freed since
+    const findNumberToKeep = async (entry: Doc<"entries">) => {
+      const previous = await query.findPreviousOf(entry);
+      if (!previous) return null;
+      return await query.findKeepableNumber(
+        entry.competitionId,
+        previous,
+        entry._id,
+      );
+    };
+
     return {
       forEntry(entryId: Id<"entries">) {
         const query = entries.query(context).forEntry(entryId);
         return {
-          async approve({ entryNumber }: { entryNumber: number }) {
+          // Keeps a returning entrant's reserved number, otherwise gives the
+          // entry a new one. Returns the number.
+          async approve() {
             const entry = await query.get();
 
             if (entry.status !== "submitted")
@@ -254,11 +341,19 @@ export const entries = {
                 `Entry '${entryId}' is not in submitted status and cannot be approved. Current status: ${entry.status}`,
               );
 
+            const entryNumber =
+              entry.entryNumber ??
+              (await findNumberToKeep(entry)) ??
+              (await entries
+                .mutate(context)
+                .getNextAvailableEntryNumber(entry.competitionId, entryId));
+
             await db.patch(entryId, {
               status: "approved",
               approvedAt: Date.now(),
               entryNumber,
             });
+            return entryNumber;
           },
 
           async reject({ rejectedReason }: { rejectedReason: string }) {
@@ -291,6 +386,53 @@ export const entries = {
             await query.get();
             await db.patch(entryId, { entryNumber });
           },
+
+          // For admins, so the number must be free in the competition
+          async overrideEntryNumber(entryNumber: number) {
+            const entry = await query.get();
+            if (entry.status === "rejected")
+              throw new ConvexError("Rejected entries don't have a number.");
+            ensureValidEntryNumber(entryNumber);
+            await entries
+              .query(context)
+              .ensureNumberIsFree(entry.competitionId, entryNumber, entryId);
+            await db.patch(entryId, { entryNumber });
+          },
+
+          // For someone who signed in with a different account this year. The
+          // entry takes the previous entry's number.
+          async linkPreviousEntry(previousEntryId: Id<"entries">) {
+            const entry = await query.get();
+            if (entry.status === "rejected")
+              throw new ConvexError(
+                "Rejected entries can't be linked to a previous entry.",
+              );
+            const previous = await entries
+              .query(context)
+              .forEntry(previousEntryId)
+              .findApproved();
+            const yearOf = async (id: Id<"competitions">) =>
+              (await competitions.query(context).forCompetition(id).get()).year;
+            if (
+              !previous ||
+              (await yearOf(previous.competitionId)) >=
+                (await yearOf(entry.competitionId))
+            )
+              throw new ConvexError(
+                "Only an approved entry from an earlier year can be linked.",
+              );
+            await entries
+              .query(context)
+              .ensureNumberIsFree(
+                entry.competitionId,
+                previous.entryNumber,
+                entryId,
+              );
+            await db.patch(entryId, {
+              previousEntryId,
+              entryNumber: previous.entryNumber,
+            });
+          },
         };
       },
 
@@ -304,10 +446,31 @@ export const entries = {
                 "You've already entered this year's competition.",
               );
 
+            const previousEntry = await query.findPreviousApproved();
+            if (!previousEntry)
+              return await db.insert("entries", {
+                competitionId,
+                submittedByUserId: userId,
+                status: "draft",
+              });
+
+            // Returning entrants start from last time's name and address and
+            // keep their number. Photos aren't copied: they show this year's
+            // display.
+            const entryNumber = await entries
+              .query(context)
+              .findKeepableNumber(competitionId, previousEntry);
             return await db.insert("entries", {
               competitionId,
               submittedByUserId: userId,
               status: "draft",
+              previousEntryId: previousEntry._id,
+              name: previousEntry.name,
+              houseAddress: {
+                address: previousEntry.houseAddress.address,
+                placeId: previousEntry.houseAddress.placeId,
+              },
+              ...(entryNumber === null ? {} : { entryNumber }),
             });
           },
 
@@ -488,57 +651,30 @@ export const entries = {
         return { deletedCount };
       },
 
+      // A new entrant's number: random within the competition's range, never
+      // one that's held or reserved
       async getNextAvailableEntryNumber(
         competitionId?: Id<"competitions">,
-        userId?: Id<"users">,
+        excludeEntryId?: Id<"entries">,
       ) {
-        const resolvedCompetitionId =
-          competitionId ?? (await competitions.query(context).current())._id;
-        const approvedEntries = await query.listApproved(resolvedCompetitionId);
-        const usedNumbers = new Set(
-          approvedEntries.map((entry) => entry.entryNumber),
+        const competition = competitionId
+          ? await competitions
+              .query(context)
+              .forCompetition(competitionId)
+              .get()
+          : await competitions.query(context).current();
+        const unavailable = await query.listHeldNumbers(
+          competition._id,
+          excludeEntryId,
         );
-        const unavailableNumbers = new Set(usedNumbers);
-
-        if (userId) {
-          const previousEntry = await entries
-            .query(context)
-            .forUser(resolvedCompetitionId, userId)
-            .findPreviousApproved();
-          if (previousEntry && !usedNumbers.has(previousEntry.entryNumber))
-            return previousEntry.entryNumber;
-
-          // Keep last season's numbers available for their returning owners.
-          // New entrants can use unreserved numbers or continue above the old pool.
-          const currentCompetition = await competitions
-            .query(context)
-            .forCompetition(resolvedCompetitionId)
-            .get();
-          const [previousCompetition] = await competitions
-            .query(context)
-            .listBeforeYear(currentCompetition.year, 1);
-          if (previousCompetition) {
-            const previousEntries = await query.listApproved(
-              previousCompetition._id,
-            );
-            for (const previousEntry of previousEntries)
-              unavailableNumbers.add(previousEntry.entryNumber);
-          }
-        }
-
-        if (unavailableNumbers.size === 0)
-          return randomIntRange(0, MAX_ENTRY_NUMBER);
-
-        const availableNumbers = [];
-        for (let i = 0; i <= MAX_ENTRY_NUMBER; i++)
-          if (!unavailableNumbers.has(i)) availableNumbers.push(i);
-
-        if (availableNumbers.length > 0) {
-          const randomIndex = randomIntRange(0, availableNumbers.length - 1);
-          return availableNumbers[randomIndex];
-        }
-
-        return Math.max(...unavailableNumbers) + 1;
+        for (const reserved of (
+          await query.listReservedNumbers(competition)
+        ).keys())
+          unavailable.add(reserved);
+        return pickEntryNumber(
+          competitions.entryNumberRange(competition),
+          unavailable,
+        );
       },
     };
   },

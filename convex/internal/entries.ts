@@ -80,10 +80,7 @@ export async function repairCurrentReturningEntryNumbersForContext(
   >();
 
   for (const entry of approvedEntries) {
-    const previousEntry = await entries
-      .query(context)
-      .forUser(competition._id, entry.submittedByUserId)
-      .findPreviousApproved();
+    const previousEntry = await entries.query(context).findPreviousOf(entry);
     if (!previousEntry || previousEntry.entryNumber === entry.entryNumber)
       continue;
 
@@ -127,4 +124,45 @@ export const repairCurrentReturningEntryNumbers = mutation
     }),
   )
   .handler(repairCurrentReturningEntryNumbersForContext)
+  .internal();
+
+// Links entries started before previousEntryId existed, and reserves the
+// number they'll keep, so they show it before they're approved
+export async function linkReturningEntrantsForContext(context: MutationCtx) {
+  const competition = await competitions.query(context).current();
+  const competitionEntries = await context.db
+    .query("entries")
+    .withIndex("by_competitionId_and_status", (q) =>
+      q.eq("competitionId", competition._id),
+    )
+    .collect();
+
+  let linkedCount = 0;
+  for (const entry of competitionEntries) {
+    if (entry.previousEntryId !== undefined || entry.status === "rejected")
+      continue;
+    const previousEntry = await entries
+      .query(context)
+      .forUser(competition._id, entry.submittedByUserId)
+      .findPreviousApproved();
+    if (!previousEntry) continue;
+
+    const entryNumber =
+      entry.entryNumber ??
+      (await entries
+        .query(context)
+        .findKeepableNumber(competition._id, previousEntry, entry._id));
+    await context.db.patch(entry._id, {
+      previousEntryId: previousEntry._id,
+      ...(entryNumber === null ? {} : { entryNumber }),
+    });
+    linkedCount++;
+  }
+  return { linkedCount };
+}
+
+export const linkReturningEntrants = mutation
+  .input({})
+  .returns(v.object({ linkedCount: v.number() }))
+  .handler(linkReturningEntrantsForContext)
   .internal();

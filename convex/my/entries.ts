@@ -6,6 +6,7 @@ import { lookUpPlace } from "../features/map/lib";
 import { internal } from "../../shared/api";
 import { competitions } from "../features/competitions/model";
 import { enforceUserRateLimit } from "../features/rateLimits/lib";
+import { photos } from "../features/photos/model";
 
 export const find = userQuery
   .input({})
@@ -18,14 +19,35 @@ export const find = userQuery
   })
   .public();
 
-export const listPrevious = userQuery
+// A returning entrant's previous entry, shown read-only with its photos. Once
+// they've started this year's entry it's the one that entry is linked to.
+export const findPrevious = userQuery
   .input({})
   .handler(async (context) => {
     const competition = await competitions.query(context).current();
-    return await entries
+    const forUser = entries
       .query(context)
-      .forUser(competition._id, context.userId)
-      .listPrevious();
+      .forUser(competition._id, context.userId);
+    const current = await forUser.find();
+    const previous = current
+      ? await entries.query(context).findPreviousOf(current)
+      : await forUser.findPreviousApproved();
+    if (!previous) return null;
+
+    const previousCompetition = await competitions
+      .query(context)
+      .forCompetition(previous.competitionId)
+      .get();
+    return {
+      year: previousCompetition.year,
+      entry: {
+        _id: previous._id,
+        name: previous.name,
+        entryNumber: previous.entryNumber,
+        address: previous.houseAddress.address,
+      },
+      photos: await photos.forEntry(previous._id).list(context.db),
+    };
   })
   .public();
 

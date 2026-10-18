@@ -59,21 +59,28 @@ export const email = {
     ctx: MutationCtx,
     args: { to: string; entry: Doc<"entries"> },
   ) {
-    const baseUrl = process.env.SITE_URL;
-    const adminUrl = baseUrl ? `${baseUrl}/admin/entries` : "/admin/entries";
-
     await resend.sendEmail(ctx, {
       from: email.adminFromAddress,
       to: args.to,
       subject: "New Entry Submitted - Awaiting Approval",
-      html: `
+      html: email.newEntryNotificationHtml(args),
+    });
+  },
+
+  newEntryNotificationHtml(args: { entry: Doc<"entries"> }) {
+    const baseUrl = process.env.SITE_URL;
+    const adminUrl = baseUrl ? `${baseUrl}/admin/entries` : "/admin/entries";
+    // Returning entrants have their number reserved before approval
+    const { entryNumber } = args.entry;
+
+    return `
         <h2>New Entry Submission</h2>
         <p>A new entry has been submitted and is awaiting approval.</p>
         <p><strong>Address:</strong> ${escapeHtml(args.entry.houseAddress?.address)}</p>
+        ${entryNumber === undefined ? "" : `<p><strong>Reserved entry number:</strong> ${escapeHtml(entryNumber)}</p>`}
         <p><a href="${escapeHtml(adminUrl)}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Review Entry</a></p>
         <p>Click the button above or visit the admin panel to approve or reject this entry.</p>
-      `,
-    });
+      `;
   },
 
   async sendEntryApprovalEmail(

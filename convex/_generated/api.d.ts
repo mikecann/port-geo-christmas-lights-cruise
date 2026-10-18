@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as admin_competition_competitions from "../admin/competition/competitions.js";
 import type * as admin_competition_entries from "../admin/competition/entries.js";
 import type * as admin_competition_photos from "../admin/competition/photos.js";
 import type * as admin_competition_votes from "../admin/competition/votes.js";
@@ -24,6 +25,7 @@ import type * as features_common_lib from "../features/common/lib.js";
 import type * as features_competitions_model from "../features/competitions/model.js";
 import type * as features_email_model from "../features/email/model.js";
 import type * as features_entries_model from "../features/entries/model.js";
+import type * as features_entries_numbers from "../features/entries/numbers.js";
 import type * as features_entries_testing from "../features/entries/testing.js";
 import type * as features_map_lib from "../features/map/lib.js";
 import type * as features_photos_lib from "../features/photos/lib.js";
@@ -53,6 +55,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "admin/competition/competitions": typeof admin_competition_competitions;
   "admin/competition/entries": typeof admin_competition_entries;
   "admin/competition/photos": typeof admin_competition_photos;
   "admin/competition/votes": typeof admin_competition_votes;
@@ -69,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   "features/competitions/model": typeof features_competitions_model;
   "features/email/model": typeof features_email_model;
   "features/entries/model": typeof features_entries_model;
+  "features/entries/numbers": typeof features_entries_numbers;
   "features/entries/testing": typeof features_entries_testing;
   "features/map/lib": typeof features_map_lib;
   "features/photos/lib": typeof features_photos_lib;

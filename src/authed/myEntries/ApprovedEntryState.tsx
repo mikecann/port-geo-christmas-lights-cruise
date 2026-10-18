@@ -16,6 +16,7 @@ import { api } from "../../../convex/_generated/api";
 import PhotoSection from "./photos/PhotoSection";
 import { useErrorCatchingMutation } from "../../common/errors";
 import { MAX_ENTRY_NAME_LENGTH } from "../../../shared/constants";
+import EntryNumberBadge from "./EntryNumberBadge";
 
 interface ApprovedEntryStateProps {
   entry: Doc<"entries">;
@@ -54,11 +55,7 @@ export default function ApprovedEntryState({ entry }: ApprovedEntryStateProps) {
               <Text fw={500} size="lg">
                 Your Competition Entry
               </Text>
-              {entry.status === "approved" && (
-                <Badge color="blue" variant="filled" size="sm">
-                  Entry #{entry.entryNumber}
-                </Badge>
-              )}
+              <EntryNumberBadge entry={entry} />
             </Group>
           </Stack>
           <Badge color="green" variant="light">

@@ -126,12 +126,8 @@ describe("competition seasons", () => {
       ).toEqual([olderEntryId]);
       expect((await fromPast.findPreviousApproved())?._id).toBe(olderEntryId);
       expect(
-        await entries
-          .query(ctx)
-          .forUser(older, userId)
-          .hasApprovedEntryBefore(),
-      ).toBe(false);
-      expect(await fromPast.hasApprovedEntryBefore()).toBe(true);
+        await entries.query(ctx).forUser(older, userId).findPreviousApproved(),
+      ).toBeNull();
     });
   });
 

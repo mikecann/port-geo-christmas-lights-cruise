@@ -1,5 +1,6 @@
 import { measured } from "../../analytics/client";
 import {
+  Alert,
   Card,
   Stack,
   Button,
@@ -25,12 +26,17 @@ import {
 } from "../../../shared/constants";
 import DraftEntryHeader from "./DraftEntryHeader";
 import EntryNameGuidelinesModal from "./EntryNameGuidelinesModal";
+import type { PreviousEntry } from "./PreviousEntrySection";
 
 interface DraftEntryStateProps {
   entry: Doc<"entries">;
+  previous: PreviousEntry | null | undefined;
 }
 
-export default function DraftEntryState({ entry }: DraftEntryStateProps) {
+export default function DraftEntryState({
+  entry,
+  previous,
+}: DraftEntryStateProps) {
   const [updateEntry, isSaving] = useErrorCatchingMutation(
     api.my.entries.updateDraft,
   );
@@ -94,6 +100,18 @@ export default function DraftEntryState({ entry }: DraftEntryStateProps) {
               removeEntry().catch(onApiError);
             }}
           />
+
+          {entry.previousEntryId && (
+            <Alert color="blue" variant="light" title="Welcome back!">
+              We've filled in your name and address from{" "}
+              {previous ? previous.year : "last time"}
+              {entry.entryNumber === undefined
+                ? ""
+                : ` and you'll keep #${entry.entryNumber}`}
+              . Photos don't carry over, so please add new photos of this year's
+              display.
+            </Alert>
+          )}
 
           {/* Form */}
           <Stack gap="md">
