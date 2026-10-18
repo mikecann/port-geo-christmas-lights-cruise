@@ -127,8 +127,6 @@ Production runs on the Convex deployment `shocking-robin-810` in Sydney (`aws-ap
 
 The old US deployment `fortunate-grouse-28` (reference `us-retired`) is still around as a fallback. Until it's deleted, the Convex CLI still treats it as the project's default production deployment, so don't run `npx convex deploy` or `--prod` commands from your machine: use `--deployment production`, or a Sydney deploy key in `CONVEX_DEPLOY_KEY`.
 
-Photo resizing through Cloudflare (`/cdn-cgi/image/...`) is switched off with `PHOTO_RESIZING_ENABLED` in `shared/photoUrls.ts`, because Cloudflare's allowed image sources only list the old US host. Turn it back on once `shocking-robin-810.ap-southeast-2.convex.cloud` is an allowed source.
-
 ### Moving to a new deployment
 
 Uploaded photos save their full file URL, which includes the deployment's host, so after importing an export (with file storage) into a new deployment they still point at the old one. Once the import is done, run this against the new deployment:
