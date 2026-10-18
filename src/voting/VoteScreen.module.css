@@ -18,6 +18,38 @@
   background-color: var(--mantine-color-dark-7);
 }
 
+.photo[data-empty] {
+  background: radial-gradient(
+    ellipse at 50% 20%,
+    var(--mantine-color-dark-6) 0%,
+    var(--mantine-color-dark-8) 70%
+  );
+}
+
+.noPhoto {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  /* Clear of the pills above and the number below */
+  padding-block: 4rem 7rem;
+}
+
+.lights {
+  width: 100%;
+  max-height: 100%;
+}
+
+.wire {
+  fill: none;
+  stroke: var(--mantine-color-dark-3);
+  stroke-width: 1.5;
+}
+
+.cap {
+  fill: var(--mantine-color-dark-2);
+}
+
 .placeholder,
 .image {
   position: absolute;
