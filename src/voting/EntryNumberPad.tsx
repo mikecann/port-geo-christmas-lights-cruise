@@ -91,6 +91,8 @@ export default function EntryNumberPad({
         <Button
           data-testid="entry-number-go"
           h={64}
+          // Mantine's xl padding leaves "Go" no room in a third of a 320px phone
+          px={0}
           size="xl"
           color="yellow"
           autoContrast
