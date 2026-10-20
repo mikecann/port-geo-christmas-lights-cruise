@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Doc } from "../../_generated/dataModel";
 import { defineTable } from "convex/server";
+import { machineTimers } from "@convex-dev/state-machines";
 
 export const commonEntryFields = {
   competitionId: v.id("competitions"),
@@ -30,9 +31,59 @@ export const draftHomeAddressValidator = v.object({
 });
 export type DraftHomeAddress = typeof draftHomeAddressValidator.type;
 
+// The entry machine's states (convex/features/entries/machine.ts). Each holds
+// only its own data, so a submitted entry always has a geocoded address.
+export const entryState = v.union(
+  v.object({
+    kind: v.literal("draft"),
+    houseAddress: v.optional(draftHomeAddressValidator),
+    name: v.optional(v.string()),
+    entryNumber: reservedEntryNumber,
+  }),
+  v.object({
+    kind: v.literal("submitting"),
+    houseAddress: draftHomeAddressValidator,
+    name: v.string(),
+    entryNumber: reservedEntryNumber,
+  }),
+  v.object({
+    kind: v.literal("submitted"),
+    submittedAt: v.number(),
+    houseAddress: homeAddressValidator,
+    name: v.string(),
+    entryNumber: reservedEntryNumber,
+  }),
+  v.object({
+    kind: v.literal("approved"),
+    submittedAt: v.number(),
+    approvedAt: v.number(),
+    entryNumber: v.number(),
+    houseAddress: homeAddressValidator,
+    name: v.string(),
+  }),
+  v.object({
+    kind: v.literal("rejected"),
+    rejectedAt: v.number(),
+    rejectedReason: v.string(),
+    submittedAt: v.number(),
+    houseAddress: homeAddressValidator,
+    name: v.string(),
+    // Kept as a record, but a rejected entry doesn't hold its number
+    entryNumber: reservedEntryNumber,
+  }),
+);
+
+// While entries move onto the machine (docs/state-machine-migration.md): each
+// row keeps its old fields, with its state beside them, until deploy 2.
+const duringMigration = {
+  state: v.optional(entryState),
+  stateTimers: v.optional(machineTimers),
+};
+
 export const entrySchema = v.union(
   v.object({
     ...commonEntryFields,
+    ...duringMigration,
     status: v.literal("draft"),
     houseAddress: v.optional(draftHomeAddressValidator),
     name: v.optional(v.string()),
@@ -40,6 +91,7 @@ export const entrySchema = v.union(
   }),
   v.object({
     ...commonEntryFields,
+    ...duringMigration,
     status: v.literal("submitting"),
     houseAddress: draftHomeAddressValidator,
     name: v.string(),
@@ -47,6 +99,7 @@ export const entrySchema = v.union(
   }),
   v.object({
     ...commonEntryFields,
+    ...duringMigration,
     status: v.literal("submitted"),
     submittedAt: v.number(),
     houseAddress: homeAddressValidator,
@@ -55,6 +108,7 @@ export const entrySchema = v.union(
   }),
   v.object({
     ...commonEntryFields,
+    ...duringMigration,
     status: v.literal("approved"),
     submittedAt: v.number(),
     approvedAt: v.number(),
@@ -64,6 +118,7 @@ export const entrySchema = v.union(
   }),
   v.object({
     ...commonEntryFields,
+    ...duringMigration,
     status: v.literal("rejected"),
     rejectedAt: v.number(),
     rejectedReason: v.string(),

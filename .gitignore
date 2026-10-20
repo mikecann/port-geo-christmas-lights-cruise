@@ -144,3 +144,6 @@ dist
 
 # Local Cloudflare Worker secrets (wrangler / vite plugin)
 .dev.vars*
+
+# The state machines package, vendored until it is on npm
+!vendor/*.tgz

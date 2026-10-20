@@ -45,6 +45,7 @@ import type * as internal_competitions from "../internal/competitions.js";
 import type * as internal_entries from "../internal/entries.js";
 import type * as internal_photos from "../internal/photos.js";
 import type * as internal_users from "../internal/users.js";
+import type * as migrations_entryState from "../migrations/entryState.js";
 import type * as my_entries from "../my/entries.js";
 import type * as my_photos from "../my/photos.js";
 import type * as my_votes from "../my/votes.js";
@@ -98,6 +99,7 @@ declare const fullApi: ApiFromModules<{
   "internal/entries": typeof internal_entries;
   "internal/photos": typeof internal_photos;
   "internal/users": typeof internal_users;
+  "migrations/entryState": typeof migrations_entryState;
   "my/entries": typeof my_entries;
   "my/photos": typeof my_photos;
   "my/votes": typeof my_votes;
