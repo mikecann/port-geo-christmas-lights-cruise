@@ -106,27 +106,6 @@ export const entryTable = defineTable({
   ...commonEntryFields,
   state: entryState,
   stateTimers: machineTimers,
-  // The old fields, until migrations/entryState:stripOldFields removes them
-  /* eslint-disable machines/no-optional-on-machine-tables -- the old top-level fields, kept only until stripOldFields has run */
-  status: v.optional(
-    v.union(
-      v.literal("draft"),
-      v.literal("submitting"),
-      v.literal("submitted"),
-      v.literal("approved"),
-      v.literal("rejected"),
-    ),
-  ),
-  houseAddress: v.optional(
-    v.union(homeAddressValidator, draftHomeAddressValidator),
-  ),
-  name: v.optional(v.string()),
-  entryNumber: v.optional(v.number()),
-  submittedAt: v.optional(v.number()),
-  approvedAt: v.optional(v.number()),
-  rejectedAt: v.optional(v.number()),
-  rejectedReason: v.optional(v.string()),
-  /* eslint-enable machines/no-optional-on-machine-tables */
 })
   .index("by_competitionId_and_status", ["competitionId", "state.kind"])
   .index("by_competitionId_and_submittedByUserId", [
