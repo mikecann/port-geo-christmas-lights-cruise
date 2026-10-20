@@ -26,6 +26,7 @@
     "@convex-dev/auth": "^0.0.94",
     "@convex-dev/rate-limiter": "^0.4.2",
     "@convex-dev/resend": "^0.2.9",
+    "@convex-dev/state-machines": "file:./vendor/convex-dev-state-machines-0.1.0.tgz",
     "@mantine/carousel": "^9.7.2",
     "@mantine/core": "^9.7.2",
     "@mantine/dropzone": "^9.7.2",
