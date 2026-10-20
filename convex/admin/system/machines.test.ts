@@ -178,6 +178,33 @@ describe("the Machines page", () => {
     });
   });
 
+  it("finds the entry holding a number past any number of rejected ones", async () => {
+    const { t, asAdmin } = await setup();
+    const rejected = {
+      kind: "rejected" as const,
+      rejectedAt: Date.now(),
+      rejectedReason: "Not in Port Geographe",
+      submittedAt: Date.now(),
+      houseAddress,
+      name: "Elsewhere",
+      entryNumber: 5,
+    };
+    for (let i = 0; i < 11; i++) await insertEntry(t, rejected);
+    const holder = await insertEntry(t, {
+      kind: "approved",
+      submittedAt: Date.now(),
+      approvedAt: Date.now(),
+      entryNumber: 5,
+      houseAddress,
+      name: "Twinkle Town",
+    });
+    expect(
+      await asAdmin.query(api.admin.system.machines.findByNumber, {
+        entryNumber: 5,
+      }),
+    ).toBe(holder);
+  });
+
   it("shows a pending timer, and rearms it", async () => {
     vi.useFakeTimers();
     const { t, asAdmin } = await setup();

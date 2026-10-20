@@ -2,6 +2,7 @@ import { stateDiagram } from "@convex-dev/state-machines";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "../../_generated/api";
+import type { Id } from "../../_generated/dataModel";
 import {
   systemAdminMutation,
   systemAdminQuery,
@@ -53,17 +54,18 @@ export const findByNumber = systemAdminQuery
   .handler(async (context, input) => {
     const competitionId =
       input.competitionId ?? (await competitions.query(context).current())._id;
-    const withNumber = await context.db
+    let firstRejected: Id<"entries"> | undefined;
+    for await (const row of context.db
       .query("entries")
       .withIndex("by_competitionId_and_entryNumber", (q) =>
         q
           .eq("competitionId", competitionId)
           .eq("state.entryNumber", input.entryNumber),
-      )
-      .take(10);
-    const found =
-      withNumber.find((row) => row.state.kind !== "rejected") ?? withNumber[0];
-    return found?._id ?? null;
+      )) {
+      if (row.state.kind !== "rejected") return row._id;
+      firstRejected ??= row._id;
+    }
+    return firstRejected ?? null;
   })
   .public();
 
@@ -112,13 +114,17 @@ const failedTimer = v.object({
 
 // The catalog's operator functions need its internal brand, so these go
 // through its internal mutations in convex/machines.ts. That makes
-// failedTimers a mutation, so the page asks for it on demand.
+// failedTimers a mutation, so the page asks for it on demand. Its limit
+// counts every scheduled function's failures, not just timers', so this
+// looks well past its default of 100.
 export const failedTimers = systemAdminMutation
   .input({})
   .returns(v.array(failedTimer))
   .handler(
     async (context): Promise<(typeof failedTimer.type)[]> =>
-      await context.runMutation(internal.machines.failedTimers, {}),
+      await context.runMutation(internal.machines.failedTimers, {
+        limit: 1000,
+      }),
   )
   .public();
 
