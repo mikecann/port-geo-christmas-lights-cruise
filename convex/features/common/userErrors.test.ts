@@ -228,8 +228,11 @@ describe("errors a user can hit", () => {
     vi.stubEnv("GOOGLE_MAPS_API_KEY", "");
     const { t } = await createConvexTestWithUser();
     await createTestEntry(t, {
-      name: "Twinkle Town",
-      houseAddress: { address: "1 Nowhere Lane", placeId: "pid" },
+      state: {
+        kind: "draft",
+        name: "Twinkle Town",
+        houseAddress: { address: "1 Nowhere Lane", placeId: "pid" },
+      },
     });
 
     await expectConvexError(

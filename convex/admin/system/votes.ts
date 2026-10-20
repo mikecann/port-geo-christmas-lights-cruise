@@ -41,7 +41,7 @@ export const generateMock = systemAdminMutation
     const approvedEntries = await context.db
       .query("entries")
       .withIndex("by_competitionId_and_status", (q) =>
-        q.eq("competitionId", competition._id).eq("status", "approved"),
+        q.eq("competitionId", competition._id).eq("state.kind", "approved"),
       )
       .collect();
 

@@ -22,16 +22,18 @@ export default function RejectedEntryState({ entry }: RejectedEntryStateProps) {
             </Text>
             <Text size="sm" c="dimmed">
               Created {new Date(entry._creationTime).toLocaleDateString()}
-              {"submittedAt" in entry && (
+              {"submittedAt" in entry.state && (
                 <span>
                   {" "}
-                  • Submitted {new Date(entry.submittedAt).toLocaleDateString()}
+                  • Submitted{" "}
+                  {new Date(entry.state.submittedAt).toLocaleDateString()}
                 </span>
               )}
-              {"rejectedAt" in entry && (
+              {"rejectedAt" in entry.state && (
                 <span>
                   {" "}
-                  • Rejected {new Date(entry.rejectedAt).toLocaleDateString()}
+                  • Rejected{" "}
+                  {new Date(entry.state.rejectedAt).toLocaleDateString()}
                 </span>
               )}
             </Text>
@@ -47,17 +49,17 @@ export default function RejectedEntryState({ entry }: RejectedEntryStateProps) {
             House Address:
           </Text>
           <Text size="sm" c="dimmed">
-            {entry.houseAddress?.address}
+            {entry.state.houseAddress?.address}
           </Text>
         </div>
 
-        {entry.name && (
+        {entry.state.name && (
           <div>
             <Text size="sm" fw={500} mb={4}>
               Entry Name:
             </Text>
             <Text size="sm" c="dimmed">
-              {entry.name}
+              {entry.state.name}
             </Text>
           </div>
         )}

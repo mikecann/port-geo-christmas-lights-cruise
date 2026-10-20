@@ -24,7 +24,7 @@ interface ApprovedEntryStateProps {
 
 export default function ApprovedEntryState({ entry }: ApprovedEntryStateProps) {
   const [isEditingName, setIsEditingName] = useState(false);
-  const [editedName, setEditedName] = useState(entry.name || "");
+  const [editedName, setEditedName] = useState(entry.state.name || "");
   const photos = useQuery(api.my.photos.list) ?? [];
 
   const [updateEntry, isSaving] = useErrorCatchingMutation(
@@ -32,7 +32,7 @@ export default function ApprovedEntryState({ entry }: ApprovedEntryStateProps) {
   );
 
   const handleSaveName = async () => {
-    if (editedName === entry.name) {
+    if (editedName === entry.state.name) {
       setIsEditingName(false);
       return;
     }
@@ -42,7 +42,7 @@ export default function ApprovedEntryState({ entry }: ApprovedEntryStateProps) {
   };
 
   const cancelNameEdit = () => {
-    setEditedName(entry.name || "");
+    setEditedName(entry.state.name || "");
     setIsEditingName(false);
   };
 
@@ -69,7 +69,7 @@ export default function ApprovedEntryState({ entry }: ApprovedEntryStateProps) {
               House Address:
             </Text>
             <Text size="sm" c="dimmed">
-              {entry.houseAddress?.address}
+              {entry.state.houseAddress?.address}
             </Text>
           </Group>
         </div>
@@ -116,7 +116,7 @@ export default function ApprovedEntryState({ entry }: ApprovedEntryStateProps) {
                 Entry Name:
               </Text>
               <Text size="sm" c="dimmed">
-                {entry.name || "No name set"}
+                {entry.state.name || "No name set"}
               </Text>
               <Tooltip label="Edit entry name">
                 <ActionIcon

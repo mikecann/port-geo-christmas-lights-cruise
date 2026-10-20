@@ -48,8 +48,8 @@ const describePreviousEntry = async (
   return {
     _id: previous._id,
     year: competition.year,
-    entryNumber: previous.entryNumber,
-    name: previous.name,
+    entryNumber: previous.state.entryNumber,
+    name: previous.state.name,
   };
 };
 
@@ -66,9 +66,9 @@ const describeSubmitter = async (context: QueryCtx, entry: Doc<"entries">) => {
 };
 
 const isNumberOutsideRange = (entry: Doc<"entries">, range: EntryNumberRange) =>
-  entry.status !== "rejected" &&
-  entry.entryNumber !== undefined &&
-  isOutsideRange(entry.entryNumber, range);
+  entry.state.kind !== "rejected" &&
+  entry.state.entryNumber !== undefined &&
+  isOutsideRange(entry.state.entryNumber, range);
 
 // What a reviewer should look at before approving
 const describeChecks = async (
@@ -76,7 +76,7 @@ const describeChecks = async (
   entry: Doc<"entries">,
   previous: { entryNumber: number } | null,
 ) => {
-  const { houseAddress } = entry;
+  const { houseAddress } = entry.state;
   // Same rule as submitting: drafts and rejected entries don't block an address
   const sameAddress = houseAddress
     ? (
@@ -86,14 +86,14 @@ const describeChecks = async (
       ).filter(
         (other) =>
           other._id !== entry._id &&
-          other.status !== "draft" &&
-          other.status !== "rejected",
+          other.state.kind !== "draft" &&
+          other.state.kind !== "rejected",
       )
     : [];
   const previousNumberHolder =
     previous &&
-    entry.status !== "rejected" &&
-    entry.entryNumber !== previous.entryNumber
+    entry.state.kind !== "rejected" &&
+    entry.state.entryNumber !== previous.entryNumber
       ? await entries
           .query(context)
           .findHolderOfNumber(
@@ -114,11 +114,11 @@ const describeChecks = async (
         : null,
     sameAddress: sameAddress.map((other) => ({
       _id: other._id,
-      name: other.name ?? "",
+      name: other.state.name ?? "",
     })),
     previousNumberHeldBy: previousNumberHolder && {
       _id: previousNumberHolder._id,
-      name: previousNumberHolder.name ?? "",
+      name: previousNumberHolder.state.name ?? "",
     },
   };
 };
@@ -144,7 +144,7 @@ export const list = competitionAdminQuery
     const competition = await competitions.query(context).current();
     const statusEntries = await entries
       .query(context)
-      .listWithStatus(competition._id, input.status);
+      .listInState(competition._id, input.status);
     const range = competitions.entryNumberRange(competition);
 
     return await Promise.all(
@@ -181,11 +181,13 @@ export const listAll = competitionAdminQuery
         const previous = await describePreviousEntry(context, entry);
         return {
           _id: entry._id,
-          status: entry.status,
-          name: entry.name ?? "",
-          address: entry.houseAddress?.address ?? "",
+          status: entry.state.kind,
+          name: entry.state.name ?? "",
+          address: entry.state.houseAddress?.address ?? "",
           entryNumber:
-            entry.status === "rejected" ? undefined : entry.entryNumber,
+            entry.state.kind === "rejected"
+              ? undefined
+              : entry.state.entryNumber,
           submitterName: submitter?.name,
           submitterEmail: submitter?.email,
           previous: previous && {
@@ -229,10 +231,12 @@ export const get = competitionAdminQuery
       earlierEntries: earlier.map((row) => ({
         _id: row.entry._id,
         year: row.competition.year,
-        name: row.entry.name ?? "",
-        status: row.entry.status,
+        name: row.entry.state.name ?? "",
+        status: row.entry.state.kind,
         entryNumber:
-          row.entry.status === "approved" ? row.entry.entryNumber : undefined,
+          row.entry.state.kind === "approved"
+            ? row.entry.state.entryNumber
+            : undefined,
       })),
     };
   })
@@ -264,9 +268,11 @@ export const getAllEntriesForExport = competitionAdminQuery
           userEmail: user?.email || "",
           userName: user?.name || "",
           entryNumber:
-            entry.status === "rejected" ? undefined : entry.entryNumber,
-          entryName: entry.name || "",
-          entryAddress: entry.houseAddress?.address ?? "",
+            entry.state.kind === "rejected"
+              ? undefined
+              : entry.state.entryNumber,
+          entryName: entry.state.name || "",
+          entryAddress: entry.state.houseAddress?.address ?? "",
         };
       }),
     );
@@ -346,9 +352,9 @@ export const listLinkablePreviousEntries = competitionAdminQuery
         rows.push({
           _id: entry._id,
           year: earlier.year,
-          entryNumber: entry.entryNumber,
-          name: entry.name,
-          address: entry.houseAddress.address,
+          entryNumber: entry.state.entryNumber,
+          name: entry.state.name,
+          address: entry.state.houseAddress.address,
           submitterEmail: submitter?.email,
         });
       }

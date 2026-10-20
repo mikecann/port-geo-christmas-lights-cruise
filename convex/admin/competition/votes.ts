@@ -57,8 +57,8 @@ const toAdminVote = async (ctx: QueryCtx, vote: Doc<"votes">) => {
   const entry = await ctx.db.get(vote.entryId);
   const common = {
     _id: vote._id,
-    entryNumber: entry?.entryNumber,
-    entryName: entry?.name,
+    entryNumber: entry?.state.entryNumber,
+    entryName: entry?.state.name,
     voterEmail: voter?.email,
     voterName: voter?.name,
     category: voteCategoryOf(vote),

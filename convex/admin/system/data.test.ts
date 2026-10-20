@@ -29,12 +29,15 @@ const seedEntryWithPhotoAndVote = async (
     const entryId = await ctx.db.insert("entries", {
       competitionId,
       submittedByUserId: entrantId,
-      status: "approved",
-      submittedAt: Date.now(),
-      approvedAt: Date.now(),
-      entryNumber: 1,
-      name: "Twinkle Town",
-      houseAddress,
+      state: {
+        kind: "approved",
+        submittedAt: Date.now(),
+        approvedAt: Date.now(),
+        entryNumber: 1,
+        name: "Twinkle Town",
+        houseAddress,
+      },
+      stateTimers: [],
     });
     const photoId = await ctx.db.insert("photos", {
       entryId,

@@ -12,6 +12,7 @@ import {
 import type { ConvexTest } from "../../features/common/tests/testingHelpers.vitest";
 import { competitions } from "../../features/competitions/model";
 import { describeNumbers } from "../../features/entries/numbers";
+import type { EntryState, EntryStateKind } from "../../features/entries/schema";
 
 const houseAddress = (placeId: string) => ({
   address: `${placeId} Keel Retreat`,
@@ -22,18 +23,23 @@ const houseAddress = (placeId: string) => ({
 
 const insertEntry = (
   ctx: MutationCtx,
-  entry: Partial<Doc<"entries">> & {
+  entry: {
     competitionId: Id<"competitions">;
     submittedByUserId: Id<"users">;
-    status: Doc<"entries">["status"];
+    previousEntryId?: Id<"entries">;
+    state: Partial<EntryState> & { kind: EntryStateKind };
   },
 ) =>
   ctx.db.insert("entries", {
-    submittedAt: Date.now(),
-    name: "Twinkle Town",
-    houseAddress: houseAddress("pid"),
     ...entry,
-  } as Doc<"entries">);
+    state: {
+      submittedAt: Date.now(),
+      name: "Twinkle Town",
+      houseAddress: houseAddress("pid"),
+      ...entry.state,
+    } as EntryState,
+    stateTimers: [],
+  });
 
 const asAdmin = async (t: ConvexTest, user: Partial<Doc<"users">> = {}) => {
   const admin = await createTestUser(t, {
@@ -55,20 +61,25 @@ describe("admin overview", () => {
       const approvedId = await insertEntry(ctx, {
         competitionId: current._id,
         submittedByUserId: await user(),
-        status: "approved",
-        approvedAt: Date.now(),
-        entryNumber: 1,
+        state: {
+          kind: "approved",
+          approvedAt: Date.now(),
+          entryNumber: 1,
+        },
       });
       await insertEntry(ctx, {
         competitionId: current._id,
         submittedByUserId: await user(),
-        status: "submitted",
-        houseAddress: houseAddress("b"),
+        state: {
+          kind: "submitted",
+          houseAddress: houseAddress("b"),
+        },
       });
       await ctx.db.insert("entries", {
         competitionId: current._id,
         submittedByUserId: await user(),
-        status: "draft",
+        state: { kind: "draft" },
+        stateTimers: [],
       });
       const ballots = [
         { category: "best_display", inPerson: true },
@@ -146,32 +157,40 @@ describe("admin entry review", () => {
       const previousId = await insertEntry(ctx, {
         competitionId: past._id,
         submittedByUserId: entrantId,
-        status: "approved",
-        approvedAt: Date.now(),
-        entryNumber: 7,
+        state: {
+          kind: "approved",
+          approvedAt: Date.now(),
+          entryNumber: 7,
+        },
       });
       const holderId = await insertEntry(ctx, {
         competitionId: current._id,
         submittedByUserId: await ctx.db.insert("users", {}),
-        status: "approved",
-        approvedAt: Date.now(),
-        entryNumber: 7,
-        name: "Number Seven",
-        houseAddress: houseAddress("other"),
+        state: {
+          kind: "approved",
+          approvedAt: Date.now(),
+          entryNumber: 7,
+          name: "Number Seven",
+          houseAddress: houseAddress("other"),
+        },
       });
       const sameAddressId = await insertEntry(ctx, {
         competitionId: current._id,
         submittedByUserId: await ctx.db.insert("users", {}),
-        status: "submitted",
-        name: "Next Door",
-        houseAddress: houseAddress("shared"),
+        state: {
+          kind: "submitted",
+          name: "Next Door",
+          houseAddress: houseAddress("shared"),
+        },
       });
       const entryId = await insertEntry(ctx, {
         competitionId: current._id,
         submittedByUserId: entrantId,
         previousEntryId: previousId,
-        status: "submitted",
-        houseAddress: houseAddress("shared"),
+        state: {
+          kind: "submitted",
+          houseAddress: houseAddress("shared"),
+        },
       });
       return { entryId, holderId, sameAddressId };
     });
@@ -195,15 +214,17 @@ describe("admin entry review", () => {
       await ctx.db.insert("entries", {
         competitionId: current._id,
         submittedByUserId: await ctx.db.insert("users", { name: "Holly" }),
-        status: "draft",
-        name: "Half Done",
+        state: { kind: "draft", name: "Half Done" },
+        stateTimers: [],
       });
       await insertEntry(ctx, {
         competitionId: past._id,
         submittedByUserId: await ctx.db.insert("users", {}),
-        status: "approved",
-        approvedAt: Date.now(),
-        entryNumber: 3,
+        state: {
+          kind: "approved",
+          approvedAt: Date.now(),
+          entryNumber: 3,
+        },
       });
     });
 
@@ -228,15 +249,19 @@ describe("admin entry review", () => {
       await insertEntry(ctx, {
         competitionId: past._id,
         submittedByUserId: entrantId,
-        status: "approved",
-        approvedAt: Date.now(),
-        entryNumber: 12,
-        name: "Last Year",
+        state: {
+          kind: "approved",
+          approvedAt: Date.now(),
+          entryNumber: 12,
+          name: "Last Year",
+        },
       });
       return await insertEntry(ctx, {
         competitionId: current._id,
         submittedByUserId: entrantId,
-        status: "submitted",
+        state: {
+          kind: "submitted",
+        },
       });
     });
 
@@ -261,18 +286,22 @@ describe("admin entry review", () => {
       const rejectedId = await insertEntry(ctx, {
         competitionId: current._id,
         submittedByUserId: await ctx.db.insert("users", {}),
-        status: "rejected",
-        rejectedAt: Date.now(),
-        rejectedReason: "Photos don't show the lights",
-        entryNumber: 5,
+        state: {
+          kind: "rejected",
+          rejectedAt: Date.now(),
+          rejectedReason: "Photos don't show the lights",
+          entryNumber: 5,
+        },
       });
       const approvedId = await insertEntry(ctx, {
         competitionId: current._id,
         submittedByUserId: await ctx.db.insert("users", {}),
-        status: "approved",
-        approvedAt: Date.now(),
-        entryNumber: 6,
-        houseAddress: houseAddress("b"),
+        state: {
+          kind: "approved",
+          approvedAt: Date.now(),
+          entryNumber: 6,
+          houseAddress: houseAddress("b"),
+        },
       });
       return { rejectedId, approvedId };
     });
@@ -282,11 +311,10 @@ describe("admin entry review", () => {
     });
     const reopened = await t.run((ctx) => ctx.db.get(rejectedId));
     expect(reopened).toMatchObject({
-      status: "submitted",
-      name: "Twinkle Town",
+      state: { kind: "submitted", name: "Twinkle Town" },
     });
-    expect(reopened).not.toHaveProperty("rejectedReason");
-    expect(reopened).not.toHaveProperty("entryNumber");
+    expect(reopened).not.toHaveProperty("state.rejectedReason");
+    expect(reopened).not.toHaveProperty("state.entryNumber");
 
     await expect(
       admin.mutation(api.admin.competition.entries.reopen, {
@@ -308,18 +336,22 @@ describe("admin numbers", () => {
         submittedByUserId: await ctx.db.insert("users", {
           email: "back@x.com",
         }),
-        status: "approved",
-        approvedAt: Date.now(),
-        entryNumber: 2,
-        name: "Coming Back",
+        state: {
+          kind: "approved",
+          approvedAt: Date.now(),
+          entryNumber: 2,
+          name: "Coming Back",
+        },
       });
       const heldId = await insertEntry(ctx, {
         competitionId: current._id,
         submittedByUserId: await ctx.db.insert("users", {}),
-        status: "approved",
-        approvedAt: Date.now(),
-        entryNumber: 40,
-        name: "Old Number",
+        state: {
+          kind: "approved",
+          approvedAt: Date.now(),
+          entryNumber: 40,
+          name: "Old Number",
+        },
       });
       return { heldId };
     });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { api } from "../../_generated/api";
+import { api, internal } from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import {
@@ -9,7 +9,6 @@ import {
   signInAsTestUser,
 } from "../common/tests/testingHelpers.vitest";
 import type { ConvexTest } from "../common/tests/testingHelpers.vitest";
-import { linkReturningEntrantsForContext } from "../../internal/entries";
 import { email } from "../email/model";
 import { entries } from "./model";
 import {
@@ -39,12 +38,15 @@ const insertApproved = (
   ctx.db.insert("entries", {
     competitionId: args.competitionId,
     submittedByUserId: args.userId,
-    status: "approved",
-    submittedAt: Date.now(),
-    approvedAt: Date.now(),
-    entryNumber: args.entryNumber,
-    name: args.name ?? `Display ${args.entryNumber}`,
-    houseAddress: houseAddress(`${args.competitionId}-${args.entryNumber}`),
+    state: {
+      kind: "approved",
+      submittedAt: Date.now(),
+      approvedAt: Date.now(),
+      entryNumber: args.entryNumber,
+      name: args.name ?? `Display ${args.entryNumber}`,
+      houseAddress: houseAddress(`${args.competitionId}-${args.entryNumber}`),
+    },
+    stateTimers: [],
   });
 
 const insertSubmitted = (
@@ -54,23 +56,29 @@ const insertSubmitted = (
   ctx.db.insert("entries", {
     competitionId: args.competitionId,
     submittedByUserId: args.userId,
-    status: "submitted",
-    submittedAt: Date.now(),
-    name: "This year",
-    houseAddress: houseAddress(`submitted-${args.userId}`),
+    state: {
+      kind: "submitted",
+      submittedAt: Date.now(),
+      name: "This year",
+      houseAddress: houseAddress(`submitted-${args.userId}`),
+    },
+    stateTimers: [],
   });
-
-const approve = (t: ConvexTest, entryId: Id<"entries">) =>
-  t.run((ctx) => entries.mutate(ctx).forEntry(entryId).approve());
-
-const getEntry = (t: ConvexTest, entryId: Id<"entries">) =>
-  t.run((ctx) => entries.query(ctx).forEntry(entryId).get());
 
 const signInAsAdmin = async (t: ConvexTest) =>
   signInAsTestUser(
     t,
     await createTestUser(t, { user: { isCompetitionAdmin: true } }),
   );
+
+// Approving checks the caller is an admin
+const approve = async (t: ConvexTest, entryId: Id<"entries">) =>
+  (await signInAsAdmin(t)).run((ctx) =>
+    entries.mutate(ctx).forEntry(entryId).approve(),
+  );
+
+const getEntry = (t: ConvexTest, entryId: Id<"entries">) =>
+  t.run((ctx) => entries.query(ctx).forEntry(entryId).get());
 
 // Fills the current competition's numbers in the range, apart from `except`
 const fillRange = async (
@@ -229,7 +237,10 @@ describe("new entrant numbers", () => {
       await signInAsAdmin(t)
     ).query(api.admin.competition.entries.list, { status: "approved" });
     expect(
-      approved.map((entry) => [entry.entryNumber, entry.isNumberOutsideRange]),
+      approved.map((entry) => [
+        entry.state.entryNumber,
+        entry.isNumberOutsideRange,
+      ]),
     ).toEqual(
       expect.arrayContaining([
         [3, false],
@@ -251,13 +262,16 @@ describe("new entrant numbers", () => {
       await ctx.db.insert("entries", {
         competitionId: current._id,
         submittedByUserId: await insertUser(ctx),
-        status: "rejected",
-        submittedAt: Date.now(),
-        rejectedAt: Date.now(),
-        rejectedReason: "Outside the area",
-        entryNumber: 2,
-        name: "Rejected",
-        houseAddress: houseAddress("rejected"),
+        state: {
+          kind: "rejected",
+          submittedAt: Date.now(),
+          rejectedAt: Date.now(),
+          rejectedReason: "Outside the area",
+          entryNumber: 2,
+          name: "Rejected",
+          houseAddress: houseAddress("rejected"),
+        },
+        stateTimers: [],
       });
       return await insertSubmitted(ctx, {
         competitionId: current._id,
@@ -301,13 +315,15 @@ describe("returning entrants", () => {
 
     const entry = await asUser.query(api.my.entries.find, {});
     expect(entry).toMatchObject({
-      status: "draft",
       previousEntryId,
-      name: "Candy Cane Lane",
-      entryNumber: 26,
-      houseAddress: {
-        address: expect.stringContaining("Keel Retreat"),
-        placeId: expect.any(String),
+      state: {
+        kind: "draft",
+        name: "Candy Cane Lane",
+        entryNumber: 26,
+        houseAddress: {
+          address: expect.stringContaining("Keel Retreat"),
+          placeId: expect.any(String),
+        },
       },
     });
     expect(await asUser.query(api.my.photos.list, {})).toEqual([]);
@@ -321,10 +337,13 @@ describe("returning entrants", () => {
     if (!entry) throw new Error("No entry");
     await t.run(async (ctx) => {
       await ctx.db.patch(entry._id, {
-        status: "submitted",
-        submittedAt: Date.now(),
-        name: "Candy Cane Lane",
-        houseAddress: houseAddress("this-year"),
+        state: {
+          kind: "submitted",
+          submittedAt: Date.now(),
+          name: "Candy Cane Lane",
+          houseAddress: houseAddress("this-year"),
+          entryNumber: entry.state.entryNumber,
+        },
       });
     });
 
@@ -333,8 +352,7 @@ describe("returning entrants", () => {
     ).mutation(api.admin.competition.entries.approve, { entryId: entry._id });
 
     expect(await getEntry(t, entry._id)).toMatchObject({
-      status: "approved",
-      entryNumber: 26,
+      state: { kind: "approved", entryNumber: 26 },
     });
   });
 
@@ -346,10 +364,13 @@ describe("returning entrants", () => {
     if (!entry) throw new Error("No entry");
     await t.run((ctx) =>
       ctx.db.patch(entry._id, {
-        status: "submitted",
-        submittedAt: Date.now(),
-        name: "Candy Cane Lane",
-        houseAddress: houseAddress("this-year"),
+        state: {
+          kind: "submitted",
+          submittedAt: Date.now(),
+          name: "Candy Cane Lane",
+          houseAddress: houseAddress("this-year"),
+          entryNumber: entry.state.entryNumber,
+        },
       }),
     );
 
@@ -357,7 +378,7 @@ describe("returning entrants", () => {
       await signInAsAdmin(t)
     ).query(api.admin.competition.entries.list, { status: "submitted" });
     expect(listed).toMatchObject({
-      entryNumber: 0,
+      state: { entryNumber: 0 },
       isNumberOutsideRange: true,
       previous: { year: 2025, entryNumber: 0, name: "Candy Cane Lane" },
     });
@@ -379,7 +400,7 @@ describe("returning entrants", () => {
 
     const entry = await asUser.query(api.my.entries.find, {});
     expect(entry?.previousEntryId).toBeDefined();
-    expect(entry?.entryNumber).toBeUndefined();
+    expect(entry?.state.entryNumber).toBeUndefined();
   });
 
   it("get their number back from a year they skipped, if nobody had it last year", async () => {
@@ -402,7 +423,7 @@ describe("returning entrants", () => {
     await asUser.mutation(api.my.entries.enter, {});
 
     expect(await asUser.query(api.my.entries.find, {})).toMatchObject({
-      entryNumber: 17,
+      state: { entryNumber: 17 },
     });
   });
 
@@ -433,7 +454,7 @@ describe("returning entrants", () => {
 
     const entry = await asUser.query(api.my.entries.find, {});
     expect(entry?.previousEntryId).toBeDefined();
-    expect(entry?.entryNumber).toBeUndefined();
+    expect(entry?.state.entryNumber).toBeUndefined();
   });
 
   it("see their previous entry with its photos", async () => {
@@ -493,12 +514,15 @@ describe("entries started before the link existed", () => {
     const t = createConvexTest();
     const { entryId, previousEntryId } = await setUp(t);
 
-    const result = await t.run(linkReturningEntrantsForContext);
+    const result = await t.mutation(
+      internal.internal.entries.linkReturningEntrants,
+      {},
+    );
 
     expect(result).toEqual({ linkedCount: 1 });
     expect(await getEntry(t, entryId)).toMatchObject({
       previousEntryId,
-      entryNumber: 26,
+      state: { entryNumber: 26 },
     });
   });
 });
@@ -537,7 +561,7 @@ describe("admin number tools", () => {
       entryNumber: 5,
     });
 
-    expect((await getEntry(t, entryId)).entryNumber).toBe(61);
+    expect((await getEntry(t, entryId)).state.entryNumber).toBe(61);
     expect(await approve(t, entryId)).toBe(61);
   });
 
@@ -622,7 +646,7 @@ describe("admin number tools", () => {
 
     expect(await getEntry(t, entryId)).toMatchObject({
       previousEntryId,
-      entryNumber: 26,
+      state: { entryNumber: 26 },
     });
     expect(
       await admin.query(api.admin.competition.entries.get, { entryId }),
@@ -647,12 +671,15 @@ describe("admin number tools", () => {
       const rejectedId = await ctx.db.insert("entries", {
         competitionId: past._id,
         submittedByUserId: await insertUser(ctx),
-        status: "rejected",
-        submittedAt: Date.now(),
-        rejectedAt: Date.now(),
-        rejectedReason: "Outside the area",
-        name: "Rejected",
-        houseAddress: houseAddress("past-rejected"),
+        state: {
+          kind: "rejected",
+          submittedAt: Date.now(),
+          rejectedAt: Date.now(),
+          rejectedReason: "Outside the area",
+          name: "Rejected",
+          houseAddress: houseAddress("past-rejected"),
+        },
+        stateTimers: [],
       });
       const entryId = await insertSubmitted(ctx, {
         competitionId: current._id,
@@ -700,10 +727,12 @@ describe("admin new entry email", () => {
   it("shows a returning entrant's reserved number", () => {
     const draft = (entryNumber?: number) =>
       ({
-        status: "draft",
-        name: "Candy Cane Lane",
-        houseAddress: { address: "1 Keel Retreat", placeId: "pid" },
-        entryNumber,
+        state: {
+          kind: "draft",
+          name: "Candy Cane Lane",
+          houseAddress: { address: "1 Keel Retreat", placeId: "pid" },
+          entryNumber,
+        },
       }) as Doc<"entries">;
 
     expect(email.newEntryNotificationHtml({ entry: draft(26) })).toContain(

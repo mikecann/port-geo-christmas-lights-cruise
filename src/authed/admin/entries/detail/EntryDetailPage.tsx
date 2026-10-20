@@ -102,28 +102,29 @@ export default function EntryDetailPage({
 
       <Stack gap={6}>
         <Group gap="sm">
-          {entry.status !== "rejected" && entry.entryNumber !== undefined && (
-            <Badge
-              size="xl"
-              variant="light"
-              color={detail.isNumberOutsideRange ? "orange" : "blue"}
-            >
-              #{entry.entryNumber}
-            </Badge>
-          )}
+          {entry.state.kind !== "rejected" &&
+            entry.state.entryNumber !== undefined && (
+              <Badge
+                size="xl"
+                variant="light"
+                color={detail.isNumberOutsideRange ? "orange" : "blue"}
+              >
+                #{entry.state.entryNumber}
+              </Badge>
+            )}
           <Text component="h1" fz={{ base: 22, sm: 28 }} fw={700} lh={1.2}>
-            {entry.name || "No name yet"}
+            {entry.state.name || "No name yet"}
           </Text>
         </Group>
         <Group gap="xs">
-          <EntryStatusBadge status={entry.status} />
+          <EntryStatusBadge status={entry.state.kind} />
           {!isCurrent && <Badge variant="outline">{detail.year}</Badge>}
         </Group>
-        {entry.houseAddress && (
+        {entry.state.houseAddress && (
           <Group gap={6} wrap="nowrap">
             <IconMapPin size={14} color="gray" />
             <Text size="sm" c="dimmed">
-              {entry.houseAddress.address}
+              {entry.state.houseAddress.address}
             </Text>
           </Group>
         )}
@@ -136,26 +137,26 @@ export default function EntryDetailPage({
         </Alert>
       )}
 
-      {(entry.status === "draft" || entry.status === "submitting") && (
+      {(entry.state.kind === "draft" || entry.state.kind === "submitting") && (
         <Alert color="gray" variant="light" icon={<IconInfoCircle size={16} />}>
           They've started this entry but haven't sent it in for review yet, so
           there's nothing to approve.
         </Alert>
       )}
 
-      {entry.status === "submitted" && isCurrent && (
+      {entry.state.kind === "submitted" && isCurrent && (
         <Card withBorder radius="md" padding="lg">
           <Stack gap="sm">
             <Text fw={600}>This entry is waiting for your review</Text>
-            <ReviewActions entryId={entry._id} entryName={entry.name} />
+            <ReviewActions entryId={entry._id} entryName={entry.state.name} />
           </Stack>
         </Card>
       )}
 
-      {entry.status === "rejected" && (
+      {entry.state.kind === "rejected" && (
         <RejectedNotice
           entryId={entry._id}
-          reason={entry.rejectedReason}
+          reason={entry.state.rejectedReason}
           canReopen={isCurrent}
         />
       )}
@@ -205,7 +206,7 @@ export default function EntryDetailPage({
           help="Entrants keep the same number every year, because the signs are reused."
         >
           <EntryNumberSection
-            key={`${entry._id}-${entry.entryNumber}`}
+            key={`${entry._id}-${entry.state.entryNumber}`}
             entry={entry}
           />
         </Section>

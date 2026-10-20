@@ -57,8 +57,8 @@ export async function competitionResults(
     rankEntries(
       approved.map((entry, index) => ({
         entryId: entry._id,
-        entryNumber: entry.entryNumber,
-        entryName: entry.name,
+        entryNumber: entry.state.entryNumber,
+        entryName: entry.state.name,
         votes: votesFor(index),
       })),
     );

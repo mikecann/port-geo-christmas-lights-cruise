@@ -1089,7 +1089,7 @@ describe("short QR links", () => {
     const findByNumber = (entryNumber: number) =>
       t.query(api.public.entries.findByNumberWithPhotos, { entryNumber });
 
-    expect((await findByNumber(entry.entryNumber ?? -1))?.entry._id).toBe(
+    expect((await findByNumber(entry.state.entryNumber ?? -1))?.entry._id).toBe(
       entry._id,
     );
     expect(await findByNumber(9999)).toBeNull();
@@ -1098,8 +1098,8 @@ describe("short QR links", () => {
     await moveEntryToStatus(t, {
       entryId: entry._id,
       status: "submitted",
-      overrides: { entryNumber: entry.entryNumber },
+      overrides: { entryNumber: entry.state.entryNumber },
     });
-    expect(await findByNumber(entry.entryNumber ?? -1)).toBeNull();
+    expect(await findByNumber(entry.state.entryNumber ?? -1)).toBeNull();
   });
 });

@@ -43,17 +43,17 @@ export default function SubmittingEntryState({
             House Address:
           </Text>
           <Text size="sm" c="dimmed">
-            {entry.houseAddress?.address || "Address not available"}
+            {entry.state.houseAddress?.address || "Address not available"}
           </Text>
         </div>
 
-        {entry.name && (
+        {entry.state.name && (
           <div>
             <Text size="sm" fw={500} mb={4}>
               Entry Name:
             </Text>
             <Text size="sm" c="dimmed">
-              {entry.name}
+              {entry.state.name}
             </Text>
           </div>
         )}

@@ -12,11 +12,8 @@ import {
 } from "../common/tests/testingHelpers.vitest";
 import { entries } from "./model";
 import type { Doc } from "../../_generated/dataModel";
+import { internal } from "../../_generated/api";
 import { competitions } from "../competitions/model";
-import type { QueryCtx } from "../../_generated/server";
-
-const currentCompetitionId = async (ctx: QueryCtx) =>
-  (await competitions.query(ctx).current())._id;
 
 describe("revertToDraft", () => {
   let rawTest: ConvexTest;
@@ -33,23 +30,22 @@ describe("revertToDraft", () => {
     // Arrange - create an entry in submitting status
     const entry = await createTestEntry(t, {
       submittedByUserId: user._id,
-      status: "submitting",
-      name: "Test Entry",
-      houseAddress: {
-        address: "123 Test Street",
-        placeId: "test-place-id-123",
+      state: {
+        kind: "submitting",
+        name: "Test Entry",
+        houseAddress: {
+          address: "123 Test Street",
+          placeId: "test-place-id-123",
+        },
       },
     });
 
-    if (!entry || entry.status !== "submitting")
+    if (!entry || entry.state.kind !== "submitting")
       throw new Error("Failed to create entry in submitting status");
 
     // Act
-    await t.run(async (ctx) => {
-      await entries
-        .mutate(ctx)
-        .forUser(await currentCompetitionId(ctx), user._id)
-        .revertToDraft();
+    await t.mutation(internal.internal.entries.revertToDraft, {
+      userId: user._id,
     });
 
     // Assert
@@ -57,9 +53,9 @@ describe("revertToDraft", () => {
       return await entries.query(ctx).forEntry(entry._id).get();
     });
 
-    expect(revertedEntry.status).toBe("draft");
-    expect(revertedEntry.name).toBe("Test Entry");
-    expect(revertedEntry.houseAddress).toEqual({
+    expect(revertedEntry.state.kind).toBe("draft");
+    expect(revertedEntry.state.name).toBe("Test Entry");
+    expect(revertedEntry.state.houseAddress).toEqual({
       address: "123 Test Street",
       placeId: "test-place-id-123",
     });
@@ -69,22 +65,21 @@ describe("revertToDraft", () => {
     // Arrange
     const entry = await createTestEntry(t, {
       submittedByUserId: user._id,
-      status: "submitting",
-      name: "Entry with Address",
-      houseAddress: {
-        address: "456 Oak Avenue",
-        placeId: "place-456",
+      state: {
+        kind: "submitting",
+        name: "Entry with Address",
+        houseAddress: {
+          address: "456 Oak Avenue",
+          placeId: "place-456",
+        },
       },
     });
 
     if (!entry) throw new Error("Failed to create entry");
 
     // Act
-    await t.run(async (ctx) => {
-      await entries
-        .mutate(ctx)
-        .forUser(await currentCompetitionId(ctx), user._id)
-        .revertToDraft();
+    await t.mutation(internal.internal.entries.revertToDraft, {
+      userId: user._id,
     });
 
     // Assert
@@ -92,38 +87,42 @@ describe("revertToDraft", () => {
       return await entries.query(ctx).forEntry(entry._id).get();
     });
 
-    expect(revertedEntry.status).toBe("draft");
-    expect(
-      typeof revertedEntry.houseAddress === "object" &&
-        revertedEntry.houseAddress !== null &&
-        "address" in revertedEntry.houseAddress,
-    ).toBe(true);
-    if (
-      typeof revertedEntry.houseAddress === "object" &&
-      revertedEntry.houseAddress !== null &&
-      "address" in revertedEntry.houseAddress
-    ) {
-      expect(revertedEntry.houseAddress.address).toBe("456 Oak Avenue");
-      expect(revertedEntry.houseAddress.placeId).toBe("place-456");
-    }
+    expect(revertedEntry.state.kind).toBe("draft");
+    expect(revertedEntry.state.houseAddress?.address).toBe("456 Oak Avenue");
+    expect(revertedEntry.state.houseAddress?.placeId).toBe("place-456");
   });
 
-  it("should throw an error when trying to revert an entry that is not in submitting status", async () => {
-    // Arrange - create a draft entry
+  it("leaves an entry that's already a draft alone: its timer sent it back first", async () => {
     const entry = await createTestEntry(t, {
       submittedByUserId: user._id,
-      status: "draft",
+      state: { kind: "draft" },
     });
-
     if (!entry) throw new Error("Failed to create entry");
 
-    // Act & Assert
     await expect(
-      t.run(async (ctx) => {
-        await entries
-          .mutate(ctx)
-          .forUser(await currentCompetitionId(ctx), user._id)
-          .revertToDraft();
+      t.mutation(internal.internal.entries.revertToDraft, {
+        userId: user._id,
+      }),
+    ).resolves.toBeNull();
+    const after = await t.run((ctx) => ctx.db.get("entries", entry._id));
+    expect(after?.state.kind).toBe("draft");
+  });
+
+  it("should throw an error when trying to revert an entry that is past submitting", async () => {
+    const entry = await createTestEntry(t, {
+      submittedByUserId: user._id,
+      state: {
+        kind: "submitted",
+        submittedAt: Date.now(),
+        name: "Test",
+        houseAddress: { address: "1 Test St", lat: 0, lng: 0, placeId: "p1" },
+      },
+    });
+    if (!entry) throw new Error("Failed to create entry");
+
+    await expect(
+      t.mutation(internal.internal.entries.revertToDraft, {
+        userId: user._id,
       }),
     ).rejects.toThrow(/not in submitting status, cannot revert/);
   });
@@ -134,23 +133,23 @@ describe("revertToDraft", () => {
       const competition = await competitions.query(ctx).current();
       const id = await ctx.db.insert("entries", {
         competitionId: competition._id,
-        status: "submitting",
         submittedByUserId: user._id,
-        name: "Entry Without Address",
-        houseAddress: {
-          address: "Test Address",
-          placeId: "test-place",
+        state: {
+          kind: "submitting",
+          name: "Entry Without Address",
+          houseAddress: {
+            address: "Test Address",
+            placeId: "test-place",
+          },
         },
+        stateTimers: [],
       });
       return id;
     });
 
     // Act
-    await t.run(async (ctx) => {
-      await entries
-        .mutate(ctx)
-        .forUser(await currentCompetitionId(ctx), user._id)
-        .revertToDraft();
+    await t.mutation(internal.internal.entries.revertToDraft, {
+      userId: user._id,
     });
 
     // Assert
@@ -158,7 +157,7 @@ describe("revertToDraft", () => {
       return await entries.query(ctx).forEntry(entryId).get();
     });
 
-    expect(revertedEntry.status).toBe("draft");
+    expect(revertedEntry.state.kind).toBe("draft");
   });
 });
 
@@ -179,11 +178,13 @@ describe("submission error reversion", () => {
     // Arrange - create an entry in submitting status with coordinates outside boundary
     const entry = await createTestEntry(t, {
       submittedByUserId: user1._id,
-      status: "submitting",
-      name: "Entry Outside Boundary",
-      houseAddress: {
-        address: "24 Hardy Street, Augusta WA, Australia",
-        placeId: "augusta-place-id",
+      state: {
+        kind: "submitting",
+        name: "Entry Outside Boundary",
+        houseAddress: {
+          address: "24 Hardy Street, Augusta WA, Australia",
+          placeId: "augusta-place-id",
+        },
       },
     });
 
@@ -195,15 +196,11 @@ describe("submission error reversion", () => {
 
     // Act & Assert - finalizeSubmission should fail
     await expect(
-      t.run(async (ctx) => {
-        await entries
-          .mutate(ctx)
-          .forUser(await currentCompetitionId(ctx), user1._id)
-          .finalizeSubmission({
-            lat: outsideBoundaryLat,
-            lng: outsideBoundaryLng,
-            placeId: entry.houseAddress?.placeId || "",
-          });
+      t.mutation(internal.internal.entries.finalizeSubmission, {
+        entryId: entry._id,
+        lat: outsideBoundaryLat,
+        lng: outsideBoundaryLng,
+        placeId: entry.state.houseAddress?.placeId ?? "",
       }),
     ).rejects.toThrow(/outside the competition area/);
 
@@ -211,7 +208,7 @@ describe("submission error reversion", () => {
     const entryAfterError = await t.run(async (ctx) => {
       return await entries.query(ctx).forEntry(entry._id).get();
     });
-    expect(entryAfterError.status).toBe("submitting");
+    expect(entryAfterError.state.kind).toBe("submitting");
   });
 
   it("should revert entry to draft when finalizeSubmission fails due to address conflict", async () => {
@@ -241,11 +238,13 @@ describe("submission error reversion", () => {
     const t2 = signInAsTestUser(rawTest, user2);
     const entry2 = await createTestEntry(t2, {
       submittedByUserId: user2._id,
-      status: "submitting",
-      name: "Second Entry",
-      houseAddress: {
-        address: "123 Test St",
-        placeId,
+      state: {
+        kind: "submitting",
+        name: "Second Entry",
+        houseAddress: {
+          address: "123 Test St",
+          placeId,
+        },
       },
     });
 
@@ -253,15 +252,11 @@ describe("submission error reversion", () => {
 
     // Act & Assert - should fail due to conflict
     await expect(
-      t2.run(async (ctx) => {
-        await entries
-          .mutate(ctx)
-          .forUser(await currentCompetitionId(ctx), user2._id)
-          .finalizeSubmission({
-            lat: -33.63,
-            lng: 115.39,
-            placeId,
-          });
+      t2.mutation(internal.internal.entries.finalizeSubmission, {
+        entryId: entry2._id,
+        lat: -33.63,
+        lng: 115.39,
+        placeId,
       }),
     ).rejects.toThrow(/is already used!/);
 
@@ -269,18 +264,20 @@ describe("submission error reversion", () => {
     const entryAfterError = await t2.run(async (ctx) => {
       return await entries.query(ctx).forEntry(entry2._id).get();
     });
-    expect(entryAfterError.status).toBe("submitting");
+    expect(entryAfterError.state.kind).toBe("submitting");
   });
 
   it("should successfully finalize submission when entry is within boundary", async () => {
     // Arrange - create entry in submitting status with coordinates inside boundary
     const entry = await createTestEntry(t, {
       submittedByUserId: user1._id,
-      status: "submitting",
-      name: "Entry Within Boundary",
-      houseAddress: {
-        address: "Within Boundary Address",
-        placeId: "within-boundary-place-id",
+      state: {
+        kind: "submitting",
+        name: "Entry Within Boundary",
+        houseAddress: {
+          address: "Within Boundary Address",
+          placeId: "within-boundary-place-id",
+        },
       },
     });
 
@@ -291,15 +288,11 @@ describe("submission error reversion", () => {
     const withinBoundaryLng = 115.39;
 
     // Act
-    await t.run(async (ctx) => {
-      await entries
-        .mutate(ctx)
-        .forUser(await currentCompetitionId(ctx), user1._id)
-        .finalizeSubmission({
-          lat: withinBoundaryLat,
-          lng: withinBoundaryLng,
-          placeId: entry.houseAddress?.placeId || "",
-        });
+    await t.mutation(internal.internal.entries.finalizeSubmission, {
+      entryId: entry._id,
+      lat: withinBoundaryLat,
+      lng: withinBoundaryLng,
+      placeId: entry.state.houseAddress?.placeId ?? "",
     });
 
     // Assert - entry should be in submitted status
@@ -307,15 +300,15 @@ describe("submission error reversion", () => {
       return await entries.query(ctx).forEntry(entry._id).get();
     });
 
-    expect(finalizedEntry.status).toBe("submitted");
-    if (finalizedEntry.status === "submitted") {
-      expect(finalizedEntry.houseAddress).toEqual({
+    expect(finalizedEntry.state.kind).toBe("submitted");
+    if (finalizedEntry.state.kind === "submitted") {
+      expect(finalizedEntry.state.houseAddress).toEqual({
         address: "Within Boundary Address",
         lat: withinBoundaryLat,
         lng: withinBoundaryLng,
         placeId: "within-boundary-place-id",
       });
-      expect(finalizedEntry.submittedAt).toBeDefined();
+      expect(finalizedEntry.state.submittedAt).toBeDefined();
     }
   });
 });
@@ -364,26 +357,24 @@ describe("finalizeSubmission", () => {
     // Move entry2 to submitting status with the same placeId
     await t.run(async (ctx) => {
       await ctx.db.patch(entry2._id, {
-        status: "submitting" as const,
-        name: "Second Entry",
-        houseAddress: {
-          address: "123 Test St",
-          placeId: sharedPlaceId,
+        state: {
+          kind: "submitting",
+          name: "Second Entry",
+          houseAddress: {
+            address: "123 Test St",
+            placeId: sharedPlaceId,
+          },
         },
       });
     });
 
     // Try to finalize entry2 - should throw an error
     await expect(
-      t.run(async (ctx) => {
-        await entries
-          .mutate(ctx)
-          .forUser(await currentCompetitionId(ctx), user2._id)
-          .finalizeSubmission({
-            lat: -33.63,
-            lng: 115.39,
-            placeId: sharedPlaceId,
-          });
+      t.mutation(internal.internal.entries.finalizeSubmission, {
+        entryId: entry2._id,
+        lat: -33.63,
+        lng: 115.39,
+        placeId: sharedPlaceId,
       }),
     ).rejects.toThrow(/is already used!/);
   });
@@ -399,25 +390,23 @@ describe("finalizeSubmission", () => {
 
     await t.run(async (ctx) => {
       await ctx.db.patch(entry._id, {
-        status: "submitting" as const,
-        name: "Test Entry",
-        houseAddress: {
-          address: "456 Oak St",
-          placeId: uniquePlaceId,
+        state: {
+          kind: "submitting",
+          name: "Test Entry",
+          houseAddress: {
+            address: "456 Oak St",
+            placeId: uniquePlaceId,
+          },
         },
       });
     });
 
     // Finalize should succeed - use coordinates within the competition boundary
-    await t.run(async (ctx) => {
-      await entries
-        .mutate(ctx)
-        .forUser(await currentCompetitionId(ctx), user1._id)
-        .finalizeSubmission({
-          lat: -33.63,
-          lng: 115.39,
-          placeId: uniquePlaceId,
-        });
+    await t.mutation(internal.internal.entries.finalizeSubmission, {
+      entryId: entry._id,
+      lat: -33.63,
+      lng: 115.39,
+      placeId: uniquePlaceId,
     });
 
     // Verify the entry was finalized successfully
@@ -425,9 +414,9 @@ describe("finalizeSubmission", () => {
       return await entries.query(ctx).forEntry(entry._id).get();
     });
 
-    expect(finalizedEntry.status).toBe("submitted");
-    if (finalizedEntry.status === "submitted")
-      expect(finalizedEntry.houseAddress.placeId).toBe(uniquePlaceId);
+    expect(finalizedEntry.state.kind).toBe("submitted");
+    if (finalizedEntry.state.kind === "submitted")
+      expect(finalizedEntry.state.houseAddress.placeId).toBe(uniquePlaceId);
   });
 
   it("should allow finalization if other entries with same placeId are only draft or rejected", async () => {
@@ -440,9 +429,12 @@ describe("finalizeSubmission", () => {
     // Create a draft entry with the shared placeId
     await createTestEntry(t, {
       submittedByUserId: user3._id,
-      houseAddress: {
-        address: "789 Pine St",
-        placeId: sharedPlaceId,
+      state: {
+        kind: "draft",
+        houseAddress: {
+          address: "789 Pine St",
+          placeId: sharedPlaceId,
+        },
       },
     });
 
@@ -454,21 +446,23 @@ describe("finalizeSubmission", () => {
     // Manually create rejected entry since moveEntryToStatus doesn't support rejected
     await t.run(async (ctx) => {
       await ctx.db.replace(rejectedEntry._id, {
-        status: "rejected" as const,
         competitionId: rejectedEntry.competitionId,
         submittedByUserId: user4._id,
-        name: "Rejected Entry",
-        submittedAt: Date.now() - 1000,
-        rejectedAt: Date.now(),
-        rejectedReason: "Test rejection reason",
-        houseAddress: {
-          address: "789 Pine St",
-          lat: -33.63,
-          lng: 115.39,
-          placeId: sharedPlaceId,
+        state: {
+          kind: "rejected",
+          name: "Rejected Entry",
+          submittedAt: Date.now() - 1000,
+          rejectedAt: Date.now(),
+          rejectedReason: "Test rejection reason",
+          houseAddress: {
+            address: "789 Pine St",
+            lat: -33.63,
+            lng: 115.39,
+            placeId: sharedPlaceId,
+          },
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+        stateTimers: [],
+      });
     });
 
     // Create a new entry to finalize with a different user
@@ -479,26 +473,24 @@ describe("finalizeSubmission", () => {
 
     await t.run(async (ctx) => {
       await ctx.db.patch(entryToFinalize._id, {
-        status: "submitting" as const,
-        name: "Entry To Finalize",
-        houseAddress: {
-          address: "789 Pine St",
-          placeId: sharedPlaceId,
+        state: {
+          kind: "submitting",
+          name: "Entry To Finalize",
+          houseAddress: {
+            address: "789 Pine St",
+            placeId: sharedPlaceId,
+          },
         },
       });
     });
 
     // Finalize should succeed since only draft and rejected entries exist with this placeId
     // Use coordinates within the competition boundary
-    await t.run(async (ctx) => {
-      await entries
-        .mutate(ctx)
-        .forUser(await currentCompetitionId(ctx), user1._id)
-        .finalizeSubmission({
-          lat: -33.63,
-          lng: 115.39,
-          placeId: sharedPlaceId,
-        });
+    await t.mutation(internal.internal.entries.finalizeSubmission, {
+      entryId: entryToFinalize._id,
+      lat: -33.63,
+      lng: 115.39,
+      placeId: sharedPlaceId,
     });
 
     // Verify the entry was finalized successfully
@@ -506,7 +498,7 @@ describe("finalizeSubmission", () => {
       return await entries.query(ctx).forEntry(entryToFinalize._id).get();
     });
 
-    expect(finalizedEntry.status).toBe("submitted");
+    expect(finalizedEntry.state.kind).toBe("submitted");
   });
 
   it("should throw an error if a submitting entry exists with the same placeId", async () => {
@@ -520,11 +512,13 @@ describe("finalizeSubmission", () => {
 
     await t.run(async (ctx) => {
       await ctx.db.patch(entry1._id, {
-        status: "submitting" as const,
-        name: "First Submitting Entry",
-        houseAddress: {
-          address: "456 Oak St",
-          placeId: sharedPlaceId,
+        state: {
+          kind: "submitting",
+          name: "First Submitting Entry",
+          houseAddress: {
+            address: "456 Oak St",
+            placeId: sharedPlaceId,
+          },
         },
       });
     });
@@ -538,26 +532,24 @@ describe("finalizeSubmission", () => {
     // Move entry2 to submitting status with the same placeId
     await t.run(async (ctx) => {
       await ctx.db.patch(entry2._id, {
-        status: "submitting" as const,
-        name: "Second Entry",
-        houseAddress: {
-          address: "456 Oak St",
-          placeId: sharedPlaceId,
+        state: {
+          kind: "submitting",
+          name: "Second Entry",
+          houseAddress: {
+            address: "456 Oak St",
+            placeId: sharedPlaceId,
+          },
         },
       });
     });
 
     // Try to finalize entry2 - should throw an error because entry1 is already submitting
     await expect(
-      t.run(async (ctx) => {
-        await entries
-          .mutate(ctx)
-          .forUser(await currentCompetitionId(ctx), user2._id)
-          .finalizeSubmission({
-            lat: 10,
-            lng: 20,
-            placeId: sharedPlaceId,
-          });
+      t.mutation(internal.internal.entries.finalizeSubmission, {
+        entryId: entry2._id,
+        lat: 10,
+        lng: 20,
+        placeId: sharedPlaceId,
       }),
     ).rejects.toThrow(/is already used!/);
   });
@@ -593,26 +585,24 @@ describe("finalizeSubmission", () => {
     // Move entry2 to submitting status with the same placeId
     await t.run(async (ctx) => {
       await ctx.db.patch(entry2._id, {
-        status: "submitting" as const,
-        name: "Second Entry",
-        houseAddress: {
-          address: "789 Elm St",
-          placeId: sharedPlaceId,
+        state: {
+          kind: "submitting",
+          name: "Second Entry",
+          houseAddress: {
+            address: "789 Elm St",
+            placeId: sharedPlaceId,
+          },
         },
       });
     });
 
     // Try to finalize entry2 - should throw an error because entry1 is already submitted
     await expect(
-      t.run(async (ctx) => {
-        await entries
-          .mutate(ctx)
-          .forUser(await currentCompetitionId(ctx), user2._id)
-          .finalizeSubmission({
-            lat: 15,
-            lng: 25,
-            placeId: sharedPlaceId,
-          });
+      t.mutation(internal.internal.entries.finalizeSubmission, {
+        entryId: entry2._id,
+        lat: 15,
+        lng: 25,
+        placeId: sharedPlaceId,
       }),
     ).rejects.toThrow(/is already used!/);
   });

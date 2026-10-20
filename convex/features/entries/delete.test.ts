@@ -23,12 +23,20 @@ const seedEntryWithEverything = async (
     const entryId = await ctx.db.insert("entries", {
       competitionId: competition._id,
       submittedByUserId: entrantId,
-      status: "approved",
-      submittedAt: Date.now(),
-      approvedAt: Date.now(),
-      entryNumber: 1,
-      name: "Twinkle Town",
-      houseAddress: { address: "1 Keel Retreat", lat: 0, lng: 0, placeId: "p" },
+      state: {
+        kind: "approved",
+        submittedAt: Date.now(),
+        approvedAt: Date.now(),
+        entryNumber: 1,
+        name: "Twinkle Town",
+        houseAddress: {
+          address: "1 Keel Retreat",
+          lat: 0,
+          lng: 0,
+          placeId: "p",
+        },
+      },
+      stateTimers: [],
     });
     const photoIds = [
       await ctx.db.insert("photos", {

@@ -25,7 +25,8 @@ const insertPhotos = async (t: ConvexTest) => {
     const entryId = await ctx.db.insert("entries", {
       competitionId: competition._id,
       submittedByUserId: owner,
-      status: "draft",
+      state: { kind: "draft" },
+      stateTimers: [],
     });
     const insertUploaded = (storageId: Id<"_storage">) =>
       ctx.db.insert("photos", {

@@ -52,13 +52,15 @@ export default function DraftEntryState({
     useDisclosure(false);
 
   // Form state
-  const [name, setName] = useState(() => entry.name || "");
+  const [name, setName] = useState(() => entry.state.name || "");
   const [address, setAddress] = useState(
-    () => entry.houseAddress?.address ?? "",
+    () => entry.state.houseAddress?.address ?? "",
   );
   const [selectedAddress, setSelectedAddress] = useState<
     { address: string; placeId: string } | undefined
-  >(() => (entry.status === "draft" ? entry.houseAddress : undefined));
+  >(() =>
+    entry.state.kind === "draft" ? entry.state.houseAddress : undefined,
+  );
 
   // Debounce form values for auto-save
   const [debouncedName] = useDebounce(name, 500);
@@ -105,9 +107,9 @@ export default function DraftEntryState({
             <Alert color="blue" variant="light" title="Welcome back!">
               We've filled in your name and address from{" "}
               {previous ? previous.year : "last time"}
-              {entry.entryNumber === undefined
+              {entry.state.entryNumber === undefined
                 ? ""
-                : ` and you'll keep #${entry.entryNumber}`}
+                : ` and you'll keep #${entry.state.entryNumber}`}
               . Photos don't carry over, so please add new photos of this year's
               display.
             </Alert>

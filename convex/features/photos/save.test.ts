@@ -19,7 +19,8 @@ const setupEntrant = async (t: ConvexTest) => {
     return await ctx.db.insert("entries", {
       competitionId: competition._id,
       submittedByUserId: user._id,
-      status: "draft",
+      state: { kind: "draft" },
+      stateTimers: [],
     });
   });
   return { asUser: signInAsTestUser(t, user), entryId };
@@ -36,7 +37,8 @@ const insertUploadedPhoto = (
     entryId ??= await ctx.db.insert("entries", {
       competitionId: competition._id,
       submittedByUserId: owner,
-      status: "draft",
+      state: { kind: "draft" },
+      stateTimers: [],
     });
     return await ctx.db.insert("photos", {
       entryId,
@@ -164,7 +166,8 @@ describe("photo save", () => {
       return await ctx.db.insert("entries", {
         competitionId: competition._id,
         submittedByUserId: admin._id,
-        status: "draft",
+        state: { kind: "draft" },
+        stateTimers: [],
       });
     });
     const { photoId } = await asAdmin.mutation(
