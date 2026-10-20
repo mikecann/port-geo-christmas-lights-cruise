@@ -23,10 +23,13 @@ const submitCurrentEntry = (t: ConvexTest, userId: Id<"users">) =>
     return await ctx.db.insert("entries", {
       competitionId: competition._id,
       submittedByUserId: userId,
-      status: "submitted",
-      submittedAt: Date.now(),
-      name: "This year",
-      houseAddress,
+      state: {
+        kind: "submitted",
+        submittedAt: Date.now(),
+        name: "This year",
+        houseAddress,
+      },
+      stateTimers: [],
     });
   });
 
@@ -48,12 +51,15 @@ describe("returning entrant flag", () => {
       await ctx.db.insert("entries", {
         competitionId: legacy._id,
         submittedByUserId: user._id,
-        status: "approved",
-        submittedAt: Date.now(),
-        approvedAt: Date.now(),
-        entryNumber: 3,
-        name: "Last year",
-        houseAddress,
+        state: {
+          kind: "approved",
+          submittedAt: Date.now(),
+          approvedAt: Date.now(),
+          entryNumber: 3,
+          name: "Last year",
+          houseAddress,
+        },
+        stateTimers: [],
       });
     });
     const entryId = await submitCurrentEntry(t, user._id);
@@ -71,12 +77,15 @@ describe("returning entrant flag", () => {
       await ctx.db.insert("entries", {
         competitionId: legacy._id,
         submittedByUserId: user._id,
-        status: "rejected",
-        submittedAt: Date.now(),
-        rejectedAt: Date.now(),
-        rejectedReason: "Outside the area",
-        name: "Last year",
-        houseAddress,
+        state: {
+          kind: "rejected",
+          submittedAt: Date.now(),
+          rejectedAt: Date.now(),
+          rejectedReason: "Outside the area",
+          name: "Last year",
+          houseAddress,
+        },
+        stateTimers: [],
       });
     });
     const entryId = await submitCurrentEntry(t, user._id);
@@ -108,12 +117,15 @@ describe("admin entry list", () => {
       await ctx.db.insert("entries", {
         competitionId: (await competitions.query(ctx).current())._id,
         submittedByUserId: await ctx.db.insert("users", {}),
-        status: "rejected",
-        submittedAt: Date.now(),
-        rejectedAt: Date.now(),
-        rejectedReason: "Outside the area",
-        name: "Rejected",
-        houseAddress: { ...houseAddress, placeId: "other" },
+        state: {
+          kind: "rejected",
+          submittedAt: Date.now(),
+          rejectedAt: Date.now(),
+          rejectedReason: "Outside the area",
+          name: "Rejected",
+          houseAddress: { ...houseAddress, placeId: "other" },
+        },
+        stateTimers: [],
       });
       return await ctx.db.insert("photos", {
         entryId,
@@ -150,10 +162,13 @@ describe("reviewing past entries", () => {
       ctx.db.insert("entries", {
         competitionId: (await ensureTestCompetitions(ctx)).past._id,
         submittedByUserId: entrant._id,
-        status: "submitted",
-        submittedAt: Date.now(),
-        name: "Last year",
-        houseAddress,
+        state: {
+          kind: "submitted",
+          submittedAt: Date.now(),
+          name: "Last year",
+          houseAddress,
+        },
+        stateTimers: [],
       }),
     );
     const asAdmin = signInAsTestUser(t, admin);
@@ -168,7 +183,7 @@ describe("reviewing past entries", () => {
       }),
     ).rejects.toThrow("Entries from past competitions");
     expect(await t.run((ctx) => ctx.db.get(entryId))).toMatchObject({
-      status: "submitted",
+      state: { kind: "submitted" },
     });
   });
 });

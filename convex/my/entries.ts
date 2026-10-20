@@ -42,9 +42,9 @@ export const findPrevious = userQuery
       year: previousCompetition.year,
       entry: {
         _id: previous._id,
-        name: previous.name,
-        entryNumber: previous.entryNumber,
-        address: previous.houseAddress.address,
+        name: previous.state.name,
+        entryNumber: previous.state.entryNumber,
+        address: previous.state.houseAddress.address,
       },
       photos: await photos.forEntry(previous._id).list(context.db),
     };
@@ -122,13 +122,14 @@ export const submit = userAction
       userId: context.userId,
     });
 
-    if (entry.status != "submitting")
+    if (entry.state.kind !== "submitting")
       throw new Error("Entry is not in submitting status");
+    const { houseAddress } = entry.state;
 
     try {
       let place: GooglePlace;
       try {
-        place = await lookUpPlace(entry.houseAddress.placeId);
+        place = await lookUpPlace(houseAddress.placeId);
       } catch (error) {
         // Revert to draft if Google can't find the place the user picked
         await context.runMutation(internal.entries.revertToDraft, {
@@ -136,7 +137,7 @@ export const submit = userAction
         });
         throw Object.assign(
           new ConvexError(
-            `Unable to find your address "${entry.houseAddress.address}". Please check the address and try again, or contact support if you believe this is an error.`,
+            `Unable to find your address "${houseAddress.address}". Please check the address and try again, or contact support if you believe this is an error.`,
           ),
           { cause: error },
         );

@@ -20,14 +20,14 @@ export default function EntryHistory({
 }) {
   const events = [
     { title: "Started", time: entry._creationTime },
-    ...("submittedAt" in entry
-      ? [{ title: "Sent in for review", time: entry.submittedAt }]
+    ...("submittedAt" in entry.state
+      ? [{ title: "Sent in for review", time: entry.state.submittedAt }]
       : []),
-    ...(entry.status === "approved"
-      ? [{ title: "Approved", time: entry.approvedAt }]
+    ...(entry.state.kind === "approved"
+      ? [{ title: "Approved", time: entry.state.approvedAt }]
       : []),
-    ...(entry.status === "rejected"
-      ? [{ title: "Rejected", time: entry.rejectedAt }]
+    ...(entry.state.kind === "rejected"
+      ? [{ title: "Rejected", time: entry.state.rejectedAt }]
       : []),
   ];
 

@@ -16,17 +16,20 @@ const seedApprovedEntryWithPhotos = async (t: ConvexTest) => {
     const entryId = await ctx.db.insert("entries", {
       competitionId: competition._id,
       submittedByUserId: user._id,
-      status: "approved",
-      submittedAt: Date.now(),
-      approvedAt: Date.now(),
-      entryNumber: 7,
-      name: "Twinkle Town",
-      houseAddress: {
-        address: "1 Keel Retreat",
-        lat: -33.63,
-        lng: 115.39,
-        placeId: "pid-1",
+      state: {
+        kind: "approved",
+        submittedAt: Date.now(),
+        approvedAt: Date.now(),
+        entryNumber: 7,
+        name: "Twinkle Town",
+        houseAddress: {
+          address: "1 Keel Retreat",
+          lat: -33.63,
+          lng: 115.39,
+          placeId: "pid-1",
+        },
       },
+      stateTimers: [],
     });
     const uploadingPhotoId = await ctx.db.insert("photos", {
       entryId,
@@ -115,15 +118,18 @@ describe("public entry lookups by id", () => {
       return await ctx.db.insert("entries", {
         competitionId: competition._id,
         submittedByUserId: user._id,
-        status: "submitted",
-        submittedAt: Date.now(),
-        name: "Not Yet Approved",
-        houseAddress: {
-          address: "2 Keel Retreat",
-          lat: -33.63,
-          lng: 115.39,
-          placeId: "pid-2",
+        state: {
+          kind: "submitted",
+          submittedAt: Date.now(),
+          name: "Not Yet Approved",
+          houseAddress: {
+            address: "2 Keel Retreat",
+            lat: -33.63,
+            lng: 115.39,
+            placeId: "pid-2",
+          },
         },
+        stateTimers: [],
       });
     });
     return {

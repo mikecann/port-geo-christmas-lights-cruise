@@ -5,8 +5,11 @@ import { event } from "../../../shared/event";
 
 const entry = {
   _id: "entry" as Id<"entries">,
-  name: "Twinkle Town",
-  houseAddress: { address: "1 Keel Retreat", placeId: "pid" },
+  state: {
+    kind: "submitting",
+    name: "Twinkle Town",
+    houseAddress: { address: "1 Keel Retreat", placeId: "pid" },
+  },
 } as Doc<"entries">;
 
 const competition = { year: 2027 } as Doc<"competitions">;

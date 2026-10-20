@@ -1,5 +1,5 @@
 import type { Doc, Id } from "../../_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "../../_generated/server";
+import type { DatabaseReader, MutationCtx } from "../../_generated/server";
 import { ensure } from "../../../shared/ensure";
 import { ConvexError } from "convex/values";
 import {
@@ -29,7 +29,8 @@ export const competitions = {
     };
   },
 
-  query(ctx: QueryCtx) {
+  // Only reads, so a machine's guards and effects can use it too
+  query(ctx: { db: DatabaseReader }) {
     return {
       forYear(year: number) {
         return {

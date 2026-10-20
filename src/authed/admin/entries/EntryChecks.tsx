@@ -122,8 +122,8 @@ export default function EntryChecks({
         </Check>
       )}
 
-      {entry.status !== "rejected" &&
-        (entry.entryNumber === undefined ? (
+      {entry.state.kind !== "rejected" &&
+        (entry.state.entryNumber === undefined ? (
           <Check tone="info" icon={<IconHash size={14} />}>
             Gets a free number when you approve it
           </Check>
@@ -138,7 +138,7 @@ export default function EntryChecks({
               )
             }
           >
-            Number #{entry.entryNumber}
+            Number #{entry.state.entryNumber}
             {isNumberOutsideRange &&
               ". There's no printed sign for this number, as it's outside the number range."}
           </Check>

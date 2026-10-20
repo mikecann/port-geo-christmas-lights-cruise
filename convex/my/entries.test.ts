@@ -40,8 +40,11 @@ describe("submit", () => {
   it("looks up the place the user picked and stores Google's id and location", async () => {
     const { t } = await createConvexTestWithUser();
     await createTestEntry(t, {
-      name: "Twinkle Town",
-      houseAddress: { address: "35 Keel Retreat", placeId: "client-chosen" },
+      state: {
+        kind: "draft",
+        name: "Twinkle Town",
+        houseAddress: { address: "35 Keel Retreat", placeId: "client-chosen" },
+      },
     });
     const fetch = stubGooglePlaces({
       "client-chosen": { id: "google-place", location: inside },
@@ -55,12 +58,14 @@ describe("submit", () => {
     );
     const entry = await t.query(api.my.entries.find, {});
     expect(entry).toMatchObject({
-      status: "submitted",
-      houseAddress: {
-        address: "35 Keel Retreat",
-        placeId: "google-place",
-        lat: inside.latitude,
-        lng: inside.longitude,
+      state: {
+        kind: "submitted",
+        houseAddress: {
+          address: "35 Keel Retreat",
+          placeId: "google-place",
+          lat: inside.latitude,
+          lng: inside.longitude,
+        },
       },
     });
   });
@@ -74,22 +79,28 @@ describe("submit", () => {
       await ctx.db.insert("entries", {
         competitionId: competition._id,
         submittedByUserId: neighbour,
-        status: "approved",
-        submittedAt: Date.now(),
-        approvedAt: Date.now(),
-        entryNumber: 1,
-        name: "Already here",
-        houseAddress: {
-          address: "35 Keel Retreat",
-          lat: -33.633,
-          lng: 115.39,
-          placeId: "google-place",
+        state: {
+          kind: "approved",
+          submittedAt: Date.now(),
+          approvedAt: Date.now(),
+          entryNumber: 1,
+          name: "Already here",
+          houseAddress: {
+            address: "35 Keel Retreat",
+            lat: -33.633,
+            lng: 115.39,
+            placeId: "google-place",
+          },
         },
+        stateTimers: [],
       });
     });
     await createTestEntry(t, {
-      name: "Copycat",
-      houseAddress: { address: "35 Keel Retreat", placeId: "old-id" },
+      state: {
+        kind: "draft",
+        name: "Copycat",
+        houseAddress: { address: "35 Keel Retreat", placeId: "old-id" },
+      },
     });
     stubGooglePlaces({ "old-id": { id: "google-place", location: inside } });
 
@@ -99,7 +110,7 @@ describe("submit", () => {
 
     const entry = await t.query(api.my.entries.find, {});
     expect(entry).toMatchObject({
-      status: "draft",
+      state: { kind: "draft" },
       submittedByUserId: user._id,
     });
   });
@@ -112,22 +123,28 @@ describe("submit", () => {
       await ctx.db.insert("entries", {
         competitionId: competition._id,
         submittedByUserId: neighbour,
-        status: "approved",
-        submittedAt: Date.now(),
-        approvedAt: Date.now(),
-        entryNumber: 1,
-        name: "Number 35",
-        houseAddress: {
-          address: "35 Keel Retreat",
-          lat: -33.633,
-          lng: 115.39,
-          placeId: "house-35",
+        state: {
+          kind: "approved",
+          submittedAt: Date.now(),
+          approvedAt: Date.now(),
+          entryNumber: 1,
+          name: "Number 35",
+          houseAddress: {
+            address: "35 Keel Retreat",
+            lat: -33.633,
+            lng: 115.39,
+            placeId: "house-35",
+          },
         },
+        stateTimers: [],
       });
     });
     await createTestEntry(t, {
-      name: "Number 37",
-      houseAddress: { address: "37 Keel Retreat", placeId: "house-37" },
+      state: {
+        kind: "draft",
+        name: "Number 37",
+        houseAddress: { address: "37 Keel Retreat", placeId: "house-37" },
+      },
     });
     stubGooglePlaces({
       "house-35": { id: "house-35", location: inside },
@@ -138,16 +155,21 @@ describe("submit", () => {
 
     const entry = await t.query(api.my.entries.find, {});
     expect(entry).toMatchObject({
-      status: "submitted",
-      houseAddress: { address: "37 Keel Retreat", placeId: "house-37" },
+      state: {
+        kind: "submitted",
+        houseAddress: { address: "37 Keel Retreat", placeId: "house-37" },
+      },
     });
   });
 
   it("refuses a place Google doesn't return and puts the entry back to draft", async () => {
     const { t } = await createConvexTestWithUser();
     await createTestEntry(t, {
-      name: "Twinkle Town",
-      houseAddress: { address: "35 Keel Retreat", placeId: "made-up" },
+      state: {
+        kind: "draft",
+        name: "Twinkle Town",
+        houseAddress: { address: "35 Keel Retreat", placeId: "made-up" },
+      },
     });
     stubGooglePlaces({});
 
@@ -160,14 +182,17 @@ describe("submit", () => {
       'Unable to find your address "35 Keel Retreat"',
     );
     const entry = await t.query(api.my.entries.find, {});
-    expect(entry).toMatchObject({ status: "draft" });
+    expect(entry).toMatchObject({ state: { kind: "draft" } });
   });
 
   it("checks the boundary using Google's location", async () => {
     const { t } = await createConvexTestWithUser();
     await createTestEntry(t, {
-      name: "Far Away",
-      houseAddress: { address: "1 Hay Street, Perth", placeId: "perth" },
+      state: {
+        kind: "draft",
+        name: "Far Away",
+        houseAddress: { address: "1 Hay Street, Perth", placeId: "perth" },
+      },
     });
     stubGooglePlaces({
       perth: { id: "perth", location: { latitude: -31.95, longitude: 115.86 } },
@@ -177,6 +202,6 @@ describe("submit", () => {
       "outside the competition area",
     );
     const entry = await t.query(api.my.entries.find, {});
-    expect(entry).toMatchObject({ status: "draft" });
+    expect(entry).toMatchObject({ state: { kind: "draft" } });
   });
 });

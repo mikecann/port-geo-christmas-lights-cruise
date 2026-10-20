@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   createConvexTest,
+  createTestUser,
   ensureTestCompetitions,
+  signInAsTestUser,
 } from "../common/tests/testingHelpers.vitest";
 import { entries } from "../entries/model";
 import { votes } from "../votes/model";
@@ -59,10 +61,16 @@ describe("competition seasons", () => {
 
   it("keeps a user's entries separate by season", async () => {
     const t = createConvexTest();
+    // Starting an entry checks the signed in user is the one entering
+    const user = await createTestUser(t, {
+      user: { name: "Seasonal Entrant" },
+    });
+    const userId = user._id;
 
-    await t.run(async (ctx) => {
+    await signInAsTestUser(t, user).run(async (ctx) => {
       const { past: legacy, current } = await ensureTestCompetitions(ctx);
-      const userId = await ctx.db.insert("users", { name: "Seasonal Entrant" });
+      // The entry machine only lets people enter a competition that's open
+      await ctx.db.patch(legacy._id, { entriesOpen: true });
 
       const legacyEntryId = await entries
         .mutate(ctx)
@@ -85,30 +93,35 @@ describe("competition seasons", () => {
 
   it("looks back from the competition it's given, not from the current one", async () => {
     const t = createConvexTest();
+    // Starting an entry checks the signed in user is the one entering
+    const user = await createTestUser(t);
+    const userId = user._id;
 
-    await t.run(async (ctx) => {
+    await signInAsTestUser(t, user).run(async (ctx) => {
       const { past, current } = await ensureTestCompetitions(ctx);
       const older = await ctx.db.insert("competitions", {
         year: 2024,
         entriesOpen: false,
         votingOpen: false,
       });
-      const userId = await ctx.db.insert("users", {});
       const approved = (competitionId: typeof older, entryNumber: number) =>
         ctx.db.insert("entries", {
           competitionId,
           submittedByUserId: userId,
-          status: "approved",
-          submittedAt: Date.now(),
-          approvedAt: Date.now(),
-          entryNumber,
-          name: `Entry ${entryNumber}`,
-          houseAddress: {
-            address: "1 Keel Retreat",
-            lat: 0,
-            lng: 0,
-            placeId: "p",
+          state: {
+            kind: "approved",
+            submittedAt: Date.now(),
+            approvedAt: Date.now(),
+            entryNumber,
+            name: `Entry ${entryNumber}`,
+            houseAddress: {
+              address: "1 Keel Retreat",
+              lat: 0,
+              lng: 0,
+              placeId: "p",
+            },
           },
+          stateTimers: [],
         });
       const olderEntryId = await approved(older, 4);
       const pastEntryId = await approved(past._id, 9);
@@ -144,7 +157,8 @@ describe("competition seasons", () => {
         ctx.db.insert("entries", {
           competitionId,
           submittedByUserId: entrantId,
-          status: "draft",
+          state: { kind: "draft" },
+          stateTimers: [],
         });
       const legacyEntryId = await insertEntry(legacy._id);
       const firstEntryId = await insertEntry(current._id);

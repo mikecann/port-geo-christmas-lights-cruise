@@ -1,6 +1,6 @@
-// The backfill runs against deploy 1's schema, which
-// docs/state-machine-migration.md spells out: the old union with an optional
-// `state` and `stateTimers` on every member.
+// The strip runs against deploy 2's schema, which
+// docs/state-machine-migration.md spells out: `state` required, with the old
+// fields still allowed until they're stripped.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { convexTest } from "convex-test";
 import { defineSchema, defineTable } from "convex/server";
@@ -17,65 +17,32 @@ import {
   homeAddressValidator,
 } from "../features/entries/schema";
 
-const reservedEntryNumber = v.optional(v.number());
-const duringMigration = {
-  state: v.optional(entryState),
-  stateTimers: v.optional(machineTimers),
-};
-
-// Deploy 1: the old union, each member with an optional state beside it
-const deploy1Entries = defineTable(
-  v.union(
-    v.object({
-      ...commonEntryFields,
-      ...duringMigration,
-      status: v.literal("draft"),
-      houseAddress: v.optional(draftHomeAddressValidator),
-      name: v.optional(v.string()),
-      entryNumber: reservedEntryNumber,
-    }),
-    v.object({
-      ...commonEntryFields,
-      ...duringMigration,
-      status: v.literal("submitting"),
-      houseAddress: draftHomeAddressValidator,
-      name: v.string(),
-      entryNumber: reservedEntryNumber,
-    }),
-    v.object({
-      ...commonEntryFields,
-      ...duringMigration,
-      status: v.literal("submitted"),
-      submittedAt: v.number(),
-      houseAddress: homeAddressValidator,
-      name: v.string(),
-      entryNumber: reservedEntryNumber,
-    }),
-    v.object({
-      ...commonEntryFields,
-      ...duringMigration,
-      status: v.literal("approved"),
-      submittedAt: v.number(),
-      approvedAt: v.number(),
-      entryNumber: v.number(),
-      houseAddress: homeAddressValidator,
-      name: v.string(),
-    }),
-    v.object({
-      ...commonEntryFields,
-      ...duringMigration,
-      status: v.literal("rejected"),
-      rejectedAt: v.number(),
-      rejectedReason: v.string(),
-      submittedAt: v.number(),
-      houseAddress: homeAddressValidator,
-      name: v.string(),
-      entryNumber: reservedEntryNumber,
-    }),
+// Deploy 2: state required, the old fields optional until they're stripped
+const deploy2Entries = defineTable({
+  ...commonEntryFields,
+  state: entryState,
+  stateTimers: machineTimers,
+  status: v.optional(
+    v.union(
+      v.literal("draft"),
+      v.literal("submitting"),
+      v.literal("submitted"),
+      v.literal("approved"),
+      v.literal("rejected"),
+    ),
   ),
-);
+  houseAddress: v.optional(
+    v.union(homeAddressValidator, draftHomeAddressValidator),
+  ),
+  name: v.optional(v.string()),
+  entryNumber: v.optional(v.number()),
+  submittedAt: v.optional(v.number()),
+  approvedAt: v.optional(v.number()),
+  rejectedAt: v.optional(v.number()),
+  rejectedReason: v.optional(v.string()),
+});
 
-const schemaWith = (entries: typeof deploy1Entries) =>
+const schemaWith = (entries: typeof deploy2Entries) =>
   defineSchema({ ...schema.tables, entries });
 
 const house = { address: "35 Keel Retreat", lat: -33.6, lng: 115.4 };
@@ -171,6 +138,17 @@ const states = [
   },
 ];
 
+const OLD_FIELDS = [
+  "status",
+  "name",
+  "houseAddress",
+  "entryNumber",
+  "submittedAt",
+  "approvedAt",
+  "rejectedAt",
+  "rejectedReason",
+];
+
 describe("the entry state migration", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -180,8 +158,8 @@ describe("the entry state migration", () => {
     vi.useRealTimers();
   });
 
-  it("backfills state from the old fields, page by page, and can run again", async () => {
-    const t = convexTest(schemaWith(deploy1Entries));
+  it("strips the old fields once every row has its state", async () => {
+    const t = convexTest(schemaWith(deploy2Entries));
     register(t);
     await t.run(async (ctx) => {
       const competitionId = await ctx.db.insert("competitions", {
@@ -190,68 +168,56 @@ describe("the entry state migration", () => {
         votingOpen: false,
       });
       const userId = await ctx.db.insert("users", {});
-      // Loosely typed: these rows are in deploy 1's shape, not the app's
-      for (const row of oldRows(competitionId, userId))
-        await ctx.db.insert("entries", row as never);
+      const rows = oldRows(competitionId, userId);
+      for (const [index, row] of rows.entries())
+        await ctx.db.insert("entries", {
+          ...row,
+          state: states[index],
+          stateTimers: [],
+        } as never);
     });
 
-    await t.mutation(internal.migrations.entryState.backfillState, {
+    await t.mutation(internal.migrations.entryState.stripOldFields, {
       batchSize: 4,
     });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
 
     const rows = await t.run((ctx) => ctx.db.query("entries").collect());
     expect(rows.map((row) => row.state)).toEqual(states);
-    expect(rows.every((row) => row.stateTimers?.length === 0)).toBe(true);
-    // The old fields stay until stripOldFields
-    expect(rows.map((row) => (row as { status?: string }).status)).toEqual([
-      "draft",
-      "draft",
-      "submitting",
-      "submitted",
-      "approved",
-      "rejected",
-    ]);
-
+    for (const row of rows)
+      for (const field of OLD_FIELDS) expect(row).not.toHaveProperty(field);
     expect(
-      await t.mutation(internal.migrations.entryState.backfillState, {}),
+      await t.mutation(internal.migrations.entryState.stripOldFields, {}),
     ).toEqual({ updated: 0, isDone: true });
   });
 
-  it("picks up what the old code changed after an earlier run", async () => {
-    const t = convexTest(schemaWith(deploy1Entries));
+  it("arms the timer of an entry it left in submitting", async () => {
+    const t = convexTest(schema);
     register(t);
-    const submittedId = await t.run(async (ctx) => {
+    const entryId = await t.run(async (ctx) => {
       const competitionId = await ctx.db.insert("competitions", {
         year: 2026,
-        entriesOpen: false,
+        entriesOpen: true,
         votingOpen: false,
       });
-      const userId = await ctx.db.insert("users", {});
-      const ids = [];
-      for (const row of oldRows(competitionId, userId))
-        ids.push(await ctx.db.insert("entries", row as never));
-      return ids[3];
+      return await ctx.db.insert("entries", {
+        competitionId,
+        submittedByUserId: await ctx.db.insert("users", {}),
+        state: {
+          kind: "submitting",
+          name: "Stuck",
+          houseAddress: { address: "2 Plover Court", placeId: "plover-2" },
+        },
+        stateTimers: [],
+      });
     });
-    await t.mutation(internal.migrations.entryState.backfillState, {});
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
 
-    // Deploy 1's code approves the submitted entry, writing only its old fields
-    await t.run((ctx) =>
-      ctx.db.patch("entries", submittedId, {
-        status: "approved",
-        approvedAt: 5,
-        entryNumber: 12,
-      } as never),
-    );
     expect(
-      await t.mutation(internal.migrations.entryState.backfillState, {}),
+      await t.mutation(internal.migrations.entryTimers.armSubmittingTimers, {}),
     ).toEqual({ updated: 1, isDone: true });
-    const row = await t.run((ctx) => ctx.db.get("entries", submittedId));
-    expect(row?.state).toMatchObject({
-      kind: "approved",
-      approvedAt: 5,
-      entryNumber: 12,
-    });
+    const row = await t.run((ctx) => ctx.db.get(entryId));
+    expect(row?.stateTimers).toEqual([
+      expect.objectContaining({ event: "TIMED_OUT" }),
+    ]);
   });
 });

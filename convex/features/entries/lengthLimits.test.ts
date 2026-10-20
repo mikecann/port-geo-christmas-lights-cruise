@@ -28,8 +28,7 @@ describe("entry text length limits", () => {
     });
 
     expect(await getTheOnlyTestEntry(t)).toMatchObject({
-      name,
-      houseAddress: { address, placeId: "pid" },
+      state: { name, houseAddress: { address, placeId: "pid" } },
     });
   });
 
@@ -84,6 +83,8 @@ describe("entry text length limits", () => {
         },
       ),
     ).rejects.toThrow("The rejection reason must be 1000 characters or fewer.");
-    expect(await getTheOnlyTestEntry(t)).toMatchObject({ status: "submitted" });
+    expect(await getTheOnlyTestEntry(t)).toMatchObject({
+      state: { kind: "submitted" },
+    });
   });
 });

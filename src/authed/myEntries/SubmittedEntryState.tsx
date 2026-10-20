@@ -27,10 +27,11 @@ export default function SubmittedEntryState({
             </Group>
             <Text size="sm" c="dimmed">
               Created {new Date(entry._creationTime).toLocaleDateString()}
-              {"submittedAt" in entry && (
+              {"submittedAt" in entry.state && (
                 <span>
                   {" "}
-                  • Submitted {new Date(entry.submittedAt).toLocaleDateString()}
+                  • Submitted{" "}
+                  {new Date(entry.state.submittedAt).toLocaleDateString()}
                 </span>
               )}
             </Text>
@@ -46,17 +47,17 @@ export default function SubmittedEntryState({
             House Address:
           </Text>
           <Text size="sm" c="dimmed">
-            {entry.houseAddress?.address}
+            {entry.state.houseAddress?.address}
           </Text>
         </div>
 
-        {entry.name && (
+        {entry.state.name && (
           <div>
             <Text size="sm" fw={500} mb={4}>
               Entry Name:
             </Text>
             <Text size="sm" c="dimmed">
-              {entry.name}
+              {entry.state.name}
             </Text>
           </div>
         )}

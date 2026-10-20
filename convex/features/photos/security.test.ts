@@ -16,7 +16,8 @@ describe("photo access", () => {
       const entryId = await ctx.db.insert("entries", {
         competitionId: competition._id,
         submittedByUserId: user._id,
-        status: "draft",
+        state: { kind: "draft" },
+        stateTimers: [],
       });
       await ctx.db.insert("photos", {
         entryId,
@@ -40,12 +41,14 @@ describe("photo access", () => {
       const ownerEntryId = await ctx.db.insert("entries", {
         competitionId: competition._id,
         submittedByUserId: owner._id,
-        status: "draft",
+        state: { kind: "draft" },
+        stateTimers: [],
       });
       await ctx.db.insert("entries", {
         competitionId: competition._id,
         submittedByUserId: attacker._id,
-        status: "draft",
+        state: { kind: "draft" },
+        stateTimers: [],
       });
       const photoId = await ctx.db.insert("photos", {
         entryId: ownerEntryId,

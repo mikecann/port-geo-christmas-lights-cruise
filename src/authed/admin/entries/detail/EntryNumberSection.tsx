@@ -28,7 +28,7 @@ export default function EntryNumberSection({
     api.admin.competition.entries.linkPreviousEntry,
   );
   const [newNumber, setNewNumber] = useState<string | number>(
-    entry.entryNumber ?? "",
+    entry.state.entryNumber ?? "",
   );
   const [isLinkOpen, setIsLinkOpen] = useState(false);
   const [previousEntryId, setPreviousEntryId] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export default function EntryNumberSection({
     isLinkOpen ? {} : "skip",
   );
 
-  if (entry.status === "rejected")
+  if (entry.state.kind === "rejected")
     return (
       <Text size="sm" c="dimmed">
         Rejected entries don't have a number.
@@ -62,7 +62,8 @@ export default function EntryNumberSection({
             variant="light"
             loading={isSettingNumber}
             disabled={
-              typeof newNumber !== "number" || newNumber === entry.entryNumber
+              typeof newNumber !== "number" ||
+              newNumber === entry.state.entryNumber
             }
             onClick={() => {
               if (typeof newNumber === "number")

@@ -12,19 +12,19 @@ export default function ReviewCard({ entry }: { entry: AdminEntry }) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const { photos, submitter } = entry;
 
-  if (entry.status !== "submitted") return null;
+  if (entry.state.kind !== "submitted") return null;
 
   return (
     <Card withBorder radius="md" padding="lg">
       <Stack gap="md">
         <Stack gap={4}>
           <Text fw={600} size="lg">
-            {entry.name}
+            {entry.state.name}
           </Text>
           <Group gap={6} wrap="nowrap">
             <IconMapPin size={14} color="gray" />
             <Text size="sm" c="dimmed">
-              {entry.houseAddress.address}
+              {entry.state.houseAddress.address}
             </Text>
           </Group>
           {submitter?.name && (
@@ -44,7 +44,7 @@ export default function ReviewCard({ entry }: { entry: AdminEntry }) {
             </Group>
           )}
           <Text size="xs" c="dimmed">
-            Sent in {new Date(entry.submittedAt).toLocaleDateString()}
+            Sent in {new Date(entry.state.submittedAt).toLocaleDateString()}
           </Text>
         </Stack>
 
@@ -71,7 +71,7 @@ export default function ReviewCard({ entry }: { entry: AdminEntry }) {
           isNumberOutsideRange={entry.isNumberOutsideRange}
         />
 
-        <ReviewActions entryId={entry._id} entryName={entry.name} />
+        <ReviewActions entryId={entry._id} entryName={entry.state.name} />
         <Anchor
           size="sm"
           ta="center"

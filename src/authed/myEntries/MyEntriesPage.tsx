@@ -70,22 +70,22 @@ export default function MyEntriesPage() {
 
           if (!myEntry) return <NoEntryState previous={previous} />;
 
-          if (myEntry.status == "draft")
+          if (myEntry.state.kind == "draft")
             return <DraftEntryState entry={myEntry} previous={previous} />;
 
-          if (myEntry.status == "submitting")
+          if (myEntry.state.kind == "submitting")
             return <SubmittingEntryState entry={myEntry} />;
 
-          if (myEntry.status == "submitted")
+          if (myEntry.state.kind == "submitted")
             return <SubmittedEntryState entry={myEntry} />;
 
-          if (myEntry.status == "approved")
+          if (myEntry.state.kind == "approved")
             return <ApprovedEntryState entry={myEntry} />;
 
-          if (myEntry.status == "rejected")
+          if (myEntry.state.kind == "rejected")
             return <RejectedEntryState entry={myEntry} />;
 
-          exhaustiveCheck(myEntry);
+          exhaustiveCheck(myEntry.state);
         })}
       </Stack>
 

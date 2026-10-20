@@ -5,6 +5,7 @@ import { convexTest } from "convex-test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import aggregate from "@convex-dev/aggregate/test";
 import resend from "@convex-dev/resend/test";
+import { register as registerStateMachines } from "@convex-dev/state-machines/test";
 import schema from "../../../schema";
 import type { Doc, Id } from "../../../_generated/dataModel";
 import type { MutationCtx } from "../../../_generated/server";
@@ -20,6 +21,7 @@ export const createConvexTest = () => {
   rateLimiter.register(t);
   aggregate.register(t, "aggregateVotes");
   resend.register(t);
+  registerStateMachines(t);
 
   return t;
 };
@@ -126,6 +128,11 @@ export const createTestPhotoObject = async (
   };
 };
 
+// Puts an entry straight into a state, skipping the machine, with sensible
+// defaults. `overrides` are the state's own fields.
+//
+// - moveEntryToStatus(t, { entryId, status: "submitted" })
+// - moveEntryToStatus(t, { entryId, status: "approved", overrides: { name: "Custom Entry Name" } })
 export const moveEntryToStatus = async (
   t: TestOrAuthenticatedConvexTest,
   options: {
@@ -134,21 +141,11 @@ export const moveEntryToStatus = async (
     overrides?: Record<string, unknown>;
   },
 ) => {
-  /**
-   * Helper function to move entries between different statuses with sensible defaults.
-   *
-   * Examples:
-   * - moveEntryToStatus(t, { entryId, status: "submitted" })
-   * - moveEntryToStatus(t, { entryId, status: "submitted", overrides: { houseAddress: "456 Oak St" } })
-   * - moveEntryToStatus(t, { entryId, status: "approved", overrides: { name: "Custom Entry Name" } })
-   */
   const { entryId, status, overrides = {} } = options;
 
   return t.run(async (ctx) => {
-    // Get the current entry to preserve some fields
     const currentEntry = await entries.query(ctx).forEntry(entryId).get();
-    if (!currentEntry)
-      throw new Error(`Entry '${entryId}' not found in moveEntryToStatus`);
+    const current = currentEntry.state;
 
     const baseDefaults = {
       houseAddress: {
@@ -159,73 +156,59 @@ export const moveEntryToStatus = async (
       },
       name: "Test Entry",
     };
+    const { houseAddress: overrideHouseAddress, ...restOverrides } = overrides;
 
-    let newEntry: Record<string, unknown>;
+    let state: Record<string, unknown>;
 
     if (status === "draft")
-      newEntry = {
-        competitionId: currentEntry.competitionId,
-        status: "draft" as const,
-        submittedByUserId: currentEntry.submittedByUserId,
+      state = {
+        kind: "draft",
         houseAddress: {
-          address: currentEntry.houseAddress?.address ?? "123 Main St",
+          address: current.houseAddress?.address ?? "123 Main St",
           placeId: "pid-test",
         },
-        name: currentEntry.name,
+        ...(current.name === undefined ? {} : { name: current.name }),
         ...overrides,
       };
-    else if (status === "submitted") {
-      const { houseAddress: overrideHouseAddress, ...restOverrides } =
-        overrides;
-      const mergedHouseAddress = {
-        ...baseDefaults.houseAddress,
-        ...(overrideHouseAddress || {}),
-      };
-      newEntry = {
-        competitionId: currentEntry.competitionId,
-        status: "submitted" as const,
+    else if (status === "submitted")
+      state = {
+        kind: "submitted",
         submittedAt: Date.now(),
-        submittedByUserId: currentEntry.submittedByUserId,
-        houseAddress: mergedHouseAddress,
-        name: (restOverrides.name as string) || baseDefaults.name,
+        houseAddress: {
+          ...baseDefaults.houseAddress,
+          ...(overrideHouseAddress || {}),
+        },
+        name: baseDefaults.name,
         ...restOverrides,
       };
-    } else if (status === "approved") {
-      const submittedAt =
-        currentEntry.status === "submitted" ||
-        currentEntry.status === "approved"
-          ? currentEntry.submittedAt
-          : Date.now() - 1000; // Default to 1 second ago if not set
-
-      // Get the next available entry number
-      const entryNumber = await entries
-        .mutate(ctx)
-        .getNextAvailableEntryNumber(currentEntry.competitionId);
-
-      const { houseAddress: overrideHouseAddress, ...restOverrides } =
-        overrides;
-      const mergedHouseAddress = {
-        ...baseDefaults.houseAddress,
-        ...(overrideHouseAddress || {}),
-      };
-      newEntry = {
-        competitionId: currentEntry.competitionId,
-        status: "approved" as const,
-        submittedAt,
+    else if (status === "approved")
+      state = {
+        kind: "approved",
+        // Default to 1 second ago if it was never sent in
+        submittedAt:
+          "submittedAt" in current ? current.submittedAt : Date.now() - 1000,
         approvedAt: Date.now(),
-        entryNumber,
-        submittedByUserId: currentEntry.submittedByUserId,
-        houseAddress: mergedHouseAddress,
-        name: (restOverrides.name as string) || baseDefaults.name,
+        entryNumber: await entries
+          .query(ctx)
+          .getNextAvailableEntryNumber(currentEntry.competitionId),
+        houseAddress: {
+          ...baseDefaults.houseAddress,
+          ...(overrideHouseAddress || {}),
+        },
+        name: baseDefaults.name,
         ...restOverrides,
       };
-    } else throw new Error(`Unknown status: ${status}`);
+    else throw new Error(`Unknown status: ${status}`);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await ctx.db.replace(entryId, newEntry as any);
+    await ctx.db.patch(entryId, {
+      state: state as Doc<"entries">["state"],
+      stateTimers: [],
+    });
   });
 };
 
+// A draft by the signed in user, unless `overrides` says otherwise. It's
+// inserted directly, so the machine's start (and its checks) don't run.
 export const createTestEntry = async (
   t: TestOrAuthenticatedConvexTest,
   overrides: Partial<Doc<"entries">> = {},
@@ -236,8 +219,9 @@ export const createTestEntry = async (
     // Create a basic draft entry first
     const entryId = await ctx.db.insert("entries", {
       competitionId: competition._id,
-      status: "draft",
       submittedByUserId: user._id,
+      state: { kind: "draft" },
+      stateTimers: [],
     });
 
     // Apply any overrides if provided (excluding system fields)
@@ -283,7 +267,8 @@ export const createApprovedTestEntryToVoteFor = async (
     return await ctx.db.insert("entries", {
       competitionId: current._id,
       submittedByUserId: await ctx.db.insert("users", entrant),
-      status: "draft",
+      state: { kind: "draft" },
+      stateTimers: [],
     });
   });
   await moveEntryToStatus(t, { entryId, status: "approved" });

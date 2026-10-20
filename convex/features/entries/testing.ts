@@ -285,7 +285,7 @@ export const createMockEntries = async (
 
     const mockData = generateMockEntry(usedAddresses);
     const entryNumber = await entries
-      .mutate(ctx)
+      .query(ctx)
       .getNextAvailableEntryNumber(args.competitionId);
 
     // Generate mock photos
@@ -311,15 +311,21 @@ export const createMockEntries = async (
         mockPath: shuffled[j],
       });
 
+    // Seeds approved entries for testing the site, so it skips the
+    // machine, which only starts entries as drafts
+    // eslint-disable-next-line machines/no-direct-state-writes -- mock data for a test deployment, inserted already approved on purpose
     const entryId = await ctx.db.insert("entries", {
       competitionId: args.competitionId,
-      name: mockData.name,
-      houseAddress: mockData.houseAddress,
-      status: "approved",
       submittedByUserId: testUserId,
-      submittedAt: Date.now(),
-      approvedAt: Date.now(),
-      entryNumber,
+      state: {
+        kind: "approved",
+        name: mockData.name,
+        houseAddress: mockData.houseAddress,
+        submittedAt: Date.now(),
+        approvedAt: Date.now(),
+        entryNumber,
+      },
+      stateTimers: [],
     });
 
     // Create photos separately
