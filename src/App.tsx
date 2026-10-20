@@ -94,6 +94,8 @@ function AdminPage({ route }: { route: Route<typeof routeGroups.admin> }) {
   if (route.name === "adminVotes") return <LazyPages.AdminVotesPage />;
   if (route.name === "adminPeople") return <LazyPages.AdminPeoplePage />;
   if (route.name === "adminSystem") return <LazyPages.AdminDangerZonePage />;
+  if (route.name === "adminMachines")
+    return <LazyPages.AdminMachinesPage entryId={route.params.entry} />;
 
   exhaustiveCheck(route);
 }

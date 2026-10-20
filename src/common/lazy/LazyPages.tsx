@@ -66,3 +66,6 @@ export const AdminPeoplePage = lazy(
 export const AdminDangerZonePage = lazy(
   () => import("../../authed/admin/dangerZone/DangerZonePage"),
 );
+export const AdminMachinesPage = lazy(
+  () => import("../../authed/admin/machines/MachinesPage"),
+);
