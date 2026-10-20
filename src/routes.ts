@@ -61,6 +61,12 @@ export const { RouteProvider, useRoute, routes } = createRouter({
   adminPeople: admin.extend("/people"),
   // System admins only: testing tools and wipes
   adminSystem: admin.extend("/system"),
+  // System admins only: the state machines on live data
+  adminMachines: admin.extend(
+    // The entry it opens on
+    { entry: param.query.optional.string },
+    () => "/machines",
+  ),
 });
 
 export const routeGroups = {
@@ -75,6 +81,7 @@ export const routeGroups = {
     routes.adminVotes,
     routes.adminPeople,
     routes.adminSystem,
+    routes.adminMachines,
   ]),
   map: createGroup([routes.map, routes.mapEntry]),
   entry: createGroup([routes.entry, routes.entryVote]),
@@ -92,5 +99,6 @@ export const routeGroups = {
     routes.adminVotes,
     routes.adminPeople,
     routes.adminSystem,
+    routes.adminMachines,
   ]),
 };

@@ -119,6 +119,14 @@ export default function EntryDetailPage({
         <Group gap="xs">
           <EntryStatusBadge status={entry.state.kind} />
           {!isCurrent && <Badge variant="outline">{detail.year}</Badge>}
+          {me?.isSystemAdmin && (
+            <Anchor
+              size="xs"
+              {...routes.adminMachines({ entry: entry._id }).link}
+            >
+              View in Machines
+            </Anchor>
+          )}
         </Group>
         {entry.state.houseAddress && (
           <Group gap={6} wrap="nowrap">

@@ -119,7 +119,7 @@ For local dev, put `GEO_TOKEN_SECRET=<secret>` in `.dev.vars` (gitignored, read 
 
 ### Admin area
 
-`/admin` is for competition admins (ARG) and system admins. It opens on an overview with the competition's status, switches to open and close entries and voting, and how many entries are waiting for review. The other pages are Entries (the review queue, then every entry), Numbers (the number range and which numbers are taken, kept for returning entrants or free), Votes (the three rankings, flagged votes and the CSV), and People (finding people and making them admins). System admins also get a Danger zone page with the testing tools and wipes.
+`/admin` is for competition admins (ARG) and system admins. It opens on an overview with the competition's status, switches to open and close entries and voting, and how many entries are waiting for review. The other pages are Entries (the review queue, then every entry), Numbers (the number range and which numbers are taken, kept for returning entrants or free), Votes (the three rankings, flagged votes and the CSV), and People (finding people and making them admins). System admins also get a Danger zone page with the testing tools and wipes. They also get Machines (`/admin/machines`), which draws the entry state machine from its rules, counts the entries in each state, shows one entry's state, timers and history, and lists failed timers to rearm. An entry's admin page links to it with "View in Machines".
 
 ### Production deployment
 

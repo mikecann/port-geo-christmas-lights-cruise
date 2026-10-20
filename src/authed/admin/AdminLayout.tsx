@@ -16,6 +16,7 @@ import {
   IconAlertTriangle,
   IconChartBar,
   IconClipboardList,
+  IconGitBranch,
   IconHash,
   IconHome,
   IconShield,
@@ -92,11 +93,19 @@ export default function AdminLayout({
             link: routes.adminSystem(),
             color: "red",
           },
+          {
+            name: "adminMachines",
+            label: "Machines",
+            icon: IconGitBranch,
+            link: routes.adminMachines(),
+          },
         ]
       : []),
   ];
   // An entry's own page sits under Entries
   const activeName = route.name === "adminEntry" ? "adminEntries" : route.name;
+  const isSystemAdminPage =
+    route.name === "adminSystem" || route.name === "adminMachines";
 
   return (
     <Container size="lg" py="md">
@@ -129,7 +138,7 @@ export default function AdminLayout({
         })}
       </Group>
 
-      {route.name === "adminSystem" && !me.isSystemAdmin ? (
+      {isSystemAdminPage && !me.isSystemAdmin ? (
         <Alert variant="light" color="red" icon={<IconShield size={16} />}>
           This page is only for system admins.
         </Alert>
