@@ -236,3 +236,82 @@
   font-weight: 500;
   opacity: 0.85;
 }
+
+/* A vote that's just gone in: a string of lights comes on along the top of
+   its button, left to right, glows a moment, then fades to the calm voted
+   look. Inside the button, which clips, so it never covers the photo or
+   moves the remove popover. They start once the label has slid back in from
+   the loader, as it holds them until then. */
+.voteLights {
+  --vote-lights-start: 150ms;
+
+  position: absolute;
+  top: 6px;
+  inset-inline: 12%;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  animation: vote-lights-settle 200ms ease-in 1000ms both;
+}
+
+.voteBulb {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--bulb-color);
+  box-shadow: 0 0 6px 1px var(--bulb-color);
+  animation: vote-bulb-on 90ms ease-out
+    calc(var(--vote-lights-start) + var(--bulb-index) * 40ms) both;
+}
+
+@keyframes vote-bulb-on {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@keyframes vote-lights-settle {
+  to {
+    opacity: 0;
+  }
+}
+
+[data-celebrate] .votedTick {
+  animation: voted-tick-pop 250ms ease-out;
+}
+
+@keyframes voted-tick-pop {
+  from {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+}
+
+/* Most jolly gives a little wiggle too. rotate, so it doesn't fight the
+   press's translate. */
+.categoryButton[data-celebrate="most_jolly"] {
+  animation: jolly-wiggle 150ms ease-in-out 2;
+}
+
+@keyframes jolly-wiggle {
+  25% {
+    rotate: 2deg;
+  }
+  75% {
+    rotate: -2deg;
+  }
+}
+
+/* Just the tick, no lights or wiggle */
+@media (prefers-reduced-motion: reduce) {
+  .voteLights {
+    display: none;
+  }
+
+  .categoryButton[data-celebrate="most_jolly"] {
+    animation: none;
+  }
+}

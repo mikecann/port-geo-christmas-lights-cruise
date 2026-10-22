@@ -2,6 +2,7 @@
 // what it shows, and the words are kept to what's needed to act.
 import { useId, type ReactElement, type ReactNode, type Ref } from "react";
 import {
+  Box,
   Button,
   Divider,
   Drawer,
@@ -28,8 +29,9 @@ import {
   VOTE_CATEGORY_DETAILS,
   type VoteCategory,
 } from "../../convex/features/votes/schema";
-import type { MyVote } from "./useVoteFlow";
+import type { JustVoted, MyVote } from "./useVoteFlow";
 import type { VoteButtonStatus } from "./voteButtons";
+import { voteBulbColors } from "./bulbs";
 
 // The number as it is on the house sign
 export function SignNumber({
@@ -197,12 +199,33 @@ export function InPersonSwitch({
   );
 }
 
+// A string of lights along the top of a vote button as the vote goes in,
+// coming on left to right then fading into the calm voted look
+function VoteLights({ category }: { category: VoteCategory }) {
+  return (
+    <span className={classes.voteLights} aria-hidden>
+      {voteBulbColors(category).map((color, i) => (
+        <Box
+          key={i}
+          component="span"
+          className={classes.voteBulb}
+          style={{
+            "--bulb-color": `var(--mantine-color-${color})`,
+            "--bulb-index": i,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
 // Calmer once their vote is on this entry
 export function CastVoteButton({
   ref,
   label,
   isVoted,
   isBusy,
+  justVoted,
   disabled,
   onClick,
 }: {
@@ -210,9 +233,11 @@ export function CastVoteButton({
   label: string;
   isVoted: boolean;
   isBusy: boolean;
+  justVoted: JustVoted | null;
   disabled?: boolean;
   onClick: () => void;
 }) {
+  const lit = justVoted?.category === "best_display" ? justVoted : null;
   return (
     <Button
       ref={ref}
@@ -222,11 +247,17 @@ export function CastVoteButton({
       color={isVoted ? "green" : "yellow"}
       variant={isVoted ? "light" : "filled"}
       autoContrast
-      leftSection={isVoted && <IconCheck size={20} aria-hidden />}
+      mod={{ celebrate: lit?.category }}
+      leftSection={
+        isVoted && (
+          <IconCheck size={20} className={classes.votedTick} aria-hidden />
+        )
+      }
       loading={isBusy}
       disabled={disabled}
       onClick={onClick}
     >
+      {lit && <VoteLights key={lit.at} category={lit.category} />}
       {label}
     </Button>
   );
@@ -242,6 +273,7 @@ const CATEGORY_HINTS: Partial<Record<VoteButtonStatus, string>> = {
 export function CategoryVoteButtons({
   status,
   busy,
+  justVoted,
   removing,
   onVote,
   onRemove,
@@ -249,6 +281,7 @@ export function CategoryVoteButtons({
 }: {
   status: (category: VoteCategory) => VoteButtonStatus;
   busy: VoteCategory | null;
+  justVoted: JustVoted | null;
   removing: VoteCategory | null;
   onVote: (category: VoteCategory) => void;
   onRemove: () => void;
@@ -259,6 +292,7 @@ export function CategoryVoteButtons({
       {(["best_display", "most_jolly"] as const).map((category) => {
         const { title, hint } = VOTE_CATEGORY_DETAILS[category];
         const isVoted = status(category) === "voted";
+        const lit = justVoted?.category === category ? justVoted : null;
         return (
           <RemoveVoteConfirm
             key={category}
@@ -274,6 +308,7 @@ export function CategoryVoteButtons({
               color={isVoted ? "green" : "yellow"}
               variant={isVoted ? "light" : "filled"}
               autoContrast
+              mod={{ celebrate: lit?.category }}
               loading={busy === category}
               disabled={busy !== null && busy !== category}
               onClick={() => onVote(category)}
@@ -282,8 +317,15 @@ export function CategoryVoteButtons({
                 label: classes.categoryLabel,
               }}
             >
+              {lit && <VoteLights key={lit.at} category={category} />}
               <span className={classes.categoryTitle}>
-                {isVoted && <IconCheck size={18} aria-hidden />}
+                {isVoted && (
+                  <IconCheck
+                    size={18}
+                    className={classes.votedTick}
+                    aria-hidden
+                  />
+                )}
                 {title}
               </span>
               <span className={classes.categoryHint}>

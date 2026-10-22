@@ -5,6 +5,7 @@ import { usePhotoSrcSet, usePhotoUrl } from "../common/hooks/usePhotoUrl";
 import { VOTE_PHOTO } from "../../shared/photoUrls";
 import { routes } from "../routes";
 import classes from "./VoteScreen.module.css";
+import { BULB_COLORS } from "./bulbs";
 import VoteFlow from "./VoteFlow";
 import { SignNumber, VoteBarLoading } from "./VoteFlowParts";
 import type { VoteFlowEntry } from "./useVoteFlow";
@@ -81,8 +82,6 @@ function VotePhoto({
     </div>
   );
 }
-
-const BULB_COLORS = ["red-6", "green-6", "yellow-5", "blue-5"];
 
 // Bulbs spaced along a drooping string, from one side of the screen to the other
 function lightString(y: number, droop: number, count: number, offset: number) {

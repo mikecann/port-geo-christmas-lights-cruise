@@ -25,6 +25,7 @@ import {
   voteToSend,
 } from "./voteButtons";
 import { showVoteToast } from "./voteToast";
+import { VOTE_LIGHTS_MS } from "./bulbs";
 
 export type VoteFlowEntry = {
   _id: Id<"entries">;
@@ -43,6 +44,10 @@ export const votesOn = (votes: MyVotes, entryId: Id<"entries">) =>
     const vote = votes[category];
     return vote?.entry._id === entryId ? [vote] : [];
   });
+
+// The vote that's just gone in, while its button lights up. When, so a
+// second vote straight after lights up afresh.
+export type JustVoted = { category: VoteCategory; at: number };
 
 // What the location check means for the "seen it in person?" question
 type InPersonCheck = {
@@ -94,6 +99,12 @@ export function useVoteFlow(entry: VoteFlowEntry) {
   const [switching, setSwitching] = useState<VoteCategory | null>(null);
   // The category whose vote here they've tapped, while it asks to remove it
   const [removing, setRemoving] = useState<VoteCategory | null>(null);
+  const [justVoted, setJustVoted] = useState<JustVoted | null>(null);
+  useEffect(() => {
+    if (!justVoted) return;
+    const timer = setTimeout(() => setJustVoted(null), VOTE_LIGHTS_MS);
+    return () => clearTimeout(timer);
+  }, [justVoted]);
 
   const analytics = {
     entry_id: entry._id,
@@ -157,6 +168,9 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     )
       .then(() => {
         setSwitching(null);
+        setJustVoted({ category, at: Date.now() });
+        // A little buzz on Android; iPhones don't let the web do it
+        if ("vibrate" in navigator) navigator.vibrate(12);
         showVoteToast(category, "sent");
       })
       .catch(onApiError)
@@ -240,6 +254,7 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     sawInPerson,
     setSawInPerson,
     busy,
+    justVoted,
     status: (category: VoteCategory) =>
       voteButtonStatus(
         votes,
