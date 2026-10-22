@@ -26,6 +26,8 @@ import {
 } from "./voteButtons";
 import { showVoteToast } from "./voteToast";
 import { VOTE_LIGHTS_MS } from "./bulbs";
+import { playVoteSound, readyVoteSound } from "./voteSound";
+import { tapHaptic, voteBuzz } from "./voteHaptics";
 
 export type VoteFlowEntry = {
   _id: Id<"entries">;
@@ -147,6 +149,14 @@ export function useVoteFlow(entry: VoteFlowEntry) {
       ? seen.answer
       : seenAnswerFromVotes(votes, entry._id);
 
+  // In the tap, as that's the only time the sound can be got ready and an
+  // iPhone will give its little tap
+  const tapToSend = (category: VoteCategory) => {
+    readyVoteSound();
+    tapHaptic();
+    send(category, sawInPerson);
+  };
+
   // Set straight away, unlike isBusy, so a second tap in the same moment
   // can't send it again
   const isSending = useRef(false);
@@ -169,8 +179,8 @@ export function useVoteFlow(entry: VoteFlowEntry) {
       .then(() => {
         setSwitching(null);
         setJustVoted({ category, at: Date.now() });
-        // A little buzz on Android; iPhones don't let the web do it
-        if ("vibrate" in navigator) navigator.vibrate(12);
+        playVoteSound(category);
+        voteBuzz();
         showVoteToast(category, "sent");
       })
       .catch(onApiError)
@@ -267,6 +277,8 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     // check before moving one from another entry
     vote: (category: VoteCategory) => {
       if (state.step === "signedOut") {
+        // Ready for when it sends itself, if they sign in without leaving
+        readyVoteSound();
         pendingVotes.save(entry._id, category, sawInPerson);
         setIsSigningIn(true);
         return;
@@ -282,7 +294,7 @@ export function useVoteFlow(entry: VoteFlowEntry) {
       );
       if (status === "voted") setRemoving(category);
       else if (status === "move") setSwitching(category);
-      else send(category, sawInPerson);
+      else tapToSend(category);
     },
     isSigningIn: isSheetOpen,
     leaveForGoogle: () => pendingVotes.setAtGoogle(true),
@@ -293,7 +305,7 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     // The category whose vote they're moving here, while the sheet asks
     switching: state.step === "choose" ? switching : null,
     confirmSwitch: () => {
-      if (switching) send(switching, sawInPerson);
+      if (switching) tapToSend(switching);
     },
     cancelSwitch: () => setSwitching(null),
     removing: state.step === "choose" ? removing : null,
