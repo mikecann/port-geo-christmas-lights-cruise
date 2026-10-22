@@ -1,7 +1,16 @@
 // The pieces of the vote flow's bottom bar and sheets. Each piece only takes
 // what it shows, and the words are kept to what's needed to act.
-import { useId, type ReactElement, type ReactNode, type Ref } from "react";
 import {
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+  type Ref,
+} from "react";
+import {
+  Box,
   Button,
   Divider,
   Drawer,
@@ -28,8 +37,9 @@ import {
   VOTE_CATEGORY_DETAILS,
   type VoteCategory,
 } from "../../convex/features/votes/schema";
-import type { MyVote } from "./useVoteFlow";
+import type { JustVoted, MyVote } from "./useVoteFlow";
 import type { VoteButtonStatus } from "./voteButtons";
+import { bulbsAroundRect, voteBulbColors, type Point } from "./bulbs";
 
 // The number as it is on the house sign
 export function SignNumber({
@@ -197,12 +207,88 @@ export function InPersonSwitch({
   );
 }
 
+// How far outside the button's edge the bulbs sit, under half the gap
+// between the two category buttons so they never reach the other one, and
+// roughly how far apart they are
+const BULB_OFFSET = 5;
+const BULB_SPACING = 22;
+// How long the lights take to come on all the way round, however many
+const CHASE_MS = 450;
+
+// A string of lights round the outside of a vote button as the vote goes in,
+// coming on round the loop then fading into the calm voted look. Measured
+// once as it lights, so there are as many as fit that button.
+function VoteLights({ category }: { category: VoteCategory }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [bulbs, setBulbs] = useState<Point[]>([]);
+  useLayoutEffect(() => {
+    const button = ref.current?.parentElement?.querySelector("button");
+    if (!button) return;
+    setBulbs(
+      bulbsAroundRect({
+        width: button.offsetWidth,
+        height: button.offsetHeight,
+        radius: parseFloat(getComputedStyle(button).borderTopLeftRadius) || 0,
+        offset: BULB_OFFSET,
+        spacing: BULB_SPACING,
+      }),
+    );
+  }, []);
+  const colors = voteBulbColors(category, bulbs.length);
+  return (
+    <Box
+      ref={ref}
+      component="span"
+      className={classes.voteLights}
+      style={{ "--bulb-step": `${CHASE_MS / Math.max(bulbs.length, 1)}ms` }}
+      aria-hidden
+    >
+      {bulbs.map(({ x, y }, i) => (
+        <Box
+          key={i}
+          component="span"
+          className={classes.voteBulb}
+          style={{
+            left: x,
+            top: y,
+            "--bulb-color": `var(--mantine-color-${colors[i]})`,
+            "--bulb-index": i,
+          }}
+        />
+      ))}
+    </Box>
+  );
+}
+
+// Round a vote button, for its lights, as the button clips what's inside it.
+// Always there, so the button isn't remade (and focus lost) when it lights.
+function VoteLightsFrame({
+  lit,
+  className,
+  children,
+}: {
+  lit: JustVoted | null;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Box
+      className={`${classes.lightsFrame} ${className ?? ""}`}
+      mod={{ celebrate: lit?.category }}
+    >
+      {children}
+      {lit && <VoteLights key={lit.at} category={lit.category} />}
+    </Box>
+  );
+}
+
 // Calmer once their vote is on this entry
 export function CastVoteButton({
   ref,
   label,
   isVoted,
   isBusy,
+  justVoted,
   disabled,
   onClick,
 }: {
@@ -210,25 +296,34 @@ export function CastVoteButton({
   label: string;
   isVoted: boolean;
   isBusy: boolean;
+  justVoted: JustVoted | null;
   disabled?: boolean;
   onClick: () => void;
 }) {
   return (
-    <Button
-      ref={ref}
-      data-testid="cast-vote"
-      size="xl"
-      fullWidth
-      color={isVoted ? "green" : "yellow"}
-      variant={isVoted ? "light" : "filled"}
-      autoContrast
-      leftSection={isVoted && <IconCheck size={20} aria-hidden />}
-      loading={isBusy}
-      disabled={disabled}
-      onClick={onClick}
+    <VoteLightsFrame
+      lit={justVoted?.category === "best_display" ? justVoted : null}
     >
-      {label}
-    </Button>
+      <Button
+        ref={ref}
+        data-testid="cast-vote"
+        size="xl"
+        fullWidth
+        color={isVoted ? "green" : "yellow"}
+        variant={isVoted ? "light" : "filled"}
+        autoContrast
+        leftSection={
+          isVoted && (
+            <IconCheck size={20} className={classes.votedTick} aria-hidden />
+          )
+        }
+        loading={isBusy}
+        disabled={disabled}
+        onClick={onClick}
+      >
+        {label}
+      </Button>
+    </VoteLightsFrame>
   );
 }
 
@@ -242,6 +337,7 @@ const CATEGORY_HINTS: Partial<Record<VoteButtonStatus, string>> = {
 export function CategoryVoteButtons({
   status,
   busy,
+  justVoted,
   removing,
   onVote,
   onRemove,
@@ -249,6 +345,7 @@ export function CategoryVoteButtons({
 }: {
   status: (category: VoteCategory) => VoteButtonStatus;
   busy: VoteCategory | null;
+  justVoted: JustVoted | null;
   removing: VoteCategory | null;
   onVote: (category: VoteCategory) => void;
   onRemove: () => void;
@@ -260,37 +357,49 @@ export function CategoryVoteButtons({
         const { title, hint } = VOTE_CATEGORY_DETAILS[category];
         const isVoted = status(category) === "voted";
         return (
-          <RemoveVoteConfirm
+          <VoteLightsFrame
             key={category}
-            category={category}
-            opened={removing === category}
-            isBusy={busy === category}
-            onRemove={onRemove}
-            onKeep={onKeep}
+            lit={justVoted?.category === category ? justVoted : null}
+            className={classes.categoryCell}
           >
-            <Button
-              data-testid={`vote-${category}`}
-              size="xl"
-              color={isVoted ? "green" : "yellow"}
-              variant={isVoted ? "light" : "filled"}
-              autoContrast
-              loading={busy === category}
-              disabled={busy !== null && busy !== category}
-              onClick={() => onVote(category)}
-              classNames={{
-                root: classes.categoryButton,
-                label: classes.categoryLabel,
-              }}
+            <RemoveVoteConfirm
+              category={category}
+              opened={removing === category}
+              isBusy={busy === category}
+              onRemove={onRemove}
+              onKeep={onKeep}
             >
-              <span className={classes.categoryTitle}>
-                {isVoted && <IconCheck size={18} aria-hidden />}
-                {title}
-              </span>
-              <span className={classes.categoryHint}>
-                {CATEGORY_HINTS[status(category)] ?? hint}
-              </span>
-            </Button>
-          </RemoveVoteConfirm>
+              <Button
+                data-testid={`vote-${category}`}
+                size="xl"
+                fullWidth
+                color={isVoted ? "green" : "yellow"}
+                variant={isVoted ? "light" : "filled"}
+                autoContrast
+                loading={busy === category}
+                disabled={busy !== null && busy !== category}
+                onClick={() => onVote(category)}
+                classNames={{
+                  root: classes.categoryButton,
+                  label: classes.categoryLabel,
+                }}
+              >
+                <span className={classes.categoryTitle}>
+                  {isVoted && (
+                    <IconCheck
+                      size={18}
+                      className={classes.votedTick}
+                      aria-hidden
+                    />
+                  )}
+                  {title}
+                </span>
+                <span className={classes.categoryHint}>
+                  {CATEGORY_HINTS[status(category)] ?? hint}
+                </span>
+              </Button>
+            </RemoveVoteConfirm>
+          </VoteLightsFrame>
         );
       })}
     </Group>

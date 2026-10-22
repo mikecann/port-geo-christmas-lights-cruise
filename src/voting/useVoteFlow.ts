@@ -25,6 +25,9 @@ import {
   voteToSend,
 } from "./voteButtons";
 import { showVoteToast } from "./voteToast";
+import { VOTE_LIGHTS_MS } from "./bulbs";
+import { playVoteSound, readyVoteSound } from "./voteSound";
+import { tapHaptic, voteBuzz } from "./voteHaptics";
 
 export type VoteFlowEntry = {
   _id: Id<"entries">;
@@ -43,6 +46,10 @@ export const votesOn = (votes: MyVotes, entryId: Id<"entries">) =>
     const vote = votes[category];
     return vote?.entry._id === entryId ? [vote] : [];
   });
+
+// The vote that's just gone in, while its button lights up. When, so a
+// second vote straight after lights up afresh.
+export type JustVoted = { category: VoteCategory; at: number };
 
 // What the location check means for the "seen it in person?" question
 type InPersonCheck = {
@@ -94,6 +101,12 @@ export function useVoteFlow(entry: VoteFlowEntry) {
   const [switching, setSwitching] = useState<VoteCategory | null>(null);
   // The category whose vote here they've tapped, while it asks to remove it
   const [removing, setRemoving] = useState<VoteCategory | null>(null);
+  const [justVoted, setJustVoted] = useState<JustVoted | null>(null);
+  useEffect(() => {
+    if (!justVoted) return;
+    const timer = setTimeout(() => setJustVoted(null), VOTE_LIGHTS_MS);
+    return () => clearTimeout(timer);
+  }, [justVoted]);
 
   const analytics = {
     entry_id: entry._id,
@@ -136,6 +149,14 @@ export function useVoteFlow(entry: VoteFlowEntry) {
       ? seen.answer
       : seenAnswerFromVotes(votes, entry._id);
 
+  // In the tap, as that's the only time the sound can be got ready and an
+  // iPhone will give its little tap
+  const tapToSend = (category: VoteCategory) => {
+    readyVoteSound();
+    tapHaptic();
+    send(category, sawInPerson);
+  };
+
   // Set straight away, unlike isBusy, so a second tap in the same moment
   // can't send it again
   const isSending = useRef(false);
@@ -157,6 +178,9 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     )
       .then(() => {
         setSwitching(null);
+        setJustVoted({ category, at: Date.now() });
+        playVoteSound(category);
+        voteBuzz();
         showVoteToast(category, "sent");
       })
       .catch(onApiError)
@@ -240,6 +264,7 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     sawInPerson,
     setSawInPerson,
     busy,
+    justVoted,
     status: (category: VoteCategory) =>
       voteButtonStatus(
         votes,
@@ -252,6 +277,8 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     // check before moving one from another entry
     vote: (category: VoteCategory) => {
       if (state.step === "signedOut") {
+        // Ready for when it sends itself, if they sign in without leaving
+        readyVoteSound();
         pendingVotes.save(entry._id, category, sawInPerson);
         setIsSigningIn(true);
         return;
@@ -267,7 +294,7 @@ export function useVoteFlow(entry: VoteFlowEntry) {
       );
       if (status === "voted") setRemoving(category);
       else if (status === "move") setSwitching(category);
-      else send(category, sawInPerson);
+      else tapToSend(category);
     },
     isSigningIn: isSheetOpen,
     leaveForGoogle: () => pendingVotes.setAtGoogle(true),
@@ -278,7 +305,7 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     // The category whose vote they're moving here, while the sheet asks
     switching: state.step === "choose" ? switching : null,
     confirmSwitch: () => {
-      if (switching) send(switching, sawInPerson);
+      if (switching) tapToSend(switching);
     },
     cancelSwitch: () => setSwitching(null),
     removing: state.step === "choose" ? removing : null,

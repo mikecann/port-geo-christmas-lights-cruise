@@ -236,3 +236,93 @@
   font-weight: 500;
   opacity: 0.85;
 }
+
+/* A vote that's just gone in: a string of lights round the outside of its
+   button comes on in a chase round the loop, glows a moment, then fades to
+   the calm voted look. The frame holds them, as the button clips, and they
+   start once the label has slid back in from the loader. */
+.lightsFrame {
+  position: relative;
+}
+
+/* Each category button fills its half, the pair the same height */
+.categoryCell {
+  display: flex;
+}
+
+.voteLights {
+  --vote-lights-start: 150ms;
+
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  animation: vote-lights-settle 250ms ease-in 1100ms both;
+}
+
+.voteBulb {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background-color: var(--bulb-color);
+  box-shadow: 0 0 6px 1px var(--bulb-color);
+  animation: vote-bulb-on 120ms ease-out
+    calc(var(--vote-lights-start) + var(--bulb-index) * var(--bulb-step)) both;
+}
+
+@keyframes vote-bulb-on {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.3);
+  }
+}
+
+@keyframes vote-lights-settle {
+  to {
+    opacity: 0;
+  }
+}
+
+[data-celebrate] .votedTick {
+  animation: voted-tick-pop 250ms ease-out;
+}
+
+@keyframes voted-tick-pop {
+  from {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+}
+
+/* Most jolly gives a little wiggle too, lights and all. rotate, so it
+   doesn't fight the press's translate. */
+.lightsFrame[data-celebrate="most_jolly"] {
+  animation: jolly-wiggle 150ms ease-in-out 2;
+}
+
+@keyframes jolly-wiggle {
+  25% {
+    rotate: 2deg;
+  }
+  75% {
+    rotate: -2deg;
+  }
+}
+
+/* Just the tick, no lights or wiggle */
+@media (prefers-reduced-motion: reduce) {
+  .voteLights {
+    display: none;
+  }
+
+  .lightsFrame[data-celebrate="most_jolly"] {
+    animation: none;
+  }
+}

@@ -64,6 +64,7 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
         <CategoryVoteButtons
           status={flow.status}
           busy={flow.busy}
+          justVoted={flow.justVoted}
           removing={flow.removing}
           onVote={flow.vote}
           onRemove={flow.confirmRemove}
@@ -81,6 +82,7 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
             label={`${SINGLE_BUTTON_LABELS[bestDisplayStatus]} #${entry.entryNumber}`}
             isVoted={bestDisplayStatus === "voted"}
             isBusy={flow.busy === "best_display"}
+            justVoted={flow.justVoted}
             // Wait for the location check, so the switch shows before they vote,
             // and then for an answer, so nobody is counted as "not seen" by
             // missing it
