@@ -113,18 +113,14 @@ const failedTimer = v.object({
 });
 
 // The catalog's operator functions need its internal brand, so these go
-// through its internal mutations in convex/machines.ts. That makes
-// failedTimers a mutation, so the page asks for it on demand. Its limit
-// counts every scheduled function's failures, not just timers', so this
-// looks well past its default of 100.
-export const failedTimers = systemAdminMutation
+// through its internal functions in convex/machines.ts. failedTimers only
+// reads, so it's a query and the page watches it live.
+export const failedTimers = systemAdminQuery
   .input({})
   .returns(v.array(failedTimer))
   .handler(
     async (context): Promise<(typeof failedTimer.type)[]> =>
-      await context.runMutation(internal.machines.failedTimers, {
-        limit: 1000,
-      }),
+      await context.runQuery(internal.machines.failedTimers, {}),
   )
   .public();
 

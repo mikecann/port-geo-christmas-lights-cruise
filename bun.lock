@@ -151,7 +151,7 @@
 
     "@convex-dev/resend": ["@convex-dev/resend@0.2.9", "", { "dependencies": { "@convex-dev/rate-limiter": "^0.3.0", "@convex-dev/workpool": "^0.4.10", "remeda": "^2.26.0", "resend": "^6.6.0", "svix": "^1.70.0" }, "peerDependencies": { "convex": "^1.43.0", "convex-helpers": "^0.1.106" } }, "sha512-4Qx2PTViSKWrcf+yS+nVZT6WNkz/XHus0xicfSd/eB6S8L6FrJH7dTD0fcToPotCm+6F6FTHpR2cHgDfjRP6KQ=="],
 
-    "@convex-dev/state-machines": ["@convex-dev/state-machines@./vendor/convex-dev-state-machines-0.1.0.tgz", { "dependencies": { "convex-helpers": "0.1.128" }, "peerDependencies": { "convex": "^1.46.0" } }, "sha512-YO2GR+T9z1gFxA6nS2neLtgZDtUDWJH5PbhHA+gAmQvQNOBm4SYD9hyi3q5JMYLuuL8MbCk8c/lPO2knNgfUeA=="],
+    "@convex-dev/state-machines": ["@convex-dev/state-machines@./vendor/convex-dev-state-machines-0.1.0.tgz", { "dependencies": { "convex-helpers": "0.1.128" }, "peerDependencies": { "convex": "^1.46.0" } }, "sha512-ymbGDHvEObYB/po1awgFA9A00IStdYmd/XyB7kzZbYjR07XiJy47AuCn87Br/NVr6YCeEYKcWoEq1Bz6SkwfhA=="],
 
     "@convex-dev/workpool": ["@convex-dev/workpool@0.4.14", "", { "dependencies": { "@convex-dev/batch-worker": "^0.2.2" }, "peerDependencies": { "convex": "^1.36.1", "convex-helpers": "^0.1.94" } }, "sha512-uTgOlLo7/Sv5OYhb6jjQ/+COAgLhOd1sMfHtJbN5qB298SHJQGoUUab66f6kqfEb8ugD1FnkL0oNZmk6fMqkow=="],
 

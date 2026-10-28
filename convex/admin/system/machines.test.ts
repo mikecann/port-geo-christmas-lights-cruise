@@ -82,7 +82,7 @@ describe("the Machines page", () => {
       }),
     ).rejects.toThrow("permission");
     await expect(
-      asCompetitionAdmin.mutation(api.admin.system.machines.failedTimers, {}),
+      asCompetitionAdmin.query(api.admin.system.machines.failedTimers, {}),
     ).rejects.toThrow("permission");
     await expect(
       asCompetitionAdmin.mutation(api.admin.system.machines.rearmTimer, {
@@ -224,7 +224,7 @@ describe("the Machines page", () => {
       ],
     });
     expect(
-      await asAdmin.mutation(api.admin.system.machines.failedTimers, {}),
+      await asAdmin.query(api.admin.system.machines.failedTimers, {}),
     ).toEqual([]);
 
     await asAdmin.mutation(api.admin.system.machines.rearmTimer, {
