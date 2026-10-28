@@ -10,6 +10,7 @@ import { components, internal } from "./_generated/api";
 /* eslint-disable no-restricted-imports -- the catalog wraps Convex's own builders. Nothing it builds touches votes, so the vote aggregate's triggers aren't needed. */
 import {
   internalMutation,
+  internalQuery,
   mutation,
   type MutationCtx,
 } from "./_generated/server";
@@ -23,14 +24,15 @@ import { entry } from "./features/entries/machine";
 // Every state machine in the app, checked together when the app loads. The
 // app's own mutations stay on fluent-convex (features/common/lib.ts) and send
 // role events with their ctx. Only `server` events, purge and the operator's
-// functions below need this catalog's internalMutation, which carries the
-// internal brand.
+// functions below need this catalog's internalMutation and internalQuery,
+// which carry the internal brand.
 export const machines: Machines<typeof schema> = defineMachines(
   schema,
   [entry],
   {
     mutation,
     internalMutation,
+    internalQuery,
     deliver: internal.machines.deliver,
     component: components.stateMachines,
   },
@@ -51,8 +53,9 @@ export const deliver = machines.internalMutation({
   handler: machines.deliver,
 });
 
-// For an operator: timers whose step threw, which stay pending until rearmed
-export const failedTimers = machines.internalMutation({
+// For an operator, or the Machines page watching it live: timers whose step
+// threw, which stay pending until rearmed
+export const failedTimers = machines.internalQuery({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => await machines.failedTimers(ctx, args),
 });
