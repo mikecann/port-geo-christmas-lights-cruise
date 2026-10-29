@@ -1,3 +1,4 @@
+import { initSentry } from "./sentry";
 import { initAnalytics } from "./analytics/client";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -14,6 +15,10 @@ import App from "./App.tsx";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { MeProvider } from "./auth/MeProvider.tsx";
 import { ConfirmationProvider } from "./common/components/confirmation/ConfirmationProvider.tsx";
+
+// Started first, so it's ready as early as possible. An ad blocker stopping
+// the SDK from loading must not break the app.
+initSentry().catch(() => {});
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 

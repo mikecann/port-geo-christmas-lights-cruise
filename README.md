@@ -127,6 +127,10 @@ Production runs on the Convex deployment `shocking-robin-810` in Sydney (`aws-ap
 
 The old US deployment `fortunate-grouse-28` (reference `us-retired`) is still around as a fallback. Until it's deleted, the Convex CLI still treats it as the project's default production deployment, so don't run `npx convex deploy` or `--prod` commands from your machine: use `--deployment production`, or a Sydney deploy key in `CONVEX_DEPLOY_KEY`.
 
+### Error reporting
+
+Browser errors go to the Sentry project `port-geo-xmas-lights` (org `mikec`), tagged `component: web`; the Convex backend's errors reach Sentry through Convex's log stream. `src/sentry.ts` only starts Sentry in a production build served from `portgeochristmascruise.com.au` or `www.`, so `vite dev`, localhost, tests and preview URLs never report. It sends errors only (no tracing, replay or session pings), no IP address, cookies or query strings, only navigation breadcrumbs, and masks emails and phone numbers in error text. The release is the commit being built. The privacy note is on `/analytics.html`.
+
 ### Moving to a new deployment
 
 Uploaded photos save their full file URL, which includes the deployment's host, so after importing an export (with file storage) into a new deployment they still point at the old one. Once the import is done, run this against the new deployment:

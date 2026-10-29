@@ -1,6 +1,19 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { execSync } from "node:child_process";
+
+// Sentry's release: the commit Cloudflare Workers Builds is building, or the
+// local checkout's when building by hand
+function gitSha() {
+  if (process.env.WORKERS_CI_COMMIT_SHA)
+    return process.env.WORKERS_CI_COMMIT_SHA;
+  try {
+    return execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+  } catch {
+    return "unknown";
+  }
+}
 
 // Pages that are lazy-loaded but are often the first page someone sees. An
 // inline script starts their chunks downloading from the HTML, instead of
@@ -72,6 +85,11 @@ function preloadFirstPages(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), cloudflare(), preloadFirstPages()],
+  define: {
+    __SENTRY_RELEASE__: JSON.stringify(
+      `port-geo-xmas-lights@${gitSha().slice(0, 12)}`,
+    ),
+  },
   server: {
     host: true,
   },
