@@ -33,6 +33,7 @@
     "@mantine/hooks": "^9.7.2",
     "@mantine/notifications": "^9.7.2",
     "@mantine/nprogress": "^9.7.2",
+    "@sentry/react": "^11.10.0",
     "@tabler/icons-react": "^3.49.0",
     "@vis.gl/react-google-maps": "^1.10.1",
     "browser-image-compression": "^2.0.2",
