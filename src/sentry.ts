@@ -21,29 +21,44 @@ export async function initSentry() {
     !PRODUCTION_HOSTS.includes(location.hostname)
   )
     return false;
-  // Destructured so the bundler keeps only what init needs
-  const { init } = await import("@sentry/react");
-  init({
-    dsn: DSN,
-    environment: "production",
-    release: __SENTRY_RELEASE__,
-    // Errors only: no tracing, replay or profiling, and no session pings
-    tracesSampleRate: 0,
-    // No IP address, cookies, query strings or request bodies. The default
-    // (userInfo: true) would have Sentry keep each visitor's IP address.
-    dataCollection: {
-      userInfo: false,
-      cookies: false,
-      httpHeaders: { allow: ["User-Agent"] },
-      urlQueryParams: false,
-      httpBodies: [],
-    },
-    integrations: (defaults) =>
-      defaults.filter((integration) => integration.name !== "BrowserSession"),
-    initialScope: { tags: { component: "web" } },
-    beforeBreadcrumb: scrubBreadcrumb,
-    beforeSend: scrubEvent,
-  });
+  // Errors while the SDK downloads (a startup crash, say) are held here and
+  // sent once it's ready, since its own handlers aren't installed until then
+  const early: unknown[] = [];
+  const onError = (event: WindowEventMap["error"]) =>
+    early.push(event.error ?? event.message);
+  const onRejection = (event: PromiseRejectionEvent) =>
+    early.push(event.reason);
+  addEventListener("error", onError);
+  addEventListener("unhandledrejection", onRejection);
+  try {
+    // Destructured so the bundler keeps only what's used
+    const { init, captureException } = await import("@sentry/react");
+    init({
+      dsn: DSN,
+      environment: "production",
+      release: __SENTRY_RELEASE__,
+      // Errors only: no tracing, replay or profiling, and no session pings
+      tracesSampleRate: 0,
+      // No IP address, cookies, query strings or request bodies. The default
+      // (userInfo: true) would have Sentry keep each visitor's IP address.
+      dataCollection: {
+        userInfo: false,
+        cookies: false,
+        httpHeaders: { allow: ["User-Agent"] },
+        urlQueryParams: false,
+        httpBodies: [],
+      },
+      integrations: (defaults) =>
+        defaults.filter((integration) => integration.name !== "BrowserSession"),
+      initialScope: { tags: { component: "web" } },
+      beforeBreadcrumb: scrubBreadcrumb,
+      beforeSend: scrubEvent,
+    });
+    for (const error of early) captureException(error);
+  } finally {
+    removeEventListener("error", onError);
+    removeEventListener("unhandledrejection", onRejection);
+  }
   return true;
 }
 
