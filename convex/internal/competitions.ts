@@ -21,3 +21,16 @@ export const setCurrentEntriesOpen = mutation
     return null;
   })
   .internal();
+
+// Lets a scheduled job open or close voting from the CLI, like entries above
+export const setCurrentVotingOpen = mutation
+  .input({ votingOpen: v.boolean() })
+  .returns(v.null())
+  .handler(async (ctx, input) => {
+    const competition = await competitions.query(ctx).current();
+    await competitions
+      .mutate(ctx)
+      .setVotingOpen(competition._id, input.votingOpen);
+    return null;
+  })
+  .internal();
