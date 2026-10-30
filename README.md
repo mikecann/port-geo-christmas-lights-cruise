@@ -125,7 +125,7 @@ For local dev, put `GEO_TOKEN_SECRET=<secret>` in `.dev.vars` (gitignored, read 
 
 Production runs on the Convex deployment `shocking-robin-810` in Sydney (`aws-ap-southeast-2`, reference `production`), moved from US East on 18 October 2026. Merging to `main` deploys it: the Cloudflare Workers build runs `convex deploy` with a Sydney deploy key in its build variables, then builds the site against it. `convex.portgeochristmascruise.com.au` (HTTP actions, Google sign-in callbacks, the worker's OG lookups) points at Sydney too.
 
-The old US deployment `fortunate-grouse-28` (reference `us-retired`) is still around as a fallback. Until it's deleted, the Convex CLI still treats it as the project's default production deployment, so don't run `npx convex deploy` or `--prod` commands from your machine: use `--deployment production`, or a Sydney deploy key in `CONVEX_DEPLOY_KEY`.
+The old US deployment `fortunate-grouse-28` was deleted on 30 October 2026 (a final export is in `../port-geo-christmas-lights-cruise-backups`), and Sydney is now the project's default production deployment, so `--prod` and `npx convex deploy` both point at it.
 
 ### Error reporting
 
