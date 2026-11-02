@@ -45,7 +45,12 @@ const asNumber = (search: string) => {
 const matchesSearch = (row: NumberRow, search: string) => {
   const text = search.trim().toLowerCase();
   if (!text) return true;
-  return [row.holder?.name, row.reservedFor?.name, row.reservedFor?.email]
+  return [
+    row.holder?.name,
+    row.holder?.email,
+    row.reservedFor?.name,
+    row.reservedFor?.email,
+  ]
     .filter(Boolean)
     .some((value) => value?.toLowerCase().includes(text));
 };
@@ -67,13 +72,18 @@ export default function NumbersPage() {
     searchedNumber === null
       ? board.numbers.filter((row) => matchesSearch(row, search))
       : board.numbers.filter((row) => row.entryNumber === searchedNumber);
+  // Counted within the search, so the chips describe what's listed
   const countFor = (f: Filter) =>
-    board.numbers.filter((row) => matchesFilter(row, f)).length;
+    searched.filter((row) => matchesFilter(row, f)).length;
   const shown =
     searchedNumber === null
       ? searched.filter((row) => matchesFilter(row, filter))
       : searched;
-  const noSignCount = countFor("noSign");
+  // The chip itself depends on the whole board, not the search, so it doesn't
+  // come and go while typing
+  const noSignCount = board.numbers.filter((row) =>
+    matchesFilter(row, "noSign"),
+  ).length;
   const filters: Filter[] = [
     "inUse",
     "kept",
@@ -239,7 +249,7 @@ function NumberTile({
   return (
     <UnstyledButton
       onClick={onPick}
-      aria-label={`Number ${row.entryNumber}: ${label}`}
+      aria-label={`Number ${row.entryNumber}: ${label}${needsAttention(row) ? ", no printed sign" : ""}`}
       aria-pressed={isPicked}
       title={label}
       py={2}

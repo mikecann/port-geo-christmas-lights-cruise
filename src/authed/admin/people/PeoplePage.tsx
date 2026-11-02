@@ -17,9 +17,6 @@ import type { Person } from "../../../../convex/admin/competition/users";
 import { PageHeader } from "../../PageHeader";
 import PersonRow from "./PersonRow";
 
-const isAdmin = (person: Person) =>
-  person.isCompetitionAdmin || person.isSystemAdmin;
-
 export default function PeoplePage() {
   const admins = useQuery(api.admin.competition.users.listAdmins);
   const [search, setSearch] = useState("");
@@ -135,18 +132,17 @@ function SearchResults({ text }: { text: string }) {
   return <PeopleTable people={results} />;
 }
 
-// Newest first. Admins have their own table above, so they're left out here.
+// Newest first. Admins have their own table above, so listPage leaves them out.
 function EveryoneList() {
   const { results, status, loadMore } = usePaginatedQuery(
     api.admin.competition.users.listPage,
     {},
     { initialNumItems: 25 },
   );
-  const people = results.filter((person) => !isAdmin(person));
   if (status === "LoadingFirstPage") return <Spinner />;
   return (
     <Stack gap="xs">
-      {people.length > 0 && <PeopleTable people={people} />}
+      {results.length > 0 && <PeopleTable people={results} />}
       {status === "CanLoadMore" && (
         <Button
           variant="default"

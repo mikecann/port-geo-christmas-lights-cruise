@@ -74,13 +74,21 @@ export const listAdmins = competitionAdminQuery
   )
   .public();
 
-// Newest first
+// Everyone but admins (they're listed by listAdmins), newest first. Filtered
+// here rather than on the page, so every page is full of people to show.
+// There are only a handful of admins, so the filter skips very little.
 export const listPage = competitionAdminQuery
   .input({ paginationOpts: paginationOptsValidator })
   .handler(async (context, input) => {
     const result = await context.db
       .query("users")
       .order("desc")
+      .filter((q) =>
+        q.and(
+          q.neq(q.field("isCompetitionAdmin"), true),
+          q.neq(q.field("isSystemAdmin"), true),
+        ),
+      )
       .paginate(input.paginationOpts);
     return { ...result, page: await toPeople(context, result.page) };
   })

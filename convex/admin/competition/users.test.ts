@@ -59,11 +59,22 @@ describe("admin people", () => {
           name: "Last year",
           email: "last@example.com",
         });
-        await ctx.db.insert("entries", {
+        const lastYearEntryId = await ctx.db.insert("entries", {
           competitionId: past._id,
           submittedByUserId: lastYearEntrantId,
           state: { kind: "draft" },
           stateTimers: [],
+        });
+        // Nor do last year's votes, so the voter's count stays at 2
+        await insertTestVote(ctx, {
+          competitionId: past._id,
+          entryId: lastYearEntryId,
+          votingUserId: voterId,
+          category: "best_display",
+          inPerson: false,
+          sawInPerson: false,
+          locationCheck: "no_location",
+          castAt: Date.now(),
         });
         return { entrantId, entryId, voterId, lastYearEntrantId };
       },
@@ -86,5 +97,7 @@ describe("admin people", () => {
     });
     expect(byId.get(voterId)).toMatchObject({ entry: null, voteCount: 2 });
     expect(byId.get(lastYearEntrantId)).toMatchObject({ entry: null });
+    // Admins have their own list, so the page leaves them out
+    expect(byId.has(admin._id)).toBe(false);
   });
 });

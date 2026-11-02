@@ -99,7 +99,14 @@ export default function PersonRow({ person }: { person: Person }) {
               size="sm"
               c="inherit"
               underline="hover"
-              style={{ whiteSpace: "nowrap" }}
+              miw={0}
+              // A number stays on one line; a draft's name can be long, so it
+              // wraps rather than stretch the table past a phone's width
+              style={
+                person.entry.entryNumber === undefined
+                  ? { overflowWrap: "anywhere" }
+                  : { whiteSpace: "nowrap" }
+              }
             >
               {person.entry.entryNumber === undefined
                 ? person.entry.name || "No name yet"

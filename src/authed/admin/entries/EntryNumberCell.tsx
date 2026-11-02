@@ -12,8 +12,20 @@ export default function EntryNumberCell({
   if (entryNumber === undefined) return <Text c="dimmed">–</Text>;
   if (!isOutsideRange) return <Text>#{entryNumber}</Text>;
   return (
-    <Tooltip label="No printed sign: this number is outside the number range">
-      <Group gap={4} wrap="nowrap">
+    <Tooltip
+      label="No printed sign: this number is outside the number range"
+      events={{ hover: true, focus: true, touch: true }}
+    >
+      {/* Focusable and labelled like InfoTip, so keyboard and screen reader
+          users can find out why it's flagged too */}
+      <Group
+        gap={4}
+        wrap="nowrap"
+        tabIndex={0}
+        role="img"
+        aria-label={`#${entryNumber}, no printed sign`}
+        style={{ cursor: "help" }}
+      >
         <Text c="orange.5" fw={500}>
           #{entryNumber}
         </Text>

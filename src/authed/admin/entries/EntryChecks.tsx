@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { Anchor, Group, Stack, Text, ThemeIcon } from "@mantine/core";
 import {
   IconAlertTriangle,
+  IconCheck,
+  IconHash,
   IconMapPin,
   IconRepeat,
   IconSparkles,
@@ -46,17 +48,21 @@ function Check({
 }
 
 // What a reviewer checks before approving: where the house is, whether
-// they've entered before, and anything that clashes
+// they've entered before, their number, and anything that clashes
 export default function EntryChecks({
   entry,
   previous,
   checks,
   isNumberOutsideRange,
+  showNumber = false,
 }: {
   entry: Doc<"entries">;
   previous: AdminEntryDetail["previous"];
   checks: AdminEntryDetail["checks"];
   isNumberOutsideRange: boolean;
+  // The detail page has the number in its header, so it only wants the line
+  // when something's wrong. Review cards have no header, so they always show it.
+  showNumber?: boolean;
 }) {
   const { location } = checks;
   const mapLink = location && (
@@ -127,16 +133,32 @@ export default function EntryChecks({
         </Check>
       )}
 
-      {/* The number is in the page header, so it's only repeated here when
-          something's wrong with it */}
       {entry.state.kind !== "rejected" &&
-        entry.state.entryNumber !== undefined &&
-        isNumberOutsideRange && (
+        // The clash line above already says which number they get
+        !(
+          checks.previousNumberHeldBy &&
+          previous &&
+          entry.state.entryNumber !== undefined &&
+          !isNumberOutsideRange
+        ) &&
+        (entry.state.entryNumber === undefined ? (
+          showNumber && (
+            <Check tone="info" icon={<IconHash size={14} />}>
+              Gets a free number when you approve it
+            </Check>
+          )
+        ) : isNumberOutsideRange ? (
           <Check tone="warn" icon={<IconAlertTriangle size={14} />}>
             There's no printed sign for #{entry.state.entryNumber}, as it's
             outside the number range.
           </Check>
-        )}
+        ) : (
+          showNumber && (
+            <Check tone="ok" icon={<IconCheck size={14} />}>
+              Number #{entry.state.entryNumber}
+            </Check>
+          )
+        ))}
     </Stack>
   );
 }

@@ -86,6 +86,7 @@ export default function ReviewCard({ entry }: { entry: AdminEntry }) {
               previous={entry.previous}
               checks={entry.checks}
               isNumberOutsideRange={entry.isNumberOutsideRange}
+              showNumber
             />
           </Stack>
         </Grid.Col>
