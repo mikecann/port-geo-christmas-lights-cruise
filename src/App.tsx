@@ -56,7 +56,9 @@ export function AppRoutes() {
   if (routeGroups.authed.has(route))
     return (
       <AuthRequired>
-        <AuthedRoutes route={route} />
+        <LazyPages.AccountShell route={route}>
+          <AuthedRoutes route={route} />
+        </LazyPages.AccountShell>
       </AuthRequired>
     );
 

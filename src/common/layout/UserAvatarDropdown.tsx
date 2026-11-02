@@ -43,10 +43,10 @@ export function UserAvatarDropdown() {
         </Menu.Item>
         <Menu.Divider />
         <Menu.Item component="a" {...routes.myEntries().link}>
-          My Entry
+          My entry
         </Menu.Item>
         <Menu.Item component="a" {...routes.myVotes().link}>
-          My Vote
+          My votes
         </Menu.Item>
         {isAdmin && (
           <Menu.Item component="a" {...routes.admin().link}>
@@ -54,7 +54,7 @@ export function UserAvatarDropdown() {
           </Menu.Item>
         )}
         <Menu.Item component="a" {...routes.settings().link}>
-          Settings
+          Account
         </Menu.Item>
         <Menu.Divider />
         <Menu.Item onClick={() => signOut().catch(onApiError)} color="red">

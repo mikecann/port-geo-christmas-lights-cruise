@@ -6,7 +6,7 @@ import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { useErrorHandler } from "../../../common/errors";
 import { downloadCsv } from "../../../common/utils/csv";
-import { AdminPageHeader } from "../AdminLayout";
+import { PageHeader } from "../../PageHeader";
 import VoteList from "./VoteList";
 import VoteResults from "./VoteResults";
 import { votesToCsv } from "./votesCsv";
@@ -27,7 +27,7 @@ export default function VotesPage() {
 
   return (
     <Stack gap="xl">
-      <AdminPageHeader
+      <PageHeader
         title="Votes"
         info="Who's ahead for the three public prizes, and every vote with where it came from. New Entrants and Judges' Favourites are judged, so they aren't voted on here. Where in-person votes can come from is on Settings."
         actions={

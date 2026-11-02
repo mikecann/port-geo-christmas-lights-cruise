@@ -7,8 +7,8 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const route = useRoute();
-  // The admin area has its own frame (AdminLayout), with a sidebar instead
-  // of the public header and footer, so it's clear you're in the admin
-  if (routeGroups.admin.has(route)) return <>{children}</>;
+  // Signed-in pages (your entry, votes, account and the admin) have their own
+  // frame, AccountShell, with a sidebar instead of the public header and footer
+  if (routeGroups.authed.has(route)) return <>{children}</>;
   return <MainAppShell>{children}</MainAppShell>;
 }

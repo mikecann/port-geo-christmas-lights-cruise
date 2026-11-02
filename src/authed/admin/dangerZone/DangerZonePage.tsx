@@ -9,7 +9,7 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { getConvexDeploymentName } from "../../../common/utils/convex";
-import { AdminPageHeader } from "../AdminLayout";
+import { PageHeader } from "../../PageHeader";
 import DeleteMyEntryButton from "./DeleteMyEntryButton";
 import { GenerateMockVotesButton } from "./GenerateMockButtons";
 import MockDataModal from "./MockDataModal";
@@ -55,7 +55,7 @@ export default function DangerZonePage() {
 
   return (
     <Stack gap="xl">
-      <AdminPageHeader
+      <PageHeader
         title="Danger zone"
         info="Tools for testing and looking after the site. Only system admins can see this page."
       />

@@ -4,7 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { downloadCsv, toCsv } from "../../../common/utils/csv";
 import { useRoute } from "../../../routes";
-import { AdminPageHeader } from "../AdminLayout";
+import { PageHeader } from "../../PageHeader";
 import AllEntries from "./AllEntries";
 
 // Every entry this year. New entries are reviewed on Home; this is for
@@ -17,7 +17,7 @@ export default function EntriesPage() {
 
   return (
     <Stack gap={0}>
-      <AdminPageHeader
+      <PageHeader
         title="Entries"
         info="Click an entry to see everything about it, change its number or manage its photos."
         actions={

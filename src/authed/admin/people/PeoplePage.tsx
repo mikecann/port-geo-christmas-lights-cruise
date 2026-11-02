@@ -12,7 +12,7 @@ import { usePaginatedQuery, useQuery } from "convex/react";
 import { useState } from "react";
 import { useDebounce } from "use-debounce";
 import { api } from "../../../../convex/_generated/api";
-import { AdminPageHeader } from "../AdminLayout";
+import { PageHeader } from "../../PageHeader";
 import PersonRow from "./PersonRow";
 
 export default function PeoplePage() {
@@ -22,7 +22,7 @@ export default function PeoplePage() {
 
   return (
     <Stack gap="xl">
-      <AdminPageHeader
+      <PageHeader
         title="People"
         info="Everyone who has signed in to the site. Make someone an admin here once they've signed in."
       />

@@ -13,7 +13,7 @@ import { usePaginatedQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { InfoTip } from "../AdminLayout";
+import { InfoTip } from "../../PageHeader";
 import { LOCATION_CHECK_LABELS, countsFor, placeName } from "./votesCsv";
 
 // Every vote with where it came from. Flagged votes are ones whose location

@@ -14,7 +14,7 @@ import { IconCircleCheck, IconCircleDashed } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { routes } from "../../../routes";
-import { AdminPageHeader } from "../AdminLayout";
+import { PageHeader } from "../../PageHeader";
 import ReviewCard from "../entries/ReviewCard";
 import { needsAttention } from "../numbers/numberState";
 import CompetitionSwitches from "./CompetitionSwitches";
@@ -96,7 +96,7 @@ export default function HomePage() {
 
   return (
     <Stack gap="xl">
-      <AdminPageHeader title={`${overview.year} competition`} />
+      <PageHeader title={`${overview.year} competition`} />
 
       <Section title="To do">
         {todos.length > 0 ? (

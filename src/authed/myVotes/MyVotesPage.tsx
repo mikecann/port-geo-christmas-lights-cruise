@@ -1,6 +1,5 @@
 import {
-  Container,
-  Title,
+  Box,
   Stack,
   Loader,
   Card,
@@ -10,6 +9,7 @@ import {
   Button,
   Alert,
 } from "@mantine/core";
+import { PageHeader } from "../PageHeader";
 import { useQuery } from "convex/react";
 import { IconTrophy } from "@tabler/icons-react";
 import { api } from "../../../convex/_generated/api";
@@ -30,12 +30,12 @@ export default function MyVotesPage() {
   if (votes === undefined || competition === undefined)
     return (
       <AuthRequired>
-        <Container size="md" py="xl">
+        <Box maw={800} py="xl">
           <Stack align="center">
             <Loader size="lg" />
             <Text c="dimmed">Loading your votes...</Text>
           </Stack>
-        </Container>
+        </Box>
       </AuthRequired>
     );
 
@@ -43,19 +43,21 @@ export default function MyVotesPage() {
 
   return (
     <AuthRequired>
-      <Container size="md" py="xl">
-        <Group justify="space-between" mb="xl">
-          <Title order={1}>My Votes</Title>
-          <Button
-            component="a"
-            {...routes.competitionDetails().link}
-            leftSection={<IconTrophy size={18} />}
-            variant="light"
-            size="sm"
-          >
-            Competition Details
-          </Button>
-        </Group>
+      <Box maw={800}>
+        <PageHeader
+          title="My votes"
+          actions={
+            <Button
+              component="a"
+              {...routes.competitionDetails().link}
+              leftSection={<IconTrophy size={18} />}
+              variant="light"
+              size="sm"
+            >
+              Competition Details
+            </Button>
+          }
+        />
 
         <Stack gap="md">
           {competition.votingOpen ? (
@@ -114,7 +116,7 @@ export default function MyVotesPage() {
             </Button>
           )}
         </Stack>
-      </Container>
+      </Box>
     </AuthRequired>
   );
 }
