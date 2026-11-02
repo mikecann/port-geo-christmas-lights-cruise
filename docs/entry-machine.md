@@ -35,6 +35,7 @@ stateDiagram-v2
   submitted --> submitted : RENUMBER(entryNumber) (server) / setNumber
   submitted --> submitted : LINK_PREVIOUS(previousEntryId) (admin) [isEarlierApprovedEntry, previousNumberIsFree] / linkPrevious
   approved --> approved : RENAME(name) (owner) / rename
+  approved --> rejected : REJECT(rejectedReason) (admin) / reject
   approved --> approved : SET_NUMBER(entryNumber) (admin) [numberIsFree] / setNumber
   approved --> approved : RENUMBER(entryNumber) (server) / setNumber
   approved --> approved : LINK_PREVIOUS(previousEntryId) (admin) [isEarlierApprovedEntry, previousNumberIsFree] / linkPrevious

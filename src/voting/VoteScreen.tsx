@@ -17,16 +17,23 @@ export default function VoteScreen({
   entryNumber,
   entry,
   photo,
+  presumeSeen = false,
 }: {
   entryNumber?: number;
   entry?: VoteFlowEntry;
   photo?: PublicPhoto;
+  // They scanned the sign on the house, so "I've seen it" starts picked
+  presumeSeen?: boolean;
 }) {
   return (
     <div className={classes.screen}>
       <VotePhoto entryNumber={entryNumber} entry={entry} photo={photo} />
       <div className={classes.bar}>
-        {entry ? <VoteFlow entry={entry} /> : <VoteBarLoading />}
+        {entry ? (
+          <VoteFlow entry={entry} presumeSeen={presumeSeen} />
+        ) : (
+          <VoteBarLoading />
+        )}
       </div>
     </div>
   );

@@ -22,6 +22,10 @@ export type EventFacts = {
     ticketSeller: string;
     // The tickets button only shows once this is set
     ticketsUrl: string | null;
+    // Where people board, with a search Google Maps can find
+    departsFrom: { name: string; mapsQuery: string } | null;
+    // How long a cruise takes, as people would say it
+    duration: string | null;
     sailings: Sailing[];
   };
   signCollection: { from: string; to: string; place: string } | null;
@@ -47,6 +51,12 @@ export const event: EventFacts = {
     ticketSeller: "Eventbrite",
     ticketsUrl:
       "https://www.eventbrite.com.au/e/2026-port-geo-christmas-cruise-tickets-2002607083696",
+    departsFrom: {
+      name: "the Port Geographe boat ramp",
+      mapsQuery: "Port Geographe Boat Ramp, Busselton WA",
+    },
+    // Mike's recollection (2 Nov), not confirmed by All Sea Charters yet
+    duration: "about an hour",
     sailings: [
       sailing("2026-12-04", "7:30pm"),
       sailing("2026-12-05", "7:30pm"),

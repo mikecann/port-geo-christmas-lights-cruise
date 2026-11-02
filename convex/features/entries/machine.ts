@@ -121,6 +121,9 @@ export const entry = defineMachine(
       approved: {
         on: {
           RENAME: { effect: "rename" },
+          // Withdrawing an approved entry (e.g. the display turns out to be
+          // unsuitable) is the same as rejecting it, reason and email included
+          REJECT: { to: "rejected", effect: "reject" },
           ...numbering,
         },
       },

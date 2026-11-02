@@ -29,6 +29,7 @@ export default function VoteByNumberPage({
 
   return (
     <VoteScreen
+      presumeSeen
       entryNumber={found.entry.entryNumber}
       entry={found.entry}
       photo={found.photos[0]}

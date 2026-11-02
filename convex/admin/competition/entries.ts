@@ -316,6 +316,8 @@ export const reject = competitionAdminMutation
   .returns(v.null())
   .handler(async (context, input) => {
     const entry = await getCurrentEntry(context, input.entryId);
+    // Rejecting an approved entry withdraws it, and the email says so
+    const wasApproved = entry.state.kind === "approved";
     await entries
       .mutate(context)
       .forEntry(input.entryId)
@@ -328,6 +330,7 @@ export const reject = competitionAdminMutation
       to: user.email,
       entry: await entries.query(context).forEntry(input.entryId).get(),
       rejectedReason: input.rejectedReason,
+      wasApproved,
     });
 
     return null;

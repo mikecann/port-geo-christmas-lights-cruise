@@ -25,8 +25,14 @@ const SINGLE_BUTTON_LABELS = {
 
 // The vote page's bottom bar: everything between seeing an entry and "your
 // vote is in". It stays as it is after a vote, so the other one is a tap away.
-export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
-  const flow = useVoteFlow(entry);
+export default function VoteFlow({
+  entry,
+  presumeSeen = false,
+}: {
+  entry: VoteFlowEntry;
+  presumeSeen?: boolean;
+}) {
+  const flow = useVoteFlow(entry, { presumeSeen });
   const { state } = flow;
 
   if (state.step === "loading") return <VoteBarLoading />;

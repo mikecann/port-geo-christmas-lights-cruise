@@ -86,7 +86,13 @@ export type VoteFlowStep =
   // Signed in, with their votes in each category, on this entry or another
   | ({ step: "choose"; votes: MyVotes } & InPersonCheck);
 
-export function useVoteFlow(entry: VoteFlowEntry) {
+export function useVoteFlow(
+  entry: VoteFlowEntry,
+  // Start on "I've seen it" (they scanned the sign at the house). It's only a
+  // starting answer: it only counts as in person if the location check
+  // passes too, and they can switch it.
+  { presumeSeen = false }: { presumeSeen?: boolean } = {},
+) {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const competition = useQuery(api.public.competitions.current, {});
   const mine = useQuery(
@@ -185,7 +191,7 @@ export function useVoteFlow(entry: VoteFlowEntry) {
   const sawInPerson =
     seen?.entryId === entry._id
       ? seen.answer
-      : seenAnswerFromVotes(votes, entry._id);
+      : (seenAnswerFromVotes(votes, entry._id) ?? (presumeSeen ? true : null));
   // The vote button waits for this, so nobody is counted as "not seen" by
   // missing the question
   const needsSeenAnswer = inPersonAllowed === true && sawInPerson === null;

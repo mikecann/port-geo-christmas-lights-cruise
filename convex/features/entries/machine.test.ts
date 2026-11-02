@@ -136,6 +136,35 @@ describe("the entry machine", () => {
     ]);
   });
 
+  it("lets an admin withdraw an approved entry, keeping its number", async () => {
+    const t = createConvexTest();
+    const { asEntrant, entryId } = await startEntry(t, {
+      name: "Twinkle Town",
+      address: "35 Keel Retreat",
+      placeId: "keel-35",
+    });
+    await asEntrant.action(api.my.entries.submit, {});
+    const asAdmin = signInAsTestUser(
+      t,
+      await createTestUser(t, { user: { isCompetitionAdmin: true } }),
+    );
+    await asAdmin.mutation(api.admin.competition.entries.approve, { entryId });
+    const { entryNumber } = (await getEntry(t, entryId)).state;
+
+    await asAdmin.mutation(api.admin.competition.entries.reject, {
+      entryId,
+      rejectedReason: "The display has been taken down",
+    });
+    expect((await getEntry(t, entryId)).state).toMatchObject({
+      kind: "rejected",
+      rejectedReason: "The display has been taken down",
+      entryNumber,
+    });
+    expect((await historyOf(t, entryId)).slice(-1)).toEqual([
+      "approved REJECT rejected by admin",
+    ]);
+  });
+
   it("goes back to draft when the address can't be found", async () => {
     const t = createConvexTest();
     const { asEntrant, entryId } = await startEntry(t, {
