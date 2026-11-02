@@ -38,7 +38,7 @@ export const email = {
   adminFromAddress:
     "Port Geographic Christmas Cruise Admin <admin@portgeochristmascruise.com.au>",
 
-  replyToAddress: "Anna McRostie <AMcRostie@aigleroyal.com.au>",
+  replyToAddress: "Zaran Oliver <ZOliver@aigleroyal.com.au>",
 
   // Matches the myEntries route in src/routes.ts
   myEntriesUrl() {
