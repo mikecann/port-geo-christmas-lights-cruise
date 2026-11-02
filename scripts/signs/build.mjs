@@ -29,6 +29,7 @@ const root = resolve(here, "../..");
 const outDir = join(root, "work/signs");
 
 const SITE = "https://portgeochristmascruise.com.au";
+const NAVY = "#0b1c3a";
 
 // A0 landscape, in mm
 const W = 1189;
@@ -93,7 +94,7 @@ function qrSvg(text) {
         for (let x = 0; x < size; x++) if (dark(x, y)) cells.add(`${x},${y}`);
       return cells;
     },
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><path d="${d}" fill="#000"/></svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><path d="${d}" fill="${NAVY}"/></svg>`,
   };
 }
 
@@ -101,26 +102,39 @@ const title = readFileSync(join(here, "assets/title.svg"), "utf8");
 const houses = readFileSync(join(here, "assets/houses.svg"), "utf8");
 const font = pathToFileURL(join(here, "fonts/MerriweatherSans.ttf")).href;
 
-// Layout, all in mm. The QR panel is white with a 4-module quiet zone.
-const QR_PANEL = 620;
-const MARGIN = 55;
-const LEFT_W = W - MARGIN * 2 - QR_PANEL - 45;
+// Layout, all in mm. The sign is white from the navy strip to its right
+// edge, so the QR code fills the full height and its white margin (3 modules)
+// runs to the edges of the sign. Bigger squares mean people on the boats have
+// to zoom in less: about 24 mm each, up from 17 mm with a framed panel.
+const QUIET = 3;
+const STRIP_W = W - H;
+const PAD = 30;
+const TEXT_W = STRIP_W - PAD * 2;
+
+// The homepage scene is very wide, with empty hills either side of the
+// houses. Crop to the houses and boat so they're a decent size in the strip.
+const scene = houses.replace(
+  'viewBox="0 0 1900.27 421.71"',
+  'viewBox="480 0 1020 421.71"',
+);
+// The crop is in the scene's own coordinates, so redo it if the art changes
+if (scene === houses) throw new Error("The houses scene's viewBox changed");
 
 function signPage(n) {
   const qr = qrSvg(`${SITE}/v/${n}`);
-  const quiet = 4;
-  const module = QR_PANEL / (qr.size + quiet * 2);
+  const module = H / (qr.size + QUIET * 2);
   return {
     qr,
+    module,
     html: `<section class="sign">
-  <div class="left">
+  <div class="strip">
     <div class="title">${title}</div>
     <div class="entrant">ENTRANT</div>
     <div class="number">${n}</div>
+    <div class="scan">Scan to vote &rarr;</div>
+    <div class="scene">${scene}</div>
   </div>
-  <div class="scene">${houses}</div>
-  <div class="qr" style="padding:${quiet * module}mm">${qr.svg}</div>
-  <div class="scan">Scan to vote</div>
+  <div class="qr" style="padding:${QUIET * module}mm">${qr.svg}</div>
 </section>`,
   };
 }
@@ -129,21 +143,23 @@ const css = `
 @font-face { font-family: "Merriweather Sans"; src: url("${font}"); font-weight: 300 800; }
 @page { size: ${W}mm ${H}mm; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: #0b1c3a; }
+html, body { background: #fff; }
 .sign {
   position: relative; width: ${W}mm; height: ${H}mm; overflow: hidden;
-  background: #0b1c3a; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: "Merriweather Sans"; font-weight: 800;
+  background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: "Merriweather Sans"; font-weight: 800;
   page-break-after: always; break-after: page;
 }
-.left { position: absolute; left: ${MARGIN}mm; top: 45mm; width: ${LEFT_W}mm; }
-.title svg { width: ${LEFT_W}mm; height: auto; display: block; }
-.entrant { margin-top: 22mm; font-size: 62mm; line-height: 1; letter-spacing: 3mm; text-align: center; }
-.number { font-size: 315mm; line-height: 0.82; margin-top: 14mm; text-align: center; letter-spacing: -8mm; }
-.scene { position: absolute; left: 0; bottom: 0; width: ${MARGIN + LEFT_W + 45}mm; }
+.strip { position: absolute; left: 0; top: 0; width: ${STRIP_W}mm; height: ${H}mm; background: ${NAVY}; color: #fff; }
+.strip > div:not(.scene) { position: absolute; left: ${PAD}mm; width: ${TEXT_W}mm; text-align: center; line-height: 1; }
+.title { top: 45mm; }
+.title svg { width: 100%; height: auto; display: block; }
+.entrant { top: 190mm; font-size: 44mm; letter-spacing: 2mm; }
+.number { top: 245mm; font-size: 225mm; line-height: 0.9 !important; letter-spacing: -6mm; }
+.scan { top: 545mm; font-size: 40mm; }
+.scene { position: absolute; left: 0; bottom: 0; width: ${STRIP_W}mm; }
 .scene svg { width: 100%; height: auto; display: block; }
-.qr { position: absolute; right: ${MARGIN}mm; top: 70mm; width: ${QR_PANEL}mm; height: ${QR_PANEL}mm; background: #fff; }
+.qr { position: absolute; right: 0; top: 0; width: ${H}mm; height: ${H}mm; }
 .qr svg { width: 100%; height: 100%; display: block; }
-.scan { position: absolute; right: ${MARGIN}mm; width: ${QR_PANEL}mm; top: ${70 + QR_PANEL + 18}mm; text-align: center; font-size: 52mm; line-height: 1; }
 `;
 
 function htmlDoc(pages) {
