@@ -19,7 +19,7 @@ import type { EntryStateKind } from "../../../../convex/features/entries/schema"
 import { useErrorHandler } from "../../../common/errors";
 import { routes } from "../../../routes";
 import { PageHeader } from "../../PageHeader";
-import { ENTRY_STATUS_COLORS } from "../entries/entryStatus";
+import { ENTRY_STATUS_COLORS } from "../../entryStatus";
 import EntryMachine from "./EntryMachine";
 import FailedTimers from "./FailedTimers";
 import MachineDiagram from "./MachineDiagram";

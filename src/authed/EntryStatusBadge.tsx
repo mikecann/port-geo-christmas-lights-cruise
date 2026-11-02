@@ -1,5 +1,5 @@
 import { Box, Group, Text } from "@mantine/core";
-import type { EntryStateKind } from "../../../../convex/features/entries/schema";
+import type { EntryStateKind } from "../../convex/features/entries/schema";
 import { ENTRY_STATUS_COLORS, ENTRY_STATUS_LABELS } from "./entryStatus";
 
 // A coloured dot and the status in plain words, quieter than a badge so a

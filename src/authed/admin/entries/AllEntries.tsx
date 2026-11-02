@@ -18,7 +18,7 @@ import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { AdminEntryRow } from "../../../../convex/admin/competition/entries";
 import { routes } from "../../../routes";
-import EntryStatusBadge from "./EntryStatusBadge";
+import EntryStatusBadge from "../../EntryStatusBadge";
 
 // "All" leaves out entries nobody has sent in yet: they're often abandoned
 // drafts and would bury the real entries. They have their own chip.

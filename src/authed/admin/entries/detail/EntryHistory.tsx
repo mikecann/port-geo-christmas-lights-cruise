@@ -2,7 +2,7 @@ import { Anchor, Group, Stack, Text, Timeline } from "@mantine/core";
 import type { AdminEntryDetail } from "../../../../../convex/admin/competition/entries";
 import type { Doc } from "../../../../../convex/_generated/dataModel";
 import { routes } from "../../../../routes";
-import EntryStatusBadge from "../EntryStatusBadge";
+import EntryStatusBadge from "../../../EntryStatusBadge";
 
 const when = (time: number) =>
   new Date(time).toLocaleString(undefined, {

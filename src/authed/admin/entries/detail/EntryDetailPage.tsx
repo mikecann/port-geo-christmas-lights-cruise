@@ -28,7 +28,7 @@ import { useConfirmation } from "../../../../common/components/confirmation/useC
 import { useErrorCatchingMutation } from "../../../../common/errors";
 import { routes } from "../../../../routes";
 import EntryChecks from "../EntryChecks";
-import EntryStatusBadge from "../EntryStatusBadge";
+import EntryStatusBadge from "../../../EntryStatusBadge";
 import ReviewActions from "../ReviewActions";
 import EntryHistory from "./EntryHistory";
 import EntryNumberSection from "./EntryNumberSection";

@@ -20,7 +20,7 @@ import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { routes } from "../../../routes";
 import { PageHeader } from "../../PageHeader";
-import { ENTRY_STATUS_LABELS } from "../entries/entryStatus";
+import { ENTRY_STATUS_LABELS } from "../../entryStatus";
 import {
   NUMBER_STATES as STATES,
   needsAttention,
