@@ -65,41 +65,38 @@ export default function EntriesGalleryPage() {
   // Show skeleton grid on initial load instead of loading spinner
   if (results === undefined && isInitialLoad)
     return (
-      <Container size="xl" py="xl">
-        <Stack gap="xl">
-          <Box mb="xl">
+      <Container size="xl" py="lg">
+        <Stack gap="lg">
+          <Box>
             <GalleryHeader />
+            <SearchSection
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              isSearching={false}
+              displayResults={[]}
+              totalCount={totalCount}
+              cachedSearchQuery=""
+            />
           </Box>
-          <SearchSection
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            isSearching={false}
-            displayResults={[]}
-            totalCount={totalCount}
-            cachedSearchQuery=""
-          />
           <SkeletonGrid />
         </Stack>
       </Container>
     );
 
   return (
-    <Container size="xl" py="xl">
-      <Stack gap="xl">
-        {/* Header */}
-        <Box mb="xl">
+    <Container size="xl" py="lg">
+      <Stack gap="lg">
+        <Box>
           <GalleryHeader />
+          <SearchSection
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            isSearching={isSearching}
+            displayResults={displayResults}
+            totalCount={totalCount}
+            cachedSearchQuery={cachedSearchQuery}
+          />
         </Box>
-
-        {/* Search Bar */}
-        <SearchSection
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          isSearching={isSearching}
-          displayResults={displayResults}
-          totalCount={totalCount}
-          cachedSearchQuery={cachedSearchQuery}
-        />
 
         {/* No Results Message */}
         {displayResults.length === 0 && searchQuery && (
