@@ -12,8 +12,7 @@ export default function DeleteMyEntryButton() {
 
   return (
     <Button
-      variant="outline"
-      color="orange"
+      variant="default"
       leftSection={<IconTrash size={16} />}
       onClick={async () => {
         const confirmed = await confirm({

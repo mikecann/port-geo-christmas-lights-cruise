@@ -47,7 +47,7 @@ export default function MockDataModal({
         />
 
         <Group justify="flex-end" mt="md">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="default" onClick={onClose}>
             Cancel
           </Button>
           <Button

@@ -1,9 +1,15 @@
-import { Card, Stack, Text, Group, Badge, Alert } from "@mantine/core";
-import { IconX } from "@tabler/icons-react";
+import { Anchor, Card, Stack, Text } from "@mantine/core";
 import { useQuery } from "convex/react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import PhotoGallery from "./photos/PhotoGallery";
+import EntryCardHeader from "./EntryCardHeader";
+import EntryStatusBadge from "../EntryStatusBadge";
+
+// The rejection email's reply-to, email.replyToAddress in
+// convex/features/email/model.ts. That file pulls in the Resend component, so
+// it can't be imported here.
+const ARG_CONTACT_EMAIL = "ZOliver@aigleroyal.com.au";
 
 interface RejectedEntryStateProps {
   entry: Doc<"entries">;
@@ -11,73 +17,47 @@ interface RejectedEntryStateProps {
 
 export default function RejectedEntryState({ entry }: RejectedEntryStateProps) {
   const photos = useQuery(api.my.photos.list) ?? [];
+  const reason =
+    entry.state.kind === "rejected" ? entry.state.rejectedReason.trim() : "";
 
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder>
       <Stack gap="md">
-        <Group justify="space-between" align="flex-start">
-          <Stack gap={4} style={{ flex: 1 }}>
-            <Text fw={500} size="lg">
-              Your Competition Entry
+        <EntryCardHeader
+          entry={entry}
+          status={<EntryStatusBadge status="rejected" />}
+        />
+
+        <Text size="sm" c="dimmed">
+          {entry.state.houseAddress?.address}
+        </Text>
+
+        {reason && (
+          <Stack gap={4}>
+            <Text size="sm" fw={500}>
+              Why it wasn't approved
             </Text>
-            <Text size="sm" c="dimmed">
-              Created {new Date(entry._creationTime).toLocaleDateString()}
-              {"submittedAt" in entry.state && (
-                <span>
-                  {" "}
-                  • Submitted{" "}
-                  {new Date(entry.state.submittedAt).toLocaleDateString()}
-                </span>
-              )}
-              {"rejectedAt" in entry.state && (
-                <span>
-                  {" "}
-                  • Rejected{" "}
-                  {new Date(entry.state.rejectedAt).toLocaleDateString()}
-                </span>
-              )}
+            <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
+              {reason}
             </Text>
           </Stack>
-          <Badge color="red" variant="light">
-            Rejected
-          </Badge>
-        </Group>
-
-        {/* Entry details */}
-        <div>
-          <Text size="sm" fw={500} mb={4}>
-            House Address:
-          </Text>
-          <Text size="sm" c="dimmed">
-            {entry.state.houseAddress?.address}
-          </Text>
-        </div>
-
-        {entry.state.name && (
-          <div>
-            <Text size="sm" fw={500} mb={4}>
-              Entry Name:
-            </Text>
-            <Text size="sm" c="dimmed">
-              {entry.state.name}
-            </Text>
-          </div>
         )}
 
-        {/* Photos */}
+        <Text size="sm" c="dimmed">
+          Questions, or want us to take another look?{" "}
+          <Anchor
+            href={`mailto:${ARG_CONTACT_EMAIL}?subject=${encodeURIComponent(
+              `My Christmas lights entry${entry.state.name ? `: ${entry.state.name}` : ""}`,
+            )}`}
+          >
+            Reply to the email we sent you
+          </Anchor>
+          .
+        </Text>
+
         {photos.length > 0 && (
-          <div>
-            <Text size="sm" fw={500} mb="sm">
-              Photos
-            </Text>
-            <PhotoGallery photos={photos} showEmptyState={false} />
-          </div>
+          <PhotoGallery photos={photos} showEmptyState={false} />
         )}
-
-        {/* Status information */}
-        <Alert color="red" variant="light" icon={<IconX size={16} />}>
-          Unfortunately, your entry was not approved for the competition.
-        </Alert>
       </Stack>
     </Card>
   );

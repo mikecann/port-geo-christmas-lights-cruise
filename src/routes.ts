@@ -44,7 +44,12 @@ export const { RouteProvider, useRoute, routes } = createRouter({
   tickets: defineRoute("/tickets"),
   competitionDetails: defineRoute("/competition-details"),
   settings: defineRoute("/settings"),
-  myEntries: defineRoute("/my-entries"),
+  myEntries: defineRoute(
+    // "1" starts an entry straight away, so the competition page's sign-in
+    // lands people on their draft instead of another Enter button
+    { start: param.query.optional.string },
+    () => "/my-entries",
+  ),
   myVotes: defineRoute("/my-votes"),
   admin,
   adminEntries: admin.extend(

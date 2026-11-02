@@ -1,14 +1,20 @@
 import {
+  Anchor,
   Card,
   Stack,
   Text,
   Group,
-  Badge,
   TextInput,
   ActionIcon,
   Tooltip,
+  List,
 } from "@mantine/core";
-import { IconEdit, IconCheck, IconX } from "@tabler/icons-react";
+import {
+  IconPencil,
+  IconCheck,
+  IconX,
+  IconChevronRight,
+} from "@tabler/icons-react";
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import type { Doc } from "../../../convex/_generated/dataModel";
@@ -16,7 +22,12 @@ import { api } from "../../../convex/_generated/api";
 import PhotoSection from "./photos/PhotoSection";
 import { useErrorCatchingMutation } from "../../common/errors";
 import { MAX_ENTRY_NAME_LENGTH } from "../../../shared/constants";
-import EntryNumberBadge from "./EntryNumberBadge";
+import { eventForYear } from "../../../shared/event";
+import { routes } from "../../routes";
+import EntryCardHeader from "./EntryCardHeader";
+import EntryStatusBadge from "../EntryStatusBadge";
+import EntryNameLabel from "./EntryNameLabel";
+import { approvedNextSteps } from "./nextSteps";
 
 interface ApprovedEntryStateProps {
   entry: Doc<"entries">;
@@ -26,14 +37,19 @@ export default function ApprovedEntryState({ entry }: ApprovedEntryStateProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(entry.state.name || "");
   const photos = useQuery(api.my.photos.list) ?? [];
+  const competition = useQuery(api.public.competitions.current, {});
+  const steps = approvedNextSteps(
+    competition ? eventForYear(competition.year) : null,
+  );
 
   const [updateEntry, isSaving] = useErrorCatchingMutation(
     api.my.entries.updateApproved,
   );
 
-  const handleSaveName = async () => {
-    if (editedName === entry.state.name) {
-      setIsEditingName(false);
+  const handleSaveName = () => {
+    // An approved entry is on the map by its name, so it can't go blank
+    if (!editedName.trim() || editedName === entry.state.name) {
+      cancelNameEdit();
       return;
     }
 
@@ -48,46 +64,19 @@ export default function ApprovedEntryState({ entry }: ApprovedEntryStateProps) {
 
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder>
-      <Stack gap="sm">
-        <Group justify="space-between" align="flex-start">
-          <Stack gap={4} style={{ flex: 1 }}>
-            <Group gap="sm" align="center">
-              <Text fw={500} size="lg">
-                Your Competition Entry
-              </Text>
-              <EntryNumberBadge entry={entry} />
-            </Group>
-          </Stack>
-          <Badge color="green" variant="light">
-            Approved
-          </Badge>
-        </Group>
-
-        <div>
-          <Group gap="xs" align="center">
-            <Text size="sm" fw={500}>
-              House Address:
-            </Text>
-            <Text size="sm" c="dimmed">
-              {entry.state.houseAddress?.address}
-            </Text>
-          </Group>
-        </div>
-
-        <div>
-          {isEditingName ? (
-            <>
-              <Text size="sm" fw={500} mb={4}>
-                Entry Name
-              </Text>
-              <Group gap="xs" align="flex-end">
+      <Stack gap="md">
+        <EntryCardHeader
+          entry={entry}
+          title={
+            isEditingName ? (
+              <Group gap="xs" align="flex-end" wrap="nowrap">
                 <TextInput
-                  size="sm"
-                  placeholder="Give your display a name (optional)"
+                  label={<EntryNameLabel />}
                   value={editedName}
                   maxLength={MAX_ENTRY_NAME_LENGTH}
                   onChange={(e) => setEditedName(e.currentTarget.value)}
                   style={{ flex: 1 }}
+                  autoFocus
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSaveName();
                     if (e.key === "Escape") cancelNameEdit();
@@ -95,45 +84,74 @@ export default function ApprovedEntryState({ entry }: ApprovedEntryStateProps) {
                 />
                 <ActionIcon
                   variant="light"
-                  color="green"
+                  size="lg"
                   loading={isSaving}
                   onClick={handleSaveName}
+                  aria-label="Save name"
                 >
-                  <IconCheck size={14} />
+                  <IconCheck size={16} />
                 </ActionIcon>
                 <ActionIcon
-                  variant="light"
-                  color="red"
+                  variant="subtle"
+                  color="gray"
+                  size="lg"
                   onClick={cancelNameEdit}
+                  aria-label="Cancel"
                 >
-                  <IconX size={14} />
+                  <IconX size={16} />
                 </ActionIcon>
               </Group>
-            </>
-          ) : (
-            <Group gap="xs" align="center">
-              <Text size="sm" fw={500}>
-                Entry Name:
-              </Text>
-              <Text size="sm" c="dimmed">
-                {entry.state.name || "No name set"}
-              </Text>
-              <Tooltip label="Edit entry name">
-                <ActionIcon
-                  variant="light"
-                  size="sm"
-                  onClick={() => setIsEditingName(true)}
+            ) : (
+              <Group gap={6} wrap="nowrap" align="center">
+                <Text
+                  fw={600}
+                  fz={20}
+                  lh={1.25}
+                  style={{ overflowWrap: "anywhere" }}
                 >
-                  <IconEdit size={12} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-          )}
-        </div>
+                  {entry.state.name || "Your entry"}
+                </Text>
+                <Tooltip label="Change the name">
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="sm"
+                    onClick={() => setIsEditingName(true)}
+                    aria-label="Change the name"
+                  >
+                    <IconPencil size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            )
+          }
+          status={<EntryStatusBadge status="approved" />}
+        />
 
-        <div>
-          <PhotoSection photos={photos} canUpload={true} canRemove={true} />
-        </div>
+        <Text size="sm" c="dimmed">
+          {entry.state.houseAddress?.address}
+        </Text>
+
+        <Stack gap={6}>
+          <Text size="sm" fw={500}>
+            What happens next
+          </Text>
+          <List type="ordered" size="sm" spacing={4}>
+            {steps.map((step) => (
+              <List.Item key={step}>{step}</List.Item>
+            ))}
+          </List>
+          <Anchor
+            size="sm"
+            {...routes.entry({ entryId: entry._id }).link}
+            style={{ display: "inline-flex", alignItems: "center", gap: 2 }}
+          >
+            See it on the site
+            <IconChevronRight size={14} />
+          </Anchor>
+        </Stack>
+
+        <PhotoSection photos={photos} canUpload={true} canRemove={true} />
       </Stack>
     </Card>
   );
