@@ -11,7 +11,7 @@ export default function CompetitionDetailsPage() {
     <Container size="sm" py="xl">
       <Stack gap="xl">
         <Box>
-          <Title order={1} c="#FBAF5D" mb="md">
+          <Title order={1} mb="md">
             Competition Details
           </Title>
           <CompetitionSignUpSection />
