@@ -1,4 +1,4 @@
-import { useConvexAuth, useQuery } from "convex/react";
+import { useConvexAuth, useQueries } from "convex/react";
 import { useState } from "react";
 import { track } from "../analytics/client";
 import { shareLink } from "../analytics/privacy";
@@ -26,9 +26,13 @@ export function useShareEntry(entry: ShareEntry, entryId: Id<"entries">) {
   const { isAuthenticated } = useConvexAuth();
   // Public entries don't say who entered, so it asks whether this one is
   // ours. Only for signed-in visitors, and up front, so sharing never waits
-  // on it and the analytics always have the answer.
-  const mine = useQuery(api.my.entries.find, isAuthenticated ? {} : "skip");
-  const isEntrant = mine?._id === entryId;
+  // on it and the analytics always have the answer. useQueries hands back an
+  // error rather than throwing, so a stale session can't take down this
+  // public page over an analytics detail.
+  const { mine } = useQueries(
+    isAuthenticated ? { mine: { query: api.my.entries.find, args: {} } } : {},
+  ) as { mine?: { _id: string } | null | Error };
+  const isEntrant = !(mine instanceof Error) && mine?._id === entryId;
   const properties: ShareProperties = {
     entry_id: entryId,
     competition_id: entry.competitionId,
