@@ -12,6 +12,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import MyLocationMarker from "./myLocation/marker/MyLocationMarker";
 import { routes } from "../routes";
 import { FitBoundsToEntries } from "./FitBoundsToEntries";
+import { WatchZoom } from "./WatchZoom";
 
 export default function MapPage({
   selectedEntryId,
@@ -28,6 +29,20 @@ export default function MapPage({
   // State for managing marker interactions
   const [hoveredEntryId, setHoveredEntryId] = useState<string | null>(null);
   const endHover = useCallback(() => setHoveredEntryId(null), []);
+  const [isZoomedIn, setIsZoomedIn] = useState(false);
+
+  // Replace rather than push, so the phone's Back button leaves the map
+  // instead of stepping back through every popup that was opened. Both read
+  // the address bar rather than props so they stay stable for the memoised
+  // markers.
+  const selectEntry = useCallback((entryId: string) => {
+    const target = routes.mapEntry({ entryId });
+    if (window.location.pathname !== target.href) target.replace();
+  }, []);
+  const deselect = useCallback(() => {
+    const target = routes.map();
+    if (window.location.pathname !== target.href) target.replace();
+  }, []);
 
   // Prevent scrollbars when map is full-screen
   useEffect(() => {
@@ -61,13 +76,14 @@ export default function MapPage({
             mapTypeId="hybrid"
             mapTypeControl={false}
             mapId="DEMO_MAP_ID"
-            onClick={() => routes.map().push()}
+            onClick={deselect}
             clickableIcons={false}
             streetViewControl={false}
             cameraControl={false}
           >
-            <FitBoundsToEntries entries={entries} />
+            <FitBoundsToEntries entries={entries} skip={!!selectedEntryId} />
             {targetEntry ? <CenterOnEntry entry={targetEntry} /> : null}
+            <WatchZoom onChange={setIsZoomedIn} />
             <MapDebugInfo />
             <CompetitionBoundaryOverlay />
             {entries.map((entry) => (
@@ -76,9 +92,11 @@ export default function MapPage({
                 entry={entry}
                 isHovered={hoveredEntryId === entry.entry._id}
                 isSelected={selectedEntryId === entry.entry._id}
+                compact={!isZoomedIn}
                 onHover={setHoveredEntryId}
                 onHoverEnd={endHover}
                 onClick={selectEntry}
+                onClose={deselect}
               />
             ))}
             <MyLocationMarker />
@@ -88,8 +106,4 @@ export default function MapPage({
       </APIProvider>
     </div>
   );
-}
-
-function selectEntry(entryId: string) {
-  routes.mapEntry({ entryId }).push();
 }

@@ -6,18 +6,23 @@ interface CenterOnEntryProps {
   entry: EntryWithFirstPhoto | null;
 }
 
+// Zoomed in far enough to see the photo pins and the houses
+const HOUSE_ZOOM = 17;
+
 export const CenterOnEntry = ({ entry }: CenterOnEntryProps) => {
   const map = useMap();
+  const lat = entry?.entry.houseAddress.lat;
+  const lng = entry?.entry.houseAddress.lng;
 
+  // Keyed on the position, not the entry object, so a live update to the
+  // entries doesn't yank the map back while someone is panning around
   useEffect(() => {
-    if (!map || !entry) return;
-
-    const address = entry.entry.houseAddress;
-
-    // Center the map on the entry with a good zoom level
-    map.setCenter({ lat: address.lat, lng: address.lng });
-    map.setZoom(17); // Close zoom level to focus on the specific house
-  }, [entry, map]);
+    if (!map || lat === undefined || lng === undefined) return;
+    if ((map.getZoom() ?? 0) < HOUSE_ZOOM) map.setZoom(HOUSE_ZOOM);
+    // Centred, the popup above the pin fits on a phone, and the info window's
+    // own auto-pan nudges it the rest of the way if it doesn't
+    map.setCenter({ lat, lng });
+  }, [map, lat, lng]);
 
   return null;
 };

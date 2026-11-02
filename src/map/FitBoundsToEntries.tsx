@@ -4,19 +4,26 @@ import type { EntryWithFirstPhoto } from "../../convex/public/entries";
 
 interface FitBoundsToEntriesProps {
   entries: EntryWithFirstPhoto[];
+  // Opened on one entry (/map/<id>): CenterOnEntry zooms to it instead, and
+  // fitting everything later would throw that away
+  skip: boolean;
 }
 
-export const FitBoundsToEntries = ({ entries }: FitBoundsToEntriesProps) => {
+// Shows every entry when the map first opens, once
+export const FitBoundsToEntries = ({
+  entries,
+  skip,
+}: FitBoundsToEntriesProps) => {
   const map = useMap();
   const hasInitted = useRef(false);
 
   useEffect(() => {
     if (!map) return;
     if (hasInitted.current) return;
-    if (entries == undefined) return;
 
     hasInitted.current = true;
 
+    if (skip) return;
     if (entries.length === 0) return;
 
     const bounds = new google.maps.LatLngBounds();
@@ -26,8 +33,8 @@ export const FitBoundsToEntries = ({ entries }: FitBoundsToEntriesProps) => {
       bounds.extend({ lat: address.lat, lng: address.lng });
     });
 
-    map.fitBounds(bounds, { top: 20, right: 20, bottom: 20, left: 20 });
-  }, [entries, map, hasInitted]);
+    map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+  }, [entries, map, skip]);
 
   return null;
 };
