@@ -10,6 +10,7 @@ import {
   SIGN_IN_CODE_LIFETIME_MINUTES,
 } from "../../shared/auth";
 import { codeDigits } from "./signInCode";
+import { sentCodes, type SentCode } from "./sentCode";
 
 const RESEND_AFTER_SECONDS = 30;
 
@@ -20,49 +21,6 @@ const SEND_FAILED_MESSAGE =
 // tries), so one message covers them all
 const WRONG_CODE_MESSAGE =
   "That code didn't work. Check it and try again, or send a new one.";
-
-// Which address a code went to, kept for the tab. iPhones often reload the
-// tab while someone is over in Mail fetching the code, which would otherwise
-// put them back at the email step with a code they can't type in.
-const SENT_KEY = "pg-email-code-sent-v1";
-
-type SentCode = { email: string; sentAt: number };
-
-const sentCodes = {
-  read(): SentCode | null {
-    try {
-      const saved: unknown = JSON.parse(
-        window.sessionStorage.getItem(SENT_KEY) ?? "null",
-      );
-      if (typeof saved !== "object" || saved === null) return null;
-      const { email, sentAt } = saved as Record<string, unknown>;
-      if (typeof email !== "string" || typeof sentAt !== "number") return null;
-      // Only while the code still works
-      if (Date.now() - sentAt > SIGN_IN_CODE_LIFETIME_MINUTES * 60_000)
-        return null;
-      return { email, sentAt };
-    } catch {
-      return null;
-    }
-  },
-  save(email: string) {
-    try {
-      window.sessionStorage.setItem(
-        SENT_KEY,
-        JSON.stringify({ email, sentAt: Date.now() } satisfies SentCode),
-      );
-    } catch {
-      /* Storage unavailable: it just won't survive a reload. */
-    }
-  },
-  clear() {
-    try {
-      window.sessionStorage.removeItem(SENT_KEY);
-    } catch {
-      /* Nothing to clear. */
-    }
-  },
-};
 
 const secondsUntilResend = (sent: SentCode | null) =>
   sent
