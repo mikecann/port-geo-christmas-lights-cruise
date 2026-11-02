@@ -1,16 +1,7 @@
-import {
-  Box,
-  Stack,
-  LoadingOverlay,
-  Loader,
-  Button,
-  Group,
-  ActionIcon,
-} from "@mantine/core";
+import { Box, Stack, LoadingOverlay, Loader, Button } from "@mantine/core";
 import { PageHeader } from "../PageHeader";
-import { IconTrophy, IconAlertTriangle } from "@tabler/icons-react";
+import { IconTrophy } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
-import { useDisclosure } from "@mantine/hooks";
 import { api } from "../../../convex/_generated/api";
 import { useMe } from "../../auth/useMeHooks";
 import NoEntryState from "./NoEntryState";
@@ -19,17 +10,16 @@ import SubmittingEntryState from "./SubmittingEntryState";
 import SubmittedEntryState from "./SubmittedEntryState";
 import ApprovedEntryState from "./ApprovedEntryState";
 import RejectedEntryState from "./RejectedEntryState";
-import EntryNameGuidelinesModal from "./EntryNameGuidelinesModal";
 import { exhaustiveCheck, iife } from "../../../shared/misc";
-import { routes } from "../../routes";
+import { routes, useRoute } from "../../routes";
 import PreviousEntrySection from "./PreviousEntrySection";
 
 export default function MyEntriesPage() {
   const me = useMe();
   const myEntry = useQuery(api.my.entries.find);
   const previous = useQuery(api.my.entries.findPrevious);
-  const [modalOpened, { open: openModal, close: closeModal }] =
-    useDisclosure(false);
+  const route = useRoute();
+  const autoStart = route.name === "myEntries" && route.params.start === "1";
 
   if (!me) return null;
 
@@ -42,35 +32,31 @@ export default function MyEntriesPage() {
       <PageHeader
         title="My entry"
         actions={
-          <Group gap="xs">
-            <ActionIcon
-              variant="light"
-              color="yellow"
-              size="lg"
-              onClick={openModal}
-            >
-              <IconAlertTriangle size={18} />
-            </ActionIcon>
-            <Button
-              component="a"
-              {...routes.competitionDetails().link}
-              leftSection={<IconTrophy size={18} />}
-              variant="light"
-              size="sm"
-            >
-              Competition Details
-            </Button>
-          </Group>
+          <Button
+            component="a"
+            {...routes.competitionDetails().link}
+            leftSection={<IconTrophy size={18} />}
+            variant="light"
+            size="sm"
+          >
+            Competition details
+          </Button>
         }
       />
-
-      <EntryNameGuidelinesModal opened={modalOpened} onClose={closeModal} />
 
       <Stack gap="md">
         {iife(() => {
           if (isLoading) return <Loader />;
 
-          if (!myEntry) return <NoEntryState previous={previous} />;
+          if (!myEntry)
+            return (
+              <NoEntryState
+                previous={previous}
+                autoStart={autoStart}
+                // Drop ?start=1 so a reload or Back doesn't start another
+                onAutoStarted={() => routes.myEntries().replace()}
+              />
+            );
 
           if (myEntry.state.kind == "draft")
             return <DraftEntryState entry={myEntry} previous={previous} />;
@@ -91,7 +77,7 @@ export default function MyEntriesPage() {
         })}
       </Stack>
 
-      <PreviousEntrySection previous={previous} />
+      <PreviousEntrySection previous={previous} collapsed={!!myEntry} />
     </Box>
   );
 }

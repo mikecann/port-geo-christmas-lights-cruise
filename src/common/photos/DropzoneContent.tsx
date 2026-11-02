@@ -1,6 +1,7 @@
 import { Group, Text } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
-import { IconUpload, IconX, IconPhoto } from "@tabler/icons-react";
+import { useMediaQuery } from "@mantine/hooks";
+import { IconUpload, IconX, IconPhotoPlus } from "@tabler/icons-react";
 
 interface DropzoneContentProps {
   isUploading: boolean;
@@ -8,44 +9,45 @@ interface DropzoneContentProps {
   remainingPhotos: number;
 }
 
+// Most people add photos from a phone, so it says tap there. With a mouse
+// (admins on a computer, mostly) it says click or drop instead.
 export default function DropzoneContent({
   isUploading,
   uploadingCount,
   remainingPhotos,
 }: DropzoneContentProps) {
+  const hasMouse = useMediaQuery("(hover: hover) and (pointer: fine)");
   return (
     <Group
       justify="center"
-      gap="xl"
-      mih={120}
+      gap="sm"
+      mih={72}
+      wrap="nowrap"
       style={{ pointerEvents: "none" }}
     >
       <Dropzone.Accept>
         <IconUpload
-          size={50}
+          size={28}
           color="var(--mantine-color-blue-6)"
           stroke={1.5}
         />
       </Dropzone.Accept>
       <Dropzone.Reject>
-        <IconX size={50} color="var(--mantine-color-red-6)" stroke={1.5} />
+        <IconX size={28} color="var(--mantine-color-red-6)" stroke={1.5} />
       </Dropzone.Reject>
       <Dropzone.Idle>
-        <IconPhoto size={50} color="var(--mantine-color-dimmed)" stroke={1.5} />
+        <IconPhotoPlus
+          size={28}
+          color="var(--mantine-color-dimmed)"
+          stroke={1.5}
+        />
       </Dropzone.Idle>
 
-      <div>
-        <Text size="lg" inline>
-          {isUploading
-            ? `Uploading ${uploadingCount} photo${uploadingCount === 1 ? "" : "s"}...`
-            : "Drag photos here or click to select"}
-        </Text>
-        <Text size="sm" c="dimmed" inline mt={7}>
-          {isUploading
-            ? "Please wait while your photos are being resized and uploaded"
-            : `${remainingPhotos} photo${remainingPhotos === 1 ? "" : "s"} remaining`}
-        </Text>
-      </div>
+      <Text size="sm">
+        {isUploading
+          ? `Uploading ${uploadingCount} photo${uploadingCount === 1 ? "" : "s"}…`
+          : `${hasMouse ? "Click or drop photos here" : "Tap to add photos"} (up to ${remainingPhotos})`}
+      </Text>
     </Group>
   );
 }

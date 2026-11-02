@@ -2,44 +2,57 @@ import { AspectRatio, Center, Loader, Stack, Text } from "@mantine/core";
 import { Carousel } from "@mantine/carousel";
 import "@mantine/carousel/styles.css";
 import { IconPhoto } from "@tabler/icons-react";
-import { useState } from "react";
-import Autoplay from "embla-carousel-autoplay";
 import type { PublicEntry } from "../../convex/features/entries/schema";
 import { usePhotoUrl } from "../common/hooks/usePhotoUrl";
 import { api } from "../../convex/_generated/api";
 import { useQuery } from "convex/react";
 import type { PublicPhoto } from "../../convex/features/photos/schema";
+import { routes } from "../routes";
 
-function PhotoSlide({ photo }: { photo: PublicPhoto }) {
+const HEIGHT = 140;
+
+function PhotoSlide({
+  photo,
+  entry,
+}: {
+  photo: PublicPhoto;
+  entry: PublicEntry;
+}) {
   const imageUrl = usePhotoUrl(photo, { size: "sm" }); // Small size for map carousel
   if (!imageUrl) return null;
 
   return (
     <Carousel.Slide>
-      <AspectRatio ratio={16 / 10}>
+      {/* Tapping the photo opens the entry. Embla swallows the click after a
+          swipe, so swiping between photos doesn't navigate. */}
+      <a
+        {...routes.entry({ entryId: entry._id }).link}
+        style={{ display: "block", height: HEIGHT }}
+      >
         <img
           src={imageUrl}
-          alt="Entry photo"
+          alt={entry.name}
           loading="lazy"
           decoding="async"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-          }}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
-      </AspectRatio>
+      </a>
     </Carousel.Slide>
   );
 }
 
+// No autoplay: photos sliding by on their own while you read is distracting
 export default function EntryMarkerCarousel({ entry }: { entry: PublicEntry }) {
   const photos = useQuery(api.public.photos.listForEntry, {
     entryId: entry._id,
   });
-  const [autoplay] = useState(() => Autoplay({ delay: 3000 }));
 
-  if (!photos) return <Loader />;
+  if (!photos)
+    return (
+      <Center h={HEIGHT}>
+        <Loader size="sm" />
+      </Center>
+    );
 
   if (photos.length === 0)
     return (
@@ -59,16 +72,13 @@ export default function EntryMarkerCarousel({ entry }: { entry: PublicEntry }) {
     <Carousel
       withIndicators={photos.length > 1}
       withControls={photos.length > 1}
-      height={160}
+      height={HEIGHT}
       emblaOptions={{
         loop: photos.length > 1,
         dragFree: false,
         align: "center",
       }}
-      plugins={[autoplay]}
-      onMouseEnter={() => autoplay.stop()}
-      onMouseLeave={() => autoplay.play()}
-      controlSize={28}
+      controlSize={26}
       style={{
         "--carousel-control-bg": "rgba(0, 0, 0, 0.6)",
         "--carousel-control-color": "white",
@@ -78,7 +88,7 @@ export default function EntryMarkerCarousel({ entry }: { entry: PublicEntry }) {
       }}
     >
       {photos.map((photo) => (
-        <PhotoSlide key={photo._id} photo={photo} />
+        <PhotoSlide key={photo._id} photo={photo} entry={entry} />
       ))}
     </Carousel>
   );

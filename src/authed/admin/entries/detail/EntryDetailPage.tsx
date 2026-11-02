@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Alert,
   Anchor,
@@ -28,7 +28,7 @@ import { useConfirmation } from "../../../../common/components/confirmation/useC
 import { useErrorCatchingMutation } from "../../../../common/errors";
 import { routes } from "../../../../routes";
 import EntryChecks from "../EntryChecks";
-import EntryStatusBadge from "../EntryStatusBadge";
+import EntryStatusBadge from "../../../EntryStatusBadge";
 import ReviewActions from "../ReviewActions";
 import EntryHistory from "./EntryHistory";
 import EntryNumberSection from "./EntryNumberSection";
@@ -67,6 +67,7 @@ export default function EntryDetailPage({
 }) {
   const detail = useQuery(api.admin.competition.entries.get, { entryId });
   const me = useMe();
+  const [isNumberOpen, setIsNumberOpen] = useState(false);
 
   const backLink = (
     <Anchor {...routes.adminEntries().link} size="sm">
@@ -95,26 +96,40 @@ export default function EntryDetailPage({
     );
 
   const { entry, submitter, isCurrent } = detail;
+  const hasNumber =
+    entry.state.kind !== "rejected" && entry.state.entryNumber !== undefined;
+  // Rejected entries give their number back, and past years are a record
+  const canChangeNumber = isCurrent && entry.state.kind !== "rejected";
 
   return (
     <Stack gap="lg">
       {backLink}
 
       <Stack gap={6}>
-        <Group gap="sm">
-          {entry.state.kind !== "rejected" &&
-            entry.state.entryNumber !== undefined && (
-              <Badge
-                size="xl"
-                variant="light"
-                color={detail.isNumberOutsideRange ? "orange" : "blue"}
-              >
-                #{entry.state.entryNumber}
-              </Badge>
-            )}
+        <Group gap="sm" align="baseline">
+          {hasNumber && (
+            <Text
+              fz={{ base: 22, sm: 28 }}
+              fw={700}
+              lh={1.2}
+              c={detail.isNumberOutsideRange ? "orange.5" : undefined}
+            >
+              #{entry.state.entryNumber}
+            </Text>
+          )}
           <Text component="h1" fz={{ base: 22, sm: 28 }} fw={700} lh={1.2}>
             {entry.state.name || "No name yet"}
           </Text>
+          {canChangeNumber && !isNumberOpen && (
+            <Anchor
+              component="button"
+              type="button"
+              size="xs"
+              onClick={() => setIsNumberOpen(true)}
+            >
+              {hasNumber ? "Change number" : "Set number"}
+            </Anchor>
+          )}
         </Group>
         <Group gap="xs">
           <EntryStatusBadge status={entry.state.kind} />
@@ -137,6 +152,16 @@ export default function EntryDetailPage({
           </Group>
         )}
       </Stack>
+
+      {canChangeNumber && isNumberOpen && (
+        <Card withBorder radius="md" padding="lg">
+          <EntryNumberSection
+            key={`${entry._id}-${entry.state.entryNumber}`}
+            entry={entry}
+            onClose={() => setIsNumberOpen(false)}
+          />
+        </Card>
+      )}
 
       {!isCurrent && (
         <Alert color="blue" variant="light" icon={<IconInfoCircle size={16} />}>
@@ -207,18 +232,6 @@ export default function EntryDetailPage({
           )}
         </Section>
       </SimpleGrid>
-
-      {isCurrent && (
-        <Section
-          title="Number"
-          help="Entrants keep the same number every year, because the signs are reused."
-        >
-          <EntryNumberSection
-            key={`${entry._id}-${entry.state.entryNumber}`}
-            entry={entry}
-          />
-        </Section>
-      )}
 
       <Section
         title="Photos"

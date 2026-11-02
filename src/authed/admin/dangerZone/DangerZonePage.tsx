@@ -91,7 +91,7 @@ export default function DangerZonePage() {
       >
         <SendTestEmailButton />
         <Button
-          variant="outline"
+          variant="default"
           leftSection={<IconPlus size={16} />}
           onClick={() => setMockDataModalOpen(true)}
         >

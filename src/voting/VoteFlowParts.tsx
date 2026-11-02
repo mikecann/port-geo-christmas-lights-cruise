@@ -10,6 +10,7 @@ import {
   type Ref,
 } from "react";
 import {
+  Anchor,
   Box,
   Button,
   Divider,
@@ -22,15 +23,19 @@ import {
   Text,
   VisuallyHidden,
 } from "@mantine/core";
-import {
-  IconArrowRight,
-  IconArrowsLeftRight,
-  IconCheck,
-} from "@tabler/icons-react";
+import { IconArrowRight, IconCheck, IconDialpad } from "@tabler/icons-react";
 import switchClasses from "./InPersonSwitch.module.css";
 import classes from "./VoteScreen.module.css";
-import { eventForYear, formatDate } from "../../shared/event";
+import { eventForYear } from "../../shared/event";
+import {
+  SEEN_IN_PERSON_REQUIRED_MESSAGE,
+  VOTE_CATEGORY_NAMES,
+  votingClosedCopy,
+  type VotingPhase,
+} from "../../shared/voting";
 import { isSignupDisabled } from "../common/auth";
+import { InfoTip } from "../authed/PageHeader";
+import { routes } from "../routes";
 import { EmailCodeSignIn } from "../auth/EmailCodeSignIn";
 import { GoogleSignInButton } from "../auth/GoogleSignInButton";
 import {
@@ -69,19 +74,22 @@ export function VoteBarLoading() {
   );
 }
 
-export function VotingClosedNotice({ year }: { year: number }) {
-  const voting = eventForYear(year)?.voting;
+export function VotingClosedNotice({
+  phase,
+  year,
+}: {
+  phase: Exclude<VotingPhase, "open">;
+  year: number;
+}) {
+  const { title, detail } = votingClosedCopy(phase, eventForYear(year));
   return (
     <Stack data-testid="voting-closed" gap={4} align="center" py="md">
       <Text fw={700} size="lg">
-        Voting is closed
+        {title}
       </Text>
-      {voting && (
-        <Text size="sm" c="dimmed">
-          Open {formatDate(voting.opens, true)} to{" "}
-          {formatDate(voting.closes, true)}
-        </Text>
-      )}
+      <Text size="sm" c="dimmed" ta="center">
+        {detail}
+      </Text>
     </Stack>
   );
 }
@@ -100,7 +108,7 @@ export function OwnEntryNotice() {
 }
 
 const categoryName = (category: VoteCategory) =>
-  VOTE_CATEGORY_DETAILS[category].title.toLowerCase();
+  VOTE_CATEGORY_NAMES[category].inSentence;
 
 // Their votes for other entries in the categories they can vote in here
 export function VotedForOtherEntries({ votes }: { votes: MyVote[] }) {
@@ -124,13 +132,17 @@ export function VotedForOtherEntries({ votes }: { votes: MyVote[] }) {
 export function InPersonSlot({
   inPersonAllowed,
   canRetryLocation,
+  peoplesChoiceReason,
   value,
+  nudgedAt,
   onChange,
   onRetry,
 }: {
   inPersonAllowed: boolean | null;
   canRetryLocation: boolean;
+  peoplesChoiceReason: string | null;
   value: boolean | null;
+  nudgedAt: number | null;
   onChange: (value: boolean | null) => void;
   onRetry: () => void;
 }) {
@@ -145,13 +157,16 @@ export function InPersonSlot({
         </Group>
       )}
       {inPersonAllowed === true && (
-        <InPersonSwitch value={value} onChange={onChange} />
+        <InPersonSwitch value={value} nudgedAt={nudgedAt} onChange={onChange} />
       )}
       {inPersonAllowed === false && (
         <>
-          <Text size="sm" c="dimmed">
-            Counts for People's Choice only
-          </Text>
+          <Group gap={6} justify="center">
+            <Text size="sm" c="dimmed">
+              Counts for People's Choice only
+            </Text>
+            {peoplesChoiceReason && <InfoTip>{peoplesChoiceReason}</InfoTip>}
+          </Group>
           {canRetryLocation && (
             <Button variant="subtle" size="compact-sm" onClick={onRetry}>
               Check my location again
@@ -164,45 +179,65 @@ export function InPersonSlot({
 }
 
 // Three stops, with "not answered" in the middle, so nobody is counted as
-// "not seen" just because they missed it
+// "not seen" just because they missed it. The chosen answer gets a plain
+// fill, as green on these buttons means "voted".
 export function InPersonSwitch({
   value,
+  nudgedAt,
   onChange,
 }: {
   value: boolean | null;
+  // When they tapped Vote without answering, to point the switch out
+  nudgedAt: number | null;
   onChange: (value: boolean | null) => void;
 }) {
   const labelId = useId();
+  const isNudged = nudgedAt !== null && value === null;
   return (
     <Stack gap={6} w="100%">
-      <Text id={labelId} size="sm" fw={600} ta="center">
-        Seen it in person?
+      <Text
+        id={labelId}
+        size="sm"
+        fw={600}
+        ta="center"
+        c={isNudged ? "yellow" : undefined}
+        aria-live="polite"
+      >
+        {isNudged ? SEEN_IN_PERSON_REQUIRED_MESSAGE : "Seen it in person?"}
       </Text>
-      <SegmentedControl
-        data-testid="seen-in-person"
-        aria-labelledby={labelId}
-        fullWidth
-        size="md"
-        radius="xl"
-        classNames={switchClasses}
-        mod={{ unset: value === null }}
-        color={value === null ? undefined : value ? "green" : "blue"}
-        value={value === null ? "unset" : value ? "seen" : "notSeen"}
-        onChange={(next) => onChange(next === "unset" ? null : next === "seen")}
-        data={[
-          { value: "seen", label: "I've seen it" },
-          {
-            value: "unset",
-            label: (
-              <>
-                <IconArrowsLeftRight size={18} aria-hidden />
-                <VisuallyHidden>Not answered yet</VisuallyHidden>
-              </>
-            ),
-          },
-          { value: "notSeen", label: "I haven't seen it" },
-        ]}
-      />
+      {/* Keyed on the tap, so a second tap plays the pulse again */}
+      <Box
+        key={nudgedAt ?? "calm"}
+        className={switchClasses.frame}
+        mod={{ nudged: isNudged }}
+      >
+        <SegmentedControl
+          data-testid="seen-in-person"
+          aria-labelledby={labelId}
+          fullWidth
+          size="md"
+          radius="xl"
+          classNames={switchClasses}
+          mod={{ unset: value === null }}
+          value={value === null ? "unset" : value ? "seen" : "notSeen"}
+          onChange={(next) =>
+            onChange(next === "unset" ? null : next === "seen")
+          }
+          data={[
+            { value: "seen", label: "I've seen it" },
+            {
+              value: "unset",
+              label: (
+                <>
+                  <span className={switchClasses.dot} aria-hidden />
+                  <VisuallyHidden>Not answered yet</VisuallyHidden>
+                </>
+              ),
+            },
+            { value: "notSeen", label: "I haven't seen it" },
+          ]}
+        />
+      </Box>
     </Stack>
   );
 }
@@ -290,6 +325,7 @@ export function CastVoteButton({
   isBusy,
   justVoted,
   disabled,
+  isWaiting,
   onClick,
 }: {
   ref?: Ref<HTMLButtonElement>;
@@ -298,6 +334,8 @@ export function CastVoteButton({
   isBusy: boolean;
   justVoted: JustVoted | null;
   disabled?: boolean;
+  // Looks greyed out but still takes a tap, to say what it's waiting for
+  isWaiting?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -319,6 +357,10 @@ export function CastVoteButton({
         }
         loading={isBusy}
         disabled={disabled}
+        // No aria-disabled: it does something when tapped (points at the
+        // question), so a screen reader shouldn't announce it as dead
+        mod={{ waiting: isWaiting }}
+        className={classes.castVote}
         onClick={onClick}
       >
         {label}
@@ -332,7 +374,7 @@ const CATEGORY_HINTS: Partial<Record<VoteButtonStatus, string>> = {
   update: "Update my vote",
 };
 
-// Best display and Most jolly side by side, for people who've seen it. A tick
+// Best display and Most Jolly side by side, for people who've seen it. A tick
 // marks the ones they've voted for this entry.
 export function CategoryVoteButtons({
   status,
@@ -354,7 +396,8 @@ export function CategoryVoteButtons({
   return (
     <Group grow gap="xs" wrap="nowrap" align="stretch">
       {(["best_display", "most_jolly"] as const).map((category) => {
-        const { title, hint } = VOTE_CATEGORY_DETAILS[category];
+        const { hint } = VOTE_CATEGORY_DETAILS[category];
+        const { title } = VOTE_CATEGORY_NAMES[category];
         const isVoted = status(category) === "voted";
         return (
           <VoteLightsFrame
@@ -491,16 +534,22 @@ function BottomSheet({
 // sends itself once they're in.
 export function SignInSheet({
   opened,
+  entryNumber,
   onGoogle,
   onClose,
 }: {
   opened: boolean;
+  entryNumber: number;
   onGoogle: () => void;
   onClose: () => void;
 }) {
   return (
     <BottomSheet opened={opened} onClose={onClose} title="Sign in to vote">
       <Stack gap="sm">
+        {/* So signing in doesn't feel like a detour that loses their vote */}
+        <Text size="sm" c="dimmed">
+          Your vote for #{entryNumber} goes in as soon as you're signed in.
+        </Text>
         <GoogleSignInButton
           returnTo={window.location.pathname + window.location.search}
           signupDisabled={isSignupDisabled()}
@@ -591,5 +640,62 @@ export function SwitchVoteSheet({
         </Stack>
       </Stack>
     </BottomSheet>
+  );
+}
+
+// Their location couldn't be confirmed even after a few tries, so nothing was
+// sent. The buttons stay as they were; People's Choice is only ever their
+// choice, never a quiet fallback.
+export function LocationFailedNotice({
+  canVotePeoplesChoice,
+  onRetry,
+  onPeoplesChoice,
+}: {
+  canVotePeoplesChoice: boolean;
+  onRetry: () => void;
+  onPeoplesChoice: () => void;
+}) {
+  return (
+    <Stack gap={6} align="center" role="alert" data-testid="location-failed">
+      <Text size="sm" ta="center">
+        We couldn't confirm your location, so your vote hasn't gone in.
+      </Text>
+      <Group gap="xs" justify="center">
+        <Button variant="light" size="compact-md" onClick={onRetry}>
+          Try again
+        </Button>
+        {canVotePeoplesChoice && (
+          <Button
+            variant="subtle"
+            color="gray"
+            size="compact-md"
+            onClick={onPeoplesChoice}
+          >
+            Count it for People's Choice
+          </Button>
+        )}
+      </Group>
+    </Stack>
+  );
+}
+
+// Once they've voted here: on to the next sign, which is what most people on
+// the boat want, or the list
+export function AfterVoteLinks() {
+  return (
+    <Group gap="md" justify="center">
+      <Button
+        component="a"
+        variant="light"
+        size="sm"
+        leftSection={<IconDialpad size={18} aria-hidden />}
+        {...routes.voteLanding().link}
+      >
+        Another number
+      </Button>
+      <Anchor size="sm" {...routes.entries().link}>
+        All displays
+      </Anchor>
+    </Group>
   );
 }

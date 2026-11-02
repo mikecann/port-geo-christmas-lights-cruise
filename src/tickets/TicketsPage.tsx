@@ -40,6 +40,8 @@ export default function TicketsPage() {
           </Stack>
         </Card>
 
+        {/* TODO(Mike): add where the boat leaves from and how long a cruise
+            takes once ARG confirm them. Not guessed here on purpose. */}
         <Card withBorder radius="md" p="xl">
           <Title order={2} size="h3" mb="md">
             {event.year} cruise times

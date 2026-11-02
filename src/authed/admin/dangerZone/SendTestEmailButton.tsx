@@ -11,8 +11,7 @@ export default function SendTestEmailButton() {
 
   return (
     <Button
-      variant="outline"
-      color="green"
+      variant="default"
       leftSection={<IconMail size={16} />}
       onClick={async () => {
         if (!(await sendTestEmail({}))) return;

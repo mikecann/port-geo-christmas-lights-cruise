@@ -54,11 +54,15 @@ export default function EntryChecks({
   previous,
   checks,
   isNumberOutsideRange,
+  showNumber = false,
 }: {
   entry: Doc<"entries">;
   previous: AdminEntryDetail["previous"];
   checks: AdminEntryDetail["checks"];
   isNumberOutsideRange: boolean;
+  // The detail page has the number in its header, so it only wants the line
+  // when something's wrong. Review cards have no header, so they always show it.
+  showNumber?: boolean;
 }) {
   const { location } = checks;
   const mapLink = location && (
@@ -138,24 +142,22 @@ export default function EntryChecks({
           !isNumberOutsideRange
         ) &&
         (entry.state.entryNumber === undefined ? (
-          <Check tone="info" icon={<IconHash size={14} />}>
-            Gets a free number when you approve it
+          showNumber && (
+            <Check tone="info" icon={<IconHash size={14} />}>
+              Gets a free number when you approve it
+            </Check>
+          )
+        ) : isNumberOutsideRange ? (
+          <Check tone="warn" icon={<IconAlertTriangle size={14} />}>
+            There's no printed sign for #{entry.state.entryNumber}, as it's
+            outside the number range.
           </Check>
         ) : (
-          <Check
-            tone={isNumberOutsideRange ? "warn" : "ok"}
-            icon={
-              isNumberOutsideRange ? (
-                <IconAlertTriangle size={14} />
-              ) : (
-                <IconCheck size={14} />
-              )
-            }
-          >
-            Number #{entry.state.entryNumber}
-            {isNumberOutsideRange &&
-              ". There's no printed sign for this number, as it's outside the number range."}
-          </Check>
+          showNumber && (
+            <Check tone="ok" icon={<IconCheck size={14} />}>
+              Number #{entry.state.entryNumber}
+            </Check>
+          )
         ))}
     </Stack>
   );

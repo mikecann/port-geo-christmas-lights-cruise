@@ -10,6 +10,7 @@ import {
   SIGN_IN_CODE_LIFETIME_MINUTES,
 } from "../../shared/auth";
 import { codeDigits } from "./signInCode";
+import { sentCodes, type SentCode } from "./sentCode";
 
 const RESEND_AFTER_SECONDS = 30;
 
@@ -21,17 +22,26 @@ const SEND_FAILED_MESSAGE =
 const WRONG_CODE_MESSAGE =
   "That code didn't work. Check it and try again, or send a new one.";
 
+const secondsUntilResend = (sent: SentCode | null) =>
+  sent
+    ? Math.max(
+        0,
+        Math.ceil(RESEND_AFTER_SECONDS - (Date.now() - sent.sentAt) / 1000),
+      )
+    : 0;
+
 // Signing in moves the page on by itself (see SignInPage), so this only has
 // to get the code checked. Compact is the vote page's sheet, which keeps the
 // words to a minimum.
 export function EmailCodeSignIn({ compact = false }: { compact?: boolean }) {
   const { signIn } = useAuthActions();
-  const [email, setEmail] = useState("");
-  const [sentTo, setSentTo] = useState<string>();
+  const [restored] = useState(sentCodes.read);
+  const [email, setEmail] = useState(restored?.email ?? "");
+  const [sentTo, setSentTo] = useState(restored?.email);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string>();
   const [isBusy, setIsBusy] = useState(false);
-  const [resendIn, setResendIn] = useState(0);
+  const [resendIn, setResendIn] = useState(() => secondsUntilResend(restored));
   const resendLabel = compact ? "Resend" : "Resend code";
 
   useEffect(() => {
@@ -46,6 +56,7 @@ export function EmailCodeSignIn({ compact = false }: { compact?: boolean }) {
     authStarted();
     try {
       await signIn(EMAIL_CODE_PROVIDER_ID, { email: address });
+      sentCodes.save(address);
       setSentTo(address);
       setCode("");
       setResendIn(RESEND_AFTER_SECONDS);
@@ -67,7 +78,10 @@ export function EmailCodeSignIn({ compact = false }: { compact?: boolean }) {
         email: sentTo,
         code: value,
       });
-      if (signingIn) return;
+      if (signingIn) {
+        sentCodes.clear();
+        return;
+      }
     } catch (checkError) {
       message = getErrorMessage(checkError, WRONG_CODE_MESSAGE);
     }
@@ -177,6 +191,7 @@ export function EmailCodeSignIn({ compact = false }: { compact?: boolean }) {
             variant="subtle"
             size="compact-sm"
             onClick={() => {
+              sentCodes.clear();
               setSentTo(undefined);
               setCode("");
               setError(undefined);

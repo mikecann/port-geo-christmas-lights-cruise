@@ -45,12 +45,11 @@ export function useGeoToken() {
     setStatus("checking");
     setAttempt((count) => count + 1);
   }, []);
+  // A vote that can't get its own token leaves the page's check as it was:
+  // that check passed, and dropping it would hide the in-person buttons and
+  // quietly turn their next tap into a People's Choice vote
   const forVote = useCallback(() => voteTokens.current.forVote(), []);
-  // A vote couldn't get a token either, so offer the retry again
-  const markFailed = useCallback(() => {
-    setToken(null);
-    setStatus("failed");
-  }, []);
+  const ifQuick = useCallback(() => voteTokens.current.ifQuick(), []);
 
-  return { token, status, retry, forVote, markFailed };
+  return { token, status, retry, forVote, ifQuick };
 }

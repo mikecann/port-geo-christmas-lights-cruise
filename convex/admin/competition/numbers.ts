@@ -20,18 +20,27 @@ export const list = competitionAdminQuery
 
     const holders = new Map<
       number,
-      { entryId: Id<"entries">; name: string; status: EntryStateKind }
+      {
+        entryId: Id<"entries">;
+        name: string;
+        status: EntryStateKind;
+        // So the page's search finds holders by email, like Entries does
+        email?: string;
+      }
     >();
     for (const entry of competitionEntries)
       if (
         entry.state.kind !== "rejected" &&
         entry.state.entryNumber !== undefined
-      )
+      ) {
+        const submitter = await context.db.get(entry.submittedByUserId);
         holders.set(entry.state.entryNumber, {
           entryId: entry._id,
           name: entry.state.name ?? "",
           status: entry.state.kind,
+          email: submitter?.email,
         });
+      }
 
     // Only while entries are open, so this is empty once they close
     const [previousCompetition] = await competitions

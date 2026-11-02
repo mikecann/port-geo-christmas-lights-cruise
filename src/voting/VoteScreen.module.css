@@ -326,3 +326,11 @@
     animation: none;
   }
 }
+
+/* Waiting for the seen-it answer: grey but still takes a tap, so it can
+   point at the question. Solid colours rather than opacity keep the label
+   readable. */
+.castVote[data-waiting] {
+  background-color: var(--mantine-color-dark-5);
+  color: var(--mantine-color-gray-4);
+}

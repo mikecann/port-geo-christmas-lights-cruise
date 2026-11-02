@@ -184,12 +184,14 @@ describe("pendingVoteAction", () => {
     votes: { ...noVotes, ...votes },
     inPersonAllowed,
     canRetryLocation: false,
+    peoplesChoiceReason: null,
   });
 
   const signedOut: VoteFlowStep = {
     step: "signedOut",
     inPersonAllowed: true,
     canRetryLocation: false,
+    peoplesChoiceReason: null,
   };
   const pending = (
     sawInPerson: boolean | null,
@@ -276,9 +278,28 @@ describe("pendingVoteAction", () => {
     );
   });
 
-  it("drops Most Jolly when the location check rules out seeing it", () => {
+  it("hands Most Jolly back when the location check rules out seeing it", () => {
     expect(
       pendingVoteAction(choose(false), fromGoogle(true, "most_jolly"), false),
+    ).toBe("notInPerson");
+  });
+
+  it("never quietly sends an \"I've seen it\" vote as People's Choice", () => {
+    expect(pendingVoteAction(choose(false), fromGoogle(true), false)).toBe(
+      "notInPerson",
+    );
+    expect(pendingVoteAction(choose(false), inSheet(true), true)).toBe(
+      "notInPerson",
+    );
+    // Not seen it, so People's Choice is what they asked for
+    expect(pendingVoteAction(choose(false), fromGoogle(false), false)).toBe(
+      "send",
+    );
+  });
+
+  it('drops a Most Jolly vote without an "I\'ve seen it"', () => {
+    expect(
+      pendingVoteAction(choose(true), fromGoogle(false, "most_jolly"), false),
     ).toBe("drop");
   });
 
@@ -288,7 +309,7 @@ describe("pendingVoteAction", () => {
     ).toBe("drop");
     expect(
       pendingVoteAction(
-        { step: "closed", year: 2026 },
+        { step: "closed", phase: "finished", year: 2026 },
         fromGoogle(true),
         false,
       ),

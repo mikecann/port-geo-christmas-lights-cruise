@@ -36,7 +36,8 @@ export default function CompetitionSignUpSection() {
                   data-testid="competition-sign-in"
                   component="a"
                   {...routes.signin({
-                    returnTo: window.location.pathname + window.location.search,
+                    // Straight on to a new draft once they're signed in
+                    returnTo: routes.myEntries({ start: "1" }).href,
                   }).link}
                   size="lg"
                   color="#FBAF5D"
@@ -70,7 +71,9 @@ function AuthenticatedContent({ entriesOpen }: { entriesOpen: boolean }) {
       </Text>
       <Button
         component="a"
-        {...routes.myEntries().link}
+        // A new entrant's draft starts as soon as the page opens
+        {...(hasEntry ? routes.myEntries() : routes.myEntries({ start: "1" }))
+          .link}
         size="lg"
         color="#FBAF5D"
       >

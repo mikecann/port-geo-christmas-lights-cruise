@@ -1,16 +1,19 @@
 import { Anchor, Button, Group, Modal, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import type { ReactNode } from "react";
 
 interface EntrySignupUnavailableButtonProps {
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   color?: string;
   link?: boolean;
+  label?: ReactNode;
 }
 
 export default function EntrySignupUnavailableButton({
   size = "md",
   color,
   link = false,
+  label = "Enter Competition",
 }: EntrySignupUnavailableButtonProps) {
   const [opened, { open, close }] = useDisclosure(false);
 
@@ -21,15 +24,15 @@ export default function EntrySignupUnavailableButton({
           component="button"
           type="button"
           onClick={open}
-          c="gray.4"
-          td="none"
-          style={{ fontSize: 14, textAlign: "left" }}
+          c="gray.3"
+          size="sm"
+          style={{ textAlign: "left" }}
         >
-          Enter Competition
+          {label}
         </Anchor>
       ) : (
         <Button onClick={open} size={size} color={color}>
-          Enter Competition
+          {label}
         </Button>
       )}
       <Modal

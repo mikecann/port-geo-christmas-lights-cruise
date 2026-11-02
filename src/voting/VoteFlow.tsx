@@ -1,11 +1,12 @@
-import { Anchor, Stack } from "@mantine/core";
+import { Stack } from "@mantine/core";
 import { VOTE_CATEGORIES } from "../../convex/features/votes/schema";
-import { routes } from "../routes";
 import { useVoteFlow, votesOn, type VoteFlowEntry } from "./useVoteFlow";
 import {
+  AfterVoteLinks,
   CastVoteButton,
   CategoryVoteButtons,
   InPersonSlot,
+  LocationFailedNotice,
   OwnEntryNotice,
   RemoveVoteConfirm,
   SignInSheet,
@@ -29,15 +30,14 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
   const { state } = flow;
 
   if (state.step === "loading") return <VoteBarLoading />;
-  if (state.step === "closed") return <VotingClosedNotice year={state.year} />;
+  if (state.step === "closed")
+    return <VotingClosedNotice phase={state.phase} year={state.year} />;
   if (state.step === "ownEntry") return <OwnEntryNotice />;
 
   const votes = state.step === "choose" ? state.votes : null;
   const isHere = (vote: { entry: { _id: string } } | null | undefined) =>
     vote?.entry._id === entry._id;
   const hasVotedHere = votes ? votesOn(votes, entry._id).length > 0 : false;
-  const needsSeenAnswer =
-    state.inPersonAllowed === true && flow.sawInPerson === null;
   // Most Jolly is only for people who've seen it, so only they get both
   const canVoteMostJolly =
     state.inPersonAllowed === true && flow.sawInPerson === true;
@@ -56,7 +56,9 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
       <InPersonSlot
         inPersonAllowed={state.inPersonAllowed}
         canRetryLocation={state.canRetryLocation}
+        peoplesChoiceReason={state.peoplesChoiceReason}
         value={flow.sawInPerson}
+        nudgedAt={flow.nudgedAt}
         onChange={flow.setSawInPerson}
         onRetry={flow.retryLocation}
       />
@@ -83,21 +85,29 @@ export default function VoteFlow({ entry }: { entry: VoteFlowEntry }) {
             isVoted={bestDisplayStatus === "voted"}
             isBusy={flow.busy === "best_display"}
             justVoted={flow.justVoted}
-            // Wait for the location check, so the switch shows before they vote,
-            // and then for an answer, so nobody is counted as "not seen" by
-            // missing it
-            disabled={state.inPersonAllowed === null || needsSeenAnswer}
+            // Wait for the location check, so the switch shows before they
+            // vote, and then for an answer, so nobody is counted as "not
+            // seen" by missing it. That wait still takes a tap, to say so.
+            disabled={state.inPersonAllowed === null}
+            isWaiting={flow.needsSeenAnswer}
             onClick={() => flow.vote("best_display")}
           />
         </RemoveVoteConfirm>
       )}
-      {hasVotedHere && (
-        <Anchor size="sm" ta="center" {...routes.entries().link}>
-          All displays
-        </Anchor>
+      {flow.locationFailed && (
+        <LocationFailedNotice
+          canVotePeoplesChoice={
+            flow.locationFailed === "best_display" &&
+            bestDisplayStatus !== "update"
+          }
+          onRetry={flow.retryVote}
+          onPeoplesChoice={flow.voteAsPeoplesChoice}
+        />
       )}
+      {hasVotedHere && !flow.locationFailed && <AfterVoteLinks />}
       <SignInSheet
         opened={flow.isSigningIn}
+        entryNumber={entry.entryNumber}
         onGoogle={flow.leaveForGoogle}
         onClose={flow.cancelSignIn}
       />

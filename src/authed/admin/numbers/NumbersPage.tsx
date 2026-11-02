@@ -1,53 +1,64 @@
 import {
-  Alert,
   Anchor,
-  Badge,
   Box,
   Card,
   Center,
+  Chip,
   Group,
   Loader,
-  Paper,
-  SegmentedControl,
   SimpleGrid,
   Stack,
+  Table,
   Text,
+  TextInput,
   UnstyledButton,
 } from "@mantine/core";
-import { IconAlertTriangle, IconInfoCircle } from "@tabler/icons-react";
+import { IconSearch } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { routes } from "../../../routes";
-import { PageHeader } from "../../PageHeader";
-import { ENTRY_STATUS_LABELS } from "../entries/entryStatus";
+import { InfoTip, PageHeader } from "../../PageHeader";
+import EntryStatusBadge from "../../EntryStatusBadge";
+import EntryNumberCell from "../entries/EntryNumberCell";
 import {
   NUMBER_STATES as STATES,
+  collapseRuns,
   needsAttention,
   stateOf,
   type NumberRow,
   type NumberState as State,
 } from "./numberState";
 
-// The grid shows every number, so the list starts on the ones in use
-const FILTERS = [
-  { value: "taken", label: "Taken" },
-  { value: "kept", label: "Kept" },
-  { value: "free", label: "Free" },
-  { value: "attention", label: "Flagged" },
-];
+type Filter = State | "noSign";
 
-const matchesFilter = (row: NumberRow, filter: string) => {
-  const state = stateOf(row);
-  if (filter === "taken") return state === "used" || state === "pending";
-  if (filter === "kept") return state === "kept";
-  if (filter === "free") return state === "free";
-  return needsAttention(row);
+const matchesFilter = (row: NumberRow, filter: Filter) =>
+  filter === "noSign" ? needsAttention(row) : stateOf(row) === filter;
+
+// A plain number finds just that number whatever the filter, which is also
+// how tapping a tile in the grid works
+const asNumber = (search: string) => {
+  const text = search.trim().replace(/^#/, "");
+  return /^\d+$/.test(text) ? Number(text) : null;
+};
+
+const matchesSearch = (row: NumberRow, search: string) => {
+  const text = search.trim().toLowerCase();
+  if (!text) return true;
+  return [
+    row.holder?.name,
+    row.holder?.email,
+    row.reservedFor?.name,
+    row.reservedFor?.email,
+  ]
+    .filter(Boolean)
+    .some((value) => value?.toLowerCase().includes(text));
 };
 
 export default function NumbersPage() {
   const board = useQuery(api.admin.competition.numbers.list);
-  const [filter, setFilter] = useState("taken");
+  const [filter, setFilter] = useState<Filter>("inUse");
+  const [search, setSearch] = useState("");
 
   if (!board)
     return (
@@ -56,166 +67,283 @@ export default function NumbersPage() {
       </Center>
     );
 
-  const count = (state: State) =>
-    board.numbers.filter((row) => stateOf(row) === state).length;
-  const flagged = board.numbers.filter(needsAttention);
-  const shown = board.numbers.filter((row) => matchesFilter(row, filter));
+  const searchedNumber = asNumber(search);
+  const searched =
+    searchedNumber === null
+      ? board.numbers.filter((row) => matchesSearch(row, search))
+      : board.numbers.filter((row) => row.entryNumber === searchedNumber);
+  // Counted within the search, so the chips describe what's listed
+  const countFor = (f: Filter) =>
+    searched.filter((row) => matchesFilter(row, f)).length;
+  const shown =
+    searchedNumber === null
+      ? searched.filter((row) => matchesFilter(row, filter))
+      : searched;
+  // The chip itself depends on the whole board, not the search, so it doesn't
+  // come and go while typing
+  const noSignCount = board.numbers.filter((row) =>
+    matchesFilter(row, "noSign"),
+  ).length;
+  const filters: Filter[] = [
+    "inUse",
+    "kept",
+    "free",
+    // Only worth a chip when there's something to sort out
+    ...(noSignCount > 0 ? (["noSign"] as const) : []),
+  ];
+  // Free numbers have nothing to show but the number, so they're one line
+  const showFreeAsLine = searchedNumber === null && filter === "free";
 
   return (
-    <Stack gap="xl">
+    <Stack gap="md">
       <PageHeader
         title="Numbers"
-        info="Every entrant has a number that matches their printed sign and QR code. Numbers stay with the same person every year, so signs can be reused."
+        info={
+          <Stack gap={6}>
+            <Text size="sm">
+              Every entrant has a number that matches their printed sign and QR
+              code. Numbers stay with the same person every year, so signs can
+              be reused.
+            </Text>
+            {!board.entriesOpen && (
+              <Text size="sm">
+                Entries are closed, so numbers kept for last year's entrants who
+                didn't enter again are now free.
+              </Text>
+            )}
+          </Stack>
+        }
         actions={<RangeLink />}
       />
 
-      {flagged.length > 0 && (
-        <Alert
-          color="orange"
-          variant="light"
-          icon={<IconAlertTriangle size={16} />}
-          title={`${flagged.length} ${flagged.length === 1 ? "number has" : "numbers have"} no printed sign`}
-        >
-          These are outside the number range, so there's no sign for them. Give
-          the entry a number inside the range, or print an extra sign.
-        </Alert>
-      )}
-
-      {!board.entriesOpen && (
-        <Alert color="gray" variant="light" icon={<IconInfoCircle size={16} />}>
-          Entries are closed, so numbers kept for last year's entrants who
-          didn't enter again are now free.
-        </Alert>
-      )}
-
-      <Card withBorder radius="md" padding="lg">
-        <Stack gap="md">
-          <Group gap="lg">
-            {(Object.keys(STATES) as State[]).map((state) => (
-              <Group key={state} gap={6}>
-                <Box
-                  w={12}
-                  h={12}
-                  bg={`${STATES[state].color}.6`}
-                  style={{ borderRadius: 3 }}
-                />
-                <Text size="sm">
-                  {STATES[state].label} ({count(state)})
-                </Text>
-              </Group>
-            ))}
-          </Group>
-          <SimpleGrid cols={{ base: 6, xs: 10, md: 15 }} spacing={6}>
-            {board.numbers.map((row) => (
-              <NumberTile key={row.entryNumber} row={row} />
-            ))}
-          </SimpleGrid>
-        </Stack>
+      <Card withBorder radius="md" padding="sm">
+        <SimpleGrid cols={{ base: 8, xs: 12, md: 20 }} spacing={4}>
+          {board.numbers.map((row) => (
+            <NumberTile
+              key={row.entryNumber}
+              row={row}
+              isPicked={searchedNumber === row.entryNumber}
+              onPick={() =>
+                setSearch(
+                  searchedNumber === row.entryNumber
+                    ? ""
+                    : String(row.entryNumber),
+                )
+              }
+            />
+          ))}
+        </SimpleGrid>
       </Card>
 
-      <Stack gap="sm">
-        <SegmentedControl
-          data={FILTERS}
-          value={filter}
-          onChange={setFilter}
-          fullWidth
+      <Group gap="sm" wrap="wrap">
+        <TextInput
+          placeholder="Number, name or email"
+          leftSection={<IconSearch size={16} />}
+          value={search}
+          onChange={(event) => setSearch(event.currentTarget.value)}
+          aria-label="Search numbers"
+          style={{ flex: "1 1 220px" }}
+          maw={320}
         />
-        {shown.length === 0 ? (
-          <Text size="sm" c="dimmed" ta="center" py="md">
-            No numbers here.
+        {/* The chips' dots match the grid, so they're the legend too */}
+        <Chip.Group
+          multiple={false}
+          value={filter}
+          onChange={(value) => setFilter(value as Filter)}
+        >
+          <Group gap={6} align="center">
+            {filters.map((f) => (
+              <Chip key={f} value={f} variant="light" size="sm">
+                <Group component="span" gap={6} wrap="nowrap">
+                  <Dot color={f === "noSign" ? "orange" : STATES[f].color} />
+                  {f === "noSign" ? "No sign" : STATES[f].label}
+                  <Text span c="dimmed" size="sm">
+                    {countFor(f)}
+                  </Text>
+                </Group>
+              </Chip>
+            ))}
+            {noSignCount > 0 && (
+              <InfoTip size={14}>
+                These numbers are in use but outside the number range, so
+                there's no printed sign for them. Give the entry a number inside
+                the range, or print an extra sign.
+              </InfoTip>
+            )}
+          </Group>
+        </Chip.Group>
+      </Group>
+
+      {shown.length === 0 ? (
+        <Card withBorder>
+          <Text size="sm" c="dimmed" ta="center">
+            No numbers match.
           </Text>
-        ) : filter === "free" ? (
-          <Text size="sm">
-            {shown.map((row) => row.entryNumber).join(", ")}
-          </Text>
-        ) : (
-          shown.map((row) => <NumberListRow key={row.entryNumber} row={row} />)
-        )}
-      </Stack>
+        </Card>
+      ) : showFreeAsLine ? (
+        <Text size="sm" c="dimmed">
+          {/* Each run stays on one line, so "36–37" never splits */}
+          {collapseRuns(shown.map((row) => row.entryNumber))
+            .split(", ")
+            .map((run, i) => (
+              <Fragment key={run}>
+                {i > 0 && ", "}
+                <span style={{ whiteSpace: "nowrap" }}>{run}</span>
+              </Fragment>
+            ))}
+        </Text>
+      ) : (
+        <Card withBorder radius="md" padding={0}>
+          <Table highlightOnHover verticalSpacing="xs" horizontalSpacing="md">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th w={70}>No.</Table.Th>
+                <Table.Th>Who has it</Table.Th>
+                <Table.Th>Status</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {shown.map((row) => (
+                <NumberTableRow key={row.entryNumber} row={row} />
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Card>
+      )}
     </Stack>
   );
 }
 
-function NumberTile({ row }: { row: NumberRow }) {
-  const state = stateOf(row);
-  const color = STATES[state].color;
-  const tile = (
-    <Paper
-      radius="sm"
-      py={6}
-      ta="center"
-      bg={state === "free" ? undefined : `${color}.8`}
-      withBorder
-      style={
-        needsAttention(row)
-          ? { outline: "2px solid var(--mantine-color-orange-5)" }
-          : undefined
-      }
-    >
-      <Text size="sm" fw={600} c={state === "free" ? "dimmed" : "white"}>
-        {row.entryNumber}
-      </Text>
-    </Paper>
+function Dot({ color }: { color: string }) {
+  return (
+    <Box
+      component="span"
+      w={8}
+      h={8}
+      bg={`${color}.6`}
+      display="inline-block"
+      style={{ borderRadius: "50%", flexShrink: 0 }}
+    />
   );
-  if (!row.holder) return tile;
+}
+
+// Light fills, coloured text on a tinted background, so a page of them stays
+// calm and the colour still says which is which
+function NumberTile({
+  row,
+  isPicked,
+  onPick,
+}: {
+  row: NumberRow;
+  isPicked: boolean;
+  onPick: () => void;
+}) {
+  const state = stateOf(row);
+  const color = needsAttention(row) ? "orange" : STATES[state].color;
+  const isFree = state === "free";
+  const label = row.holder
+    ? row.holder.name || "No name yet"
+    : row.reservedFor
+      ? `Kept for ${row.reservedFor.name || "last year's entrant"}`
+      : "Free";
   return (
     <UnstyledButton
-      component="a"
-      {...routes.adminEntry({ entryId: row.holder.entryId }).link}
-      aria-label={`Number ${row.entryNumber}: ${row.holder.name}`}
+      onClick={onPick}
+      aria-label={`Number ${row.entryNumber}: ${label}${needsAttention(row) ? ", no printed sign" : ""}`}
+      aria-pressed={isPicked}
+      title={label}
+      py={2}
+      ta="center"
+      style={{
+        borderRadius: "var(--mantine-radius-sm)",
+        background: isFree ? undefined : `var(--mantine-color-${color}-light)`,
+        color: isFree
+          ? "var(--mantine-color-dimmed)"
+          : `var(--mantine-color-${color}-light-color)`,
+        outline: isPicked
+          ? "2px solid var(--mantine-color-white)"
+          : isFree
+            ? "1px solid var(--mantine-color-dark-4)"
+            : undefined,
+        outlineOffset: isPicked ? 1 : -1,
+      }}
     >
-      {tile}
+      <Text size="xs" fw={600} inherit>
+        {row.entryNumber}
+      </Text>
     </UnstyledButton>
   );
 }
 
-function NumberListRow({ row }: { row: NumberRow }) {
-  const state = stateOf(row);
+function NumberTableRow({ row }: { row: NumberRow }) {
+  const { holder, reservedFor } = row;
+  const open = holder
+    ? () => routes.adminEntry({ entryId: holder.entryId }).push()
+    : undefined;
   return (
-    <Paper withBorder radius="md" p="sm">
-      <Group gap="sm" wrap="nowrap" align="flex-start">
-        <Badge
-          size="lg"
-          w={56}
-          color={STATES[state].color}
-          variant={state === "free" ? "default" : "light"}
-          style={{ flexShrink: 0 }}
-        >
-          #{row.entryNumber}
-        </Badge>
-        <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-          {row.holder ? (
-            <>
-              <Anchor
-                {...routes.adminEntry({ entryId: row.holder.entryId }).link}
-                fw={500}
-              >
-                {row.holder.name || "No name yet"}
-              </Anchor>
-              <Text size="xs" c="dimmed">
-                {ENTRY_STATUS_LABELS[row.holder.status]}
-              </Text>
-            </>
-          ) : row.reservedFor ? (
-            <>
-              <Text fw={500}>
-                Kept for {row.reservedFor.name || "last year's entrant"}
-              </Text>
-              <Text size="xs" c="dimmed">
-                Their number in {row.reservedFor.year}. They haven't entered
-                again yet.
-                {row.reservedFor.email && ` ${row.reservedFor.email}`}
-              </Text>
-            </>
-          ) : null}
-          {needsAttention(row) && (
-            <Text size="xs" c="orange">
-              No printed sign: outside the number range
+    <Table.Tr
+      // Like the Entries table: the whole row opens the entry, the name is the
+      // real link for keyboards and new tabs
+      onClick={(event) => {
+        if (!open) return;
+        if ((event.target as HTMLElement).closest("a")) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+          return;
+        if (window.getSelection()?.toString()) return;
+        open();
+      }}
+      style={{ cursor: open ? "pointer" : undefined }}
+    >
+      <Table.Td>
+        <EntryNumberCell
+          entryNumber={row.entryNumber}
+          isOutsideRange={needsAttention(row)}
+        />
+      </Table.Td>
+      <Table.Td>
+        {holder ? (
+          <Anchor
+            {...routes.adminEntry({ entryId: holder.entryId }).link}
+            c="inherit"
+            fw={600}
+            underline="hover"
+          >
+            {holder.name || "No name yet"}
+          </Anchor>
+        ) : reservedFor ? (
+          <>
+            <Text size="sm">
+              Kept for {reservedFor.name || "last year's entrant"} (
+              {reservedFor.year})
             </Text>
-          )}
-        </Stack>
-      </Group>
-    </Paper>
+            {reservedFor.email && (
+              <Text size="xs" c="dimmed" truncate maw={{ base: 170, sm: 260 }}>
+                {reservedFor.email}
+              </Text>
+            )}
+          </>
+        ) : (
+          <Text size="sm" c="dimmed">
+            Free
+          </Text>
+        )}
+      </Table.Td>
+      <Table.Td>
+        {holder ? (
+          <EntryStatusBadge status={holder.status} labelFrom="sm" />
+        ) : reservedFor ? (
+          // The name cell already says it's kept, so phones skip this
+          <Text
+            size="sm"
+            c="dimmed"
+            style={{ whiteSpace: "nowrap" }}
+            visibleFrom="sm"
+          >
+            Not entered yet
+          </Text>
+        ) : null}
+      </Table.Td>
+    </Table.Tr>
   );
 }
 

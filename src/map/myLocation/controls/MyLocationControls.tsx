@@ -17,8 +17,9 @@ export default function MyLocationControls() {
     <div
       style={{
         position: "absolute",
+        // Above Google's attribution line and clear of the phone's home bar
         right: 12,
-        bottom: 12,
+        bottom: 28,
         zIndex: 1000,
       }}
     >

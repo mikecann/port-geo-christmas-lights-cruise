@@ -1,4 +1,4 @@
-import type { EntryStateKind } from "../../../../convex/features/entries/schema";
+import type { EntryStateKind } from "../../convex/features/entries/schema";
 
 // "submitting" only lasts while the address is checked, so admins see it as
 // not sent in yet, the same as a draft

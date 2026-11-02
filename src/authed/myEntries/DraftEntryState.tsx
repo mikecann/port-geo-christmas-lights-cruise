@@ -1,19 +1,10 @@
 import { measured } from "../../analytics/client";
-import {
-  Alert,
-  Card,
-  Stack,
-  Button,
-  TextInput,
-  Divider,
-  ActionIcon,
-} from "@mantine/core";
+import { Alert, Card, Stack, Button, TextInput, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconCheck, IconAlertTriangle } from "@tabler/icons-react";
-import { useState, useEffect, useRef } from "react";
-import { useDisclosure } from "@mantine/hooks";
+import { IconCheck } from "@tabler/icons-react";
+import { useState, useRef } from "react";
 import { useMutation, useAction, useQuery } from "convex/react";
-import { useDebounce } from "use-debounce";
+import { useDebouncedCallback } from "use-debounce";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { useConfirmation } from "../../common/components/confirmation/useConfirmation";
@@ -25,7 +16,8 @@ import {
   MAX_ENTRY_NAME_LENGTH,
 } from "../../../shared/constants";
 import DraftEntryHeader from "./DraftEntryHeader";
-import EntryNameGuidelinesModal from "./EntryNameGuidelinesModal";
+import { iife } from "../../../shared/misc";
+import EntryNameLabel from "./EntryNameLabel";
 import type { PreviousEntry } from "./PreviousEntrySection";
 
 interface DraftEntryStateProps {
@@ -48,8 +40,10 @@ export default function DraftEntryState({
   const [isPhotosUploading, setIsPhotosUploading] = useState(false);
   const { confirm } = useConfirmation();
   const onApiError = useErrorHandler();
-  const [modalOpened, { open: openModal, close: closeModal }] =
-    useDisclosure(false);
+  // Errors wait until someone has left the field or tried to send it in, so
+  // the form doesn't open covered in red
+  const [addressTouched, setAddressTouched] = useState(false);
+  const [triedToSubmit, setTriedToSubmit] = useState(false);
 
   // Form state
   const [name, setName] = useState(() => entry.state.name || "");
@@ -62,119 +56,168 @@ export default function DraftEntryState({
     entry.state.kind === "draft" ? entry.state.houseAddress : undefined,
   );
 
-  // Debounce form values for auto-save
-  const [debouncedName] = useDebounce(name, 500);
+  // The draft saves itself: typing waits for a pause, picking an address
+  // saves at once. The last save is kept so sending it in can wait for it,
+  // and isNamePending keeps the header on "Saving…" until a typed name has
+  // actually gone off.
+  const lastSave = useRef<Promise<boolean>>(Promise.resolve(true));
+  const [isNamePending, setIsNamePending] = useState(false);
+  const save = (fields: {
+    name: string;
+    houseAddress: typeof selectedAddress;
+  }) => {
+    setIsNamePending(false);
+    lastSave.current = updateEntry(fields);
+    return lastSave.current;
+  };
+  const saveName = useDebouncedCallback(
+    (value: string) => save({ name: value, houseAddress: selectedAddress }),
+    500,
+    // Leaving the page straight after typing still saves it
+    { flushOnExit: true },
+  );
+  const saveAddress = (houseAddress: typeof selectedAddress) => {
+    // This save carries the latest name too, so a waiting one isn't needed
+    saveName.cancel();
+    void save({ name, houseAddress });
+  };
 
-  // Track if this is the first render to avoid saving on mount
-  const isFirstRender = useRef(true);
-
-  // // Auto-save effect
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
-    updateEntry({
-      houseAddress: selectedAddress,
-      name: debouncedName,
-    });
-  }, [debouncedName, selectedAddress, updateEntry]);
+  const hasAddress = !!selectedAddress?.placeId;
+  const hasName = !!name.trim();
+  // The machine's hasAddress and hasName guards refuse it without both
+  const missing = iife(() => {
+    if (hasAddress && hasName) return null;
+    if (hasName) return "Pick your address from the list to send it in";
+    if (hasAddress) return "Add a name to send it in";
+    return "Add your address and a name to send it in";
+  });
+  const isKeepingNumber =
+    entry.previousEntryId !== undefined &&
+    entry.state.entryNumber !== undefined;
 
   return (
-    <>
-      <Card shadow="sm" padding="lg" radius="md" withBorder>
+    <Card shadow="sm" padding="lg" radius="md" withBorder>
+      <Stack gap="md">
+        <DraftEntryHeader
+          entry={entry}
+          name={name}
+          isSaving={isSaving || isNamePending}
+          previousYear={isKeepingNumber ? previous?.year : undefined}
+          onRemove={async () => {
+            const confirmed = await confirm({
+              title: "Remove Entry",
+              content:
+                "Are you sure you want to remove your entry from the Christmas lights competition? This action cannot be undone.",
+              confirmButton: "Remove Entry",
+              confirmButtonColor: "red",
+            });
+
+            if (!confirmed) return;
+
+            removeEntry().catch(onApiError);
+          }}
+        />
+
+        {entry.previousEntryId && (
+          <Alert color="blue" variant="light" title="Welcome back!">
+            We've filled in your name and address from{" "}
+            {previous ? previous.year : "last time"}. Photos don't carry over,
+            so please add new photos of this year's display.
+            {/* The number shows in the header when it's kept, so it's only
+                  spelled out here when it's gone */}
+            {!isKeepingNumber && previous && (
+              <>
+                {" "}
+                #{previous.entry.entryNumber} has gone to someone else this
+                year, so you'll get a new number and sign.
+              </>
+            )}
+          </Alert>
+        )}
+
+        {/* Form */}
         <Stack gap="md">
-          <DraftEntryHeader
-            entry={entry}
-            isSaving={isSaving}
-            onRemove={async () => {
-              const confirmed = await confirm({
-                title: "Remove Entry",
-                content:
-                  "Are you sure you want to remove your entry from the Christmas lights competition? This action cannot be undone.",
-                confirmButton: "Remove Entry",
-                confirmButtonColor: "red",
-              });
-
-              if (!confirmed) return;
-
-              removeEntry().catch(onApiError);
-            }}
-          />
-
-          {entry.previousEntryId && (
-            <Alert color="blue" variant="light" title="Welcome back!">
-              We've filled in your name and address from{" "}
-              {previous ? previous.year : "last time"}
-              {entry.state.entryNumber === undefined
-                ? ""
-                : ` and you'll keep #${entry.state.entryNumber}`}
-              . Photos don't carry over, so please add new photos of this year's
-              display.
-            </Alert>
-          )}
-
-          {/* Form */}
-          <Stack gap="md">
+          {/* AddressAutocomplete has no onBlur of its own, and blur
+                bubbles in React, so this wrapper hears its input leave */}
+          <div onBlur={() => setAddressTouched(true)}>
             <AddressAutocomplete
-              label="House Address"
-              placeholder="Enter your house address"
+              label="House address"
+              placeholder="Start typing your address"
               required
               value={address}
-              onChange={setAddress}
+              onChange={(value) => {
+                setAddress(value);
+                // Once the text is edited it's no longer the address that
+                // was picked, so drop it rather than save the old one
+                if (selectedAddress && value !== selectedAddress.address) {
+                  setSelectedAddress(undefined);
+                  saveAddress(undefined);
+                }
+              }}
               maxLength={MAX_ENTRY_ADDRESS_LENGTH}
-              onSelect={(val) => setSelectedAddress(val)}
+              onSelect={(val) => {
+                setSelectedAddress(val);
+                saveAddress(val);
+              }}
               error={
-                selectedAddress?.placeId
+                hasAddress || !(addressTouched || triedToSubmit)
                   ? null
-                  : "Select an address from the list"
+                  : "Pick your address from the list"
               }
             />
-            <TextInput
-              label="Entry Name"
-              placeholder="Give your display a name (optional)"
-              value={name}
-              maxLength={MAX_ENTRY_NAME_LENGTH}
-              onChange={(e) => setName(e.currentTarget.value)}
-              rightSection={
-                <ActionIcon
-                  variant="subtle"
-                  color="yellow"
-                  onClick={openModal}
-                  size="sm"
-                >
-                  <IconAlertTriangle size={18} />
-                </ActionIcon>
-              }
-            />
+          </div>
+          <TextInput
+            label={<EntryNameLabel />}
+            placeholder="Give your display a festive name"
+            required
+            value={name}
+            maxLength={MAX_ENTRY_NAME_LENGTH}
+            onChange={(e) => {
+              setName(e.currentTarget.value);
+              setIsNamePending(true);
+              saveName(e.currentTarget.value);
+            }}
+            error={triedToSubmit && !hasName ? "Add a name" : null}
+          />
 
-            {/* Photo Section */}
-            <PhotoSection
-              photos={photos}
-              canUpload={true}
-              canRemove={true}
-              onUploadStateChange={setIsPhotosUploading}
-            />
-          </Stack>
+          {/* Photo Section */}
+          <PhotoSection
+            photos={photos}
+            canUpload={true}
+            canRemove={true}
+            showAddLaterHint
+            onUploadStateChange={setIsPhotosUploading}
+          />
+        </Stack>
 
-          <Divider />
-
-          {/* Submit button */}
+        {/* Stays tappable while something's missing, so a tap shows what
+              to fix on the fields instead of doing nothing */}
+        <Stack gap={6}>
           <Button
             size="lg"
-            disabled={!selectedAddress || isPhotosUploading}
+            disabled={isPhotosUploading}
             loading={isSubmitting}
-            onClick={() => {
+            onClick={async () => {
+              if (missing) {
+                setTriedToSubmit(true);
+                return;
+              }
               setIsSubmitting(true);
+              // Sending it in checks the saved draft, so a name typed in the
+              // last half second has to be saved first
+              saveName.flush();
+              if (!(await lastSave.current)) {
+                setIsSubmitting(false);
+                return;
+              }
               measured(() => submitMyEntry(), "entry_submit", {
                 entry_id: entry._id,
                 competition_id: entry.competitionId,
               })
                 .then(() =>
                   notifications.show({
-                    title: "Submitted!",
-                    message: "Your entry has been submitted for admin review.",
+                    title: "Sent in",
+                    message: "We'll email you once it's been reviewed.",
                     color: "green",
                     icon: <IconCheck size={16} />,
                   }),
@@ -184,13 +227,16 @@ export default function DraftEntryState({
             }}
           >
             {isPhotosUploading
-              ? "Wait for photos to finish uploading..."
-              : "Submit Entry for Review"}
+              ? "Waiting for photos to upload…"
+              : "Send in my entry"}
           </Button>
+          {missing && !isPhotosUploading && (
+            <Text size="sm" c="dimmed" ta="center">
+              {missing}
+            </Text>
+          )}
         </Stack>
-      </Card>
-
-      <EntryNameGuidelinesModal opened={modalOpened} onClose={closeModal} />
-    </>
+      </Stack>
+    </Card>
   );
 }

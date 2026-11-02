@@ -12,8 +12,9 @@ export default function DeleteMyEntryButton() {
 
   return (
     <Button
+      // Red like the wipes: it can't be undone either
       variant="outline"
-      color="orange"
+      color="red"
       leftSection={<IconTrash size={16} />}
       onClick={async () => {
         const confirmed = await confirm({
@@ -32,7 +33,7 @@ export default function DeleteMyEntryButton() {
             </>
           ),
           confirmButton: "Delete My Entry",
-          confirmButtonColor: "orange",
+          confirmButtonColor: "red",
         });
         if (!confirmed) return;
         deleteMyEntry();

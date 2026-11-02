@@ -5,7 +5,6 @@ import {
   NumberInput,
   Select,
   Stack,
-  Text,
 } from "@mantine/core";
 import { useState } from "react";
 import { useQuery } from "convex/react";
@@ -14,12 +13,15 @@ import type { Doc, Id } from "../../../../../convex/_generated/dataModel";
 import { useErrorCatchingMutation } from "../../../../common/errors";
 
 // Changing the number by hand, and linking someone who entered last year
-// with a different account. Give it a key that changes with the entry's
-// number so the input resets.
+// with a different account. Opened from "Change number" in the page header,
+// so it's out of the way until it's wanted. Give it a key that changes with
+// the entry's number so the input resets.
 export default function EntryNumberSection({
   entry,
+  onClose,
 }: {
   entry: Doc<"entries">;
+  onClose: () => void;
 }) {
   const [setEntryNumber, isSettingNumber] = useErrorCatchingMutation(
     api.admin.competition.entries.setEntryNumber,
@@ -37,19 +39,15 @@ export default function EntryNumberSection({
     isLinkOpen ? {} : "skip",
   );
 
-  if (entry.state.kind === "rejected")
-    return (
-      <Text size="sm" c="dimmed">
-        Rejected entries don't have a number.
-      </Text>
-    );
+  if (entry.state.kind === "rejected") return null;
 
   return (
     <Stack gap="md">
       <Stack gap={4}>
         <Group gap="xs" align="flex-end">
           <NumberInput
-            label="Change number"
+            label="Number"
+            autoFocus
             description="It must match their printed sign. Numbers used by another entry can't be picked."
             min={0}
             allowDecimal={false}
@@ -74,6 +72,9 @@ export default function EntryNumberSection({
             }}
           >
             Save number
+          </Button>
+          <Button variant="subtle" color="gray" onClick={onClose}>
+            Close
           </Button>
         </Group>
       </Stack>

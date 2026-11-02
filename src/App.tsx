@@ -88,7 +88,10 @@ function AdminPage({ route }: { route: Route<typeof routeGroups.admin> }) {
   if (route.name === "adminEntries") return <LazyPages.AdminEntriesPage />;
   if (route.name === "adminEntry")
     return (
+      // Keyed so going from one entry to another (the clash links) starts
+      // fresh, with the number editor closed
       <LazyPages.AdminEntryPage
+        key={route.params.entryId}
         entryId={route.params.entryId as Id<"entries">}
       />
     );

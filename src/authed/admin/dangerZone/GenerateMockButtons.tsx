@@ -19,8 +19,7 @@ export function GenerateMockVotesButton({
 
   return (
     <Button
-      variant="outline"
-      color="blue"
+      variant="default"
       leftSection={<IconPlus size={16} />}
       onClick={async () => {
         const confirmed = await confirm({
