@@ -92,6 +92,12 @@ const countRows = (t: ConvexTest) =>
     accounts: (await ctx.db.query("authAccounts").collect()).length,
   }));
 
+const addCompetition = (
+  t: ConvexTest,
+  year: number,
+  state: { entriesOpen: boolean; votingOpen: boolean },
+) => t.run((ctx) => ctx.db.insert("competitions", { year, ...state }));
+
 const allUsers = (t: ConvexTest) =>
   t.run((ctx) => ctx.db.query("users").collect());
 
@@ -609,6 +615,37 @@ describe("sign-up lock (IS_SIGNUP_DISABLED)", () => {
     await signInWithCode(t, "zoliver@aigleroyal.com.au");
 
     expect(await countRows(t)).toEqual({ users: 1, accounts: 1 });
+  });
+
+  // The lock was left on after entries opened in 2026 and turned entrants
+  // away, so it now steps aside by itself while the season is on
+  it.each([
+    { entriesOpen: true, votingOpen: false },
+    { entriesOpen: false, votingOpen: true },
+  ])("lifts while the current competition is open (%o)", async (state) => {
+    const t = createConvexTest();
+    await addCompetition(t, 2025, { entriesOpen: false, votingOpen: false });
+    await addCompetition(t, 2026, state);
+
+    await signInWithGoogle(t, "new-google-id", "new@example.com");
+    await signInWithCode(t, "other@example.com");
+
+    expect(await countRows(t)).toEqual({ users: 2, accounts: 2 });
+  });
+
+  it("stays shut when only an older competition is open", async () => {
+    const t = createConvexTest();
+    await addCompetition(t, 2025, { entriesOpen: true, votingOpen: true });
+    await addCompetition(t, 2026, { entriesOpen: false, votingOpen: false });
+
+    await expect(requestCode(t, "new@example.com")).rejects.toThrow(
+      SIGNUPS_CLOSED_MESSAGE,
+    );
+    await expect(
+      signInWithGoogle(t, "new-google-id", "new@example.com"),
+    ).rejects.toThrow(SIGNUPS_CLOSED_MESSAGE);
+
+    expect(await countRows(t)).toEqual({ users: 0, accounts: 0 });
   });
 });
 
