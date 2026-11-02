@@ -143,7 +143,14 @@ export function pendingVoteAction(
     "entryId" | "category" | "sawInPerson" | "isAtGoogle"
   >,
   isSheetOpen: boolean,
-): "wait" | "reopen" | "drop" | "ask" | "send" | "confirmSwitch" {
+):
+  | "wait"
+  | "reopen"
+  | "drop"
+  | "notInPerson"
+  | "ask"
+  | "send"
+  | "confirmSwitch" {
   if (state.step === "loading") return "wait";
   // Back without signing in, e.g. they cancelled at Google
   if (state.step === "signedOut") return isSheetOpen ? "wait" : "reopen";
@@ -155,11 +162,17 @@ export function pendingVoteAction(
   // Already voted for it in this category
   if (existing?.entry._id === pending.entryId) return "drop";
   if (state.inPersonAllowed === null) return "wait";
-  // Most Jolly needs them to have seen it, which the location check now rules out
+  // They said they'd seen it (Most Jolly always means that), but the location
+  // check doesn't pass now, e.g. on another connection back from Google.
+  // Sending it would quietly make it People's Choice, or be turned away for
+  // Most Jolly, so it's handed back to them with a word why.
   if (
-    pending.category === "most_jolly" &&
-    !(state.inPersonAllowed && pending.sawInPerson)
+    !state.inPersonAllowed &&
+    (pending.category === "most_jolly" || pending.sawInPerson === true)
   )
+    return "notInPerson";
+  // Most Jolly needs them to have seen it
+  if (pending.category === "most_jolly" && pending.sawInPerson !== true)
     return "drop";
   // The location check passed after all, so they still have to answer
   if (state.inPersonAllowed && pending.sawInPerson === null) return "ask";

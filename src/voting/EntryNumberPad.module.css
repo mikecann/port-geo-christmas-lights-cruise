@@ -27,7 +27,7 @@
   text-wrap: balance;
 }
 
-/* Styled like the number on the house sign */
+/* A dark box with a light number: a white slab glares on a phone at night */
 .display {
   display: flex;
   align-items: center;
@@ -37,9 +37,10 @@
   height: 6.5rem;
   height: clamp(3.5rem, 12dvh, 6.5rem);
   padding-inline: var(--mantine-spacing-lg);
+  border: 2px solid var(--mantine-color-dark-2);
   border-radius: var(--mantine-radius-lg);
-  background-color: var(--mantine-color-white);
-  color: var(--mantine-color-dark-9);
+  background-color: var(--mantine-color-dark-8);
+  color: var(--mantine-color-white);
   font-size: 4.5rem;
   font-size: clamp(2.5rem, 8.5dvh, 4.5rem);
   font-weight: 800;
@@ -48,11 +49,13 @@
 }
 
 .display[data-empty] {
-  color: var(--mantine-color-gray-4);
+  color: var(--mantine-color-dark-3);
 }
 
-/* Holds its height so the keys never move as the name comes and goes */
+/* Holds its height so the keys never move as the name comes and goes.
+   Pulled up to sit just under the number it names. */
 .match {
+  margin-top: calc(var(--mantine-spacing-xs) * -1);
   display: flex;
   align-items: center;
   justify-content: center;

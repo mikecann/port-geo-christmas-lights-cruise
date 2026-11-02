@@ -12,7 +12,12 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { measured, track } from "../analytics/client";
 import { useErrorHandler } from "../common/errors";
-import { LOCATION_RETRY_MESSAGE } from "../../shared/voting";
+import {
+  LOCATION_RETRY_MESSAGE,
+  peoplesChoiceOnlyReason,
+  votingPhase,
+  type VotingPhase,
+} from "../../shared/voting";
 import {
   VOTE_CATEGORIES,
   type VoteCategory,
@@ -24,7 +29,7 @@ import {
   voteButtonStatus,
   voteToSend,
 } from "./voteButtons";
-import { showVoteToast } from "./voteToast";
+import { showVoteNotSentToast, showVoteToast } from "./voteToast";
 import { VOTE_LIGHTS_MS } from "./bulbs";
 import { playVoteSound, readyVoteSound } from "./voteSound";
 import { tapHaptic, voteBuzz } from "./voteHaptics";
@@ -57,13 +62,24 @@ type InPersonCheck = {
   inPersonAllowed: boolean | null;
   // Every try at the location check failed, so they can have another go
   canRetryLocation: boolean;
+  // Why it can only count for People's Choice, null once the check passes
+  peoplesChoiceReason: string | null;
 };
+
+// The vote couldn't get a fresh location token, even after retrying
+class LocationUnconfirmed extends Error {}
+
+// Both ends say "try again" when an in-person vote can't be confirmed: here
+// when no token could be fetched, and the server when the token was stale
+const isLocationRetry = (error: unknown) =>
+  error instanceof LocationUnconfirmed ||
+  (error instanceof ConvexError && error.data === LOCATION_RETRY_MESSAGE);
 
 // Each step is one screen of the vote flow, so the look can change without
 // touching the rules
 export type VoteFlowStep =
   | { step: "loading" }
-  | { step: "closed"; year: number }
+  | { step: "closed"; phase: Exclude<VotingPhase, "open">; year: number }
   // They can answer and tap Vote before signing in; it sends once they're in
   | ({ step: "signedOut" } & InPersonCheck)
   | { step: "ownEntry" }
@@ -92,8 +108,11 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     entryId: Id<"entries">;
     answer: boolean | null;
   } | null>(null);
-  const setSawInPerson = (answer: boolean | null) =>
+  const setSawInPerson = (answer: boolean | null) => {
     setSeen({ entryId: entry._id, answer });
+    setNudge(null);
+    setLocationFailed(null);
+  };
   // The category being sent, voted or removed
   const [busy, setBusy] = useState<VoteCategory | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -102,6 +121,18 @@ export function useVoteFlow(entry: VoteFlowEntry) {
   // The category whose vote here they've tapped, while it asks to remove it
   const [removing, setRemoving] = useState<VoteCategory | null>(null);
   const [justVoted, setJustVoted] = useState<JustVoted | null>(null);
+  // The category whose vote couldn't confirm their location, so the buttons
+  // stay as they were and they choose what happens next
+  const [locationFailed, setLocationFailed] = useState<{
+    entryId: Id<"entries">;
+    category: VoteCategory;
+  } | null>(null);
+  // When they last tapped Vote before answering the seen-it question, so the
+  // switch can point itself out
+  const [nudge, setNudge] = useState<{
+    entryId: Id<"entries">;
+    at: number;
+  } | null>(null);
   useEffect(() => {
     if (!justVoted) return;
     const timer = setTimeout(() => setJustVoted(null), VOTE_LIGHTS_MS);
@@ -129,13 +160,20 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     inPersonAllowed:
       geo.status === "checking" || !check ? null : check.locationCheck === "ok",
     canRetryLocation: geo.status === "failed",
+    peoplesChoiceReason:
+      geo.status === "checking" || !check
+        ? null
+        : peoplesChoiceOnlyReason(check.locationCheck, check.area),
   };
   const { inPersonAllowed } = inPersonCheck;
 
   const state = ((): VoteFlowStep => {
     if (competition === undefined || isAuthLoading) return { step: "loading" };
-    if (!competition.votingOpen || competition._id !== entry.competitionId)
-      return { step: "closed", year: competition.year };
+    if (competition._id !== entry.competitionId)
+      return { step: "closed", phase: "finished", year: competition.year };
+    const phase = votingPhase(competition);
+    if (phase !== "open")
+      return { step: "closed", phase, year: competition.year };
     if (!isAuthenticated) return { step: "signedOut", ...inPersonCheck };
     if (mine === undefined) return { step: "loading" };
     if (mine.isOwnEntry) return { step: "ownEntry" };
@@ -148,29 +186,40 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     seen?.entryId === entry._id
       ? seen.answer
       : seenAnswerFromVotes(votes, entry._id);
+  // The vote button waits for this, so nobody is counted as "not seen" by
+  // missing the question
+  const needsSeenAnswer = inPersonAllowed === true && sawInPerson === null;
 
   // In the tap, as that's the only time the sound can be got ready and an
   // iPhone will give its little tap
-  const tapToSend = (category: VoteCategory) => {
+  const tapToSend = (category: VoteCategory, peoplesChoice = false) => {
     readyVoteSound();
     tapHaptic();
-    send(category, sawInPerson);
+    send(category, sawInPerson, peoplesChoice);
   };
 
   // Set straight away, unlike isBusy, so a second tap in the same moment
   // can't send it again
   const isSending = useRef(false);
-  const send = (category: VoteCategory, answer: boolean | null) => {
+  // peoplesChoice: they chose it after their location couldn't be confirmed,
+  // so it goes as "not seen" without waiting on another token
+  const send = (
+    category: VoteCategory,
+    answer: boolean | null,
+    peoplesChoice = false,
+  ) => {
     if (isSending.current) return;
     isSending.current = true;
     setBusy(category);
+    setLocationFailed(null);
     void measured(
       async () => {
-        const args = voteToSend(answer, inPersonAllowed, await geo.forVote());
-        if (!args) {
-          geo.markFailed();
-          throw new ConvexError(LOCATION_RETRY_MESSAGE);
-        }
+        const args = peoplesChoice
+          ? { sawInPerson: false, geoToken: undefined }
+          : voteToSend(answer, inPersonAllowed, await geo.forVote());
+        // The page's location check is left as it was, so the in-person
+        // buttons and their answer stay put for another go
+        if (!args) throw new LocationUnconfirmed();
         return await voteMutation({ entryId: entry._id, category, ...args });
       },
       "vote",
@@ -183,7 +232,12 @@ export function useVoteFlow(entry: VoteFlowEntry) {
         voteBuzz();
         showVoteToast(category, "sent");
       })
-      .catch(onApiError)
+      .catch((error: unknown) => {
+        if (isLocationRetry(error)) {
+          setSwitching(null);
+          setLocationFailed({ entryId: entry._id, category });
+        } else onApiError(error);
+      })
       .finally(() => {
         isSending.current = false;
         setBusy(null);
@@ -205,6 +259,12 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     }
     if (!pendingVotes.take(entry._id)) return;
     setIsSigningIn(false);
+    if (action === "notInPerson") {
+      // Kept, so it's there if checking their location again works
+      setSawInPerson(pending.sawInPerson);
+      showVoteNotSentToast(pending.category);
+      return;
+    }
     if (action === "drop" || action === "ask") return;
     setSawInPerson(pending.sawInPerson);
     if (action === "send") send(pending.category, pending.sawInPerson);
@@ -276,6 +336,11 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     // A vote button: sign in first, offer to remove a vote that's here, or
     // check before moving one from another entry
     vote: (category: VoteCategory) => {
+      // Tappable rather than greyed out, so it can say what it's waiting for
+      if (needsSeenAnswer) {
+        setNudge({ entryId: entry._id, at: Date.now() });
+        return;
+      }
       if (state.step === "signedOut") {
         // Ready for when it sends itself, if they sign in without leaving
         readyVoteSound();
@@ -312,5 +377,19 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     confirmRemove: remove,
     cancelRemove: () => setRemoving(null),
     retryLocation: geo.retry,
+    needsSeenAnswer,
+    // When they last tapped Vote without answering, null once they have
+    nudgedAt: nudge?.entryId === entry._id ? nudge.at : null,
+    // The category whose vote couldn't confirm their location
+    locationFailed:
+      state.step === "choose" && locationFailed?.entryId === entry._id
+        ? locationFailed.category
+        : null,
+    retryVote: () => {
+      if (locationFailed?.entryId === entry._id)
+        tapToSend(locationFailed.category);
+    },
+    // Only offered for best display, as Most Jolly has no other prize
+    voteAsPeoplesChoice: () => tapToSend("best_display", true),
   };
 }

@@ -326,3 +326,9 @@
     animation: none;
   }
 }
+
+/* Waiting for the seen-it answer: looks greyed out but still takes a tap, so
+   it can point at the question */
+.castVote[data-waiting] {
+  opacity: 0.45;
+}

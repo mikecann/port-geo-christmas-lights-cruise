@@ -44,11 +44,25 @@ export async function fetchGeoTokenWithRetries(
 
 // A token only works for one vote, so each vote fetches its own. If that
 // fetch fails, the page's spare one is used, once, while it's still fresh.
+// Without a spare it tries again a couple of times, as a vote that can't get
+// a token can't count as in person, and a phone on the boat often only
+// dropped out for a moment.
 export function createVoteTokens(
   fetchOnce: FetchGeoToken,
   now: () => number = Date.now,
+  options: { retries: number; wait: () => Promise<void> } = {
+    retries: 2,
+    wait: () => new Promise((resolve) => setTimeout(resolve, 1_000)),
+  },
 ) {
   let spare: { token: string; fetchedAt: number } | null = null;
+  const takeSpare = () => {
+    const fallback = spare;
+    spare = null;
+    return fallback && now() - fallback.fetchedAt < MAX_AGE_MS
+      ? fallback.token
+      : null;
+  };
   return {
     keepSpare(token: string) {
       spare = { token, fetchedAt: now() };
@@ -56,10 +70,13 @@ export function createVoteTokens(
     async forVote() {
       const token = await fetchOnce();
       if (token !== null) return token;
-      const fallback = spare;
-      spare = null;
-      if (fallback && now() - fallback.fetchedAt < MAX_AGE_MS)
-        return fallback.token;
+      const fallback = takeSpare();
+      if (fallback !== null) return fallback;
+      for (let retry = 0; retry < options.retries; retry++) {
+        await options.wait();
+        const retried = await fetchOnce();
+        if (retried !== null) return retried;
+      }
       return null;
     },
   };

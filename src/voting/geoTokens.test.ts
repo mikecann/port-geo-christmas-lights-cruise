@@ -46,8 +46,14 @@ describe("fetchGeoTokenWithRetries", () => {
 });
 
 describe("createVoteTokens", () => {
+  const noWait = { retries: 2, wait: async () => {} };
+
   it("fetches a new token for every vote", async () => {
-    const tokens = createVoteTokens(answers("first", "second"));
+    const tokens = createVoteTokens(
+      answers("first", "second"),
+      Date.now,
+      noWait,
+    );
     tokens.keepSpare("spare");
 
     expect(await tokens.forVote()).toBe("first");
@@ -55,16 +61,37 @@ describe("createVoteTokens", () => {
   });
 
   it("falls back to the spare once when the fetch fails", async () => {
-    const tokens = createVoteTokens(answers());
+    const fetchOnce = answers();
+    const tokens = createVoteTokens(fetchOnce, Date.now, noWait);
     tokens.keepSpare("spare");
 
     expect(await tokens.forVote()).toBe("spare");
+    // The spare saves waiting on retries
+    expect(fetchOnce).toHaveBeenCalledTimes(1);
     expect(await tokens.forVote()).toBeNull();
+  });
+
+  it("tries again after a dropout when there's no spare", async () => {
+    const fetchOnce = answers(null, null, "third");
+    const wait = vi.fn(async () => {});
+    const tokens = createVoteTokens(fetchOnce, Date.now, { retries: 2, wait });
+
+    expect(await tokens.forVote()).toBe("third");
+    expect(fetchOnce).toHaveBeenCalledTimes(3);
+    expect(wait).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up after its retries", async () => {
+    const fetchOnce = answers();
+    const tokens = createVoteTokens(fetchOnce, Date.now, noWait);
+
+    expect(await tokens.forVote()).toBeNull();
+    expect(fetchOnce).toHaveBeenCalledTimes(3);
   });
 
   it("won't use a spare that's too old to be accepted", async () => {
     let now = 0;
-    const tokens = createVoteTokens(answers(), () => now);
+    const tokens = createVoteTokens(answers(), () => now, noWait);
     tokens.keepSpare("spare");
     now = 9 * 60_000;
 
