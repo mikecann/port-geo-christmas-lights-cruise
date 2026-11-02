@@ -15,7 +15,7 @@ import {
 } from "@mantine/core";
 import { IconSearch } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { routes } from "../../../routes";
 import { InfoTip, PageHeader } from "../../PageHeader";
@@ -172,7 +172,15 @@ export default function NumbersPage() {
         </Card>
       ) : showFreeAsLine ? (
         <Text size="sm" c="dimmed">
-          {collapseRuns(shown.map((row) => row.entryNumber))}
+          {/* Each run stays on one line, so "36–37" never splits */}
+          {collapseRuns(shown.map((row) => row.entryNumber))
+            .split(", ")
+            .map((run, i) => (
+              <Fragment key={run}>
+                {i > 0 && ", "}
+                <span style={{ whiteSpace: "nowrap" }}>{run}</span>
+              </Fragment>
+            ))}
         </Text>
       ) : (
         <Card withBorder radius="md" padding={0}>
@@ -299,7 +307,7 @@ function NumberTableRow({ row }: { row: NumberRow }) {
               {reservedFor.year})
             </Text>
             {reservedFor.email && (
-              <Text size="xs" c="dimmed" truncate maw={260}>
+              <Text size="xs" c="dimmed" truncate maw={{ base: 170, sm: 260 }}>
                 {reservedFor.email}
               </Text>
             )}
@@ -314,7 +322,13 @@ function NumberTableRow({ row }: { row: NumberRow }) {
         {holder ? (
           <EntryStatusBadge status={holder.status} labelFrom="sm" />
         ) : reservedFor ? (
-          <Text size="sm" c="dimmed" style={{ whiteSpace: "nowrap" }}>
+          // The name cell already says it's kept, so phones skip this
+          <Text
+            size="sm"
+            c="dimmed"
+            style={{ whiteSpace: "nowrap" }}
+            visibleFrom="sm"
+          >
             Not entered yet
           </Text>
         ) : null}
