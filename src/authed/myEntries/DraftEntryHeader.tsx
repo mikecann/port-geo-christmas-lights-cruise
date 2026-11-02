@@ -1,47 +1,68 @@
-import { Group, Stack, Text, Badge, ActionIcon, Tooltip } from "@mantine/core";
+import { ActionIcon, Text, Tooltip } from "@mantine/core";
 import { IconTrash } from "@tabler/icons-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
-import EntryNumberBadge from "./EntryNumberBadge";
+import { eventForYear, formatDate } from "../../../shared/event";
+import EntryCardHeader from "./EntryCardHeader";
 
 interface DraftEntryHeaderProps {
   entry: Doc<"entries">;
+  name: string;
   isSaving: boolean;
+  // Set for a returning entrant, to say their number is the one they had
+  previousYear?: number;
   onRemove: () => void;
 }
 
 export default function DraftEntryHeader({
   entry,
+  name,
   isSaving,
+  previousYear,
   onRemove,
 }: DraftEntryHeaderProps) {
+  const competition = useQuery(api.public.competitions.current, {});
+  const entriesClose = competition
+    ? eventForYear(competition.year)?.entriesClose
+    : null;
+
+  // The draft saves itself, so the line says so, and that it still has to be
+  // sent in, which is easy to miss otherwise
+  const status = [
+    isSaving ? "Saving…" : "Saved",
+    "not sent in yet",
+    entriesClose ? `entries close ${formatDate(entriesClose, true)}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <Group justify="space-between" align="flex-start">
-      <Stack gap={4} style={{ flex: 1 }}>
-        <Group gap="sm" align="center">
-          <Text fw={500} size="lg">
-            Your Competition Entry
-          </Text>
-          <EntryNumberBadge entry={entry} />
-        </Group>
-        <Text size="sm" c="dimmed">
-          Created {new Date(entry._creationTime).toLocaleDateString()}
+    <EntryCardHeader
+      entry={entry}
+      title={
+        <Text fw={600} fz={20} lh={1.25} style={{ overflowWrap: "anywhere" }}>
+          {name.trim() || "Your entry"}
         </Text>
-      </Stack>
-      <Group gap="xs">
-        {isSaving && (
-          <Badge color="yellow" variant="transparent">
-            💾
-          </Badge>
-        )}
-        <Badge color="blue" variant="light">
-          Draft
-        </Badge>
+      }
+      status={
+        <Text size="sm" c="dimmed">
+          {status}
+        </Text>
+      }
+      numberCaption={previousYear ? `yours from ${previousYear}` : undefined}
+      actions={
         <Tooltip label="Remove entry">
-          <ActionIcon variant="light" color="red" onClick={onRemove}>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            onClick={onRemove}
+            aria-label="Remove entry"
+          >
             <IconTrash size={16} />
           </ActionIcon>
         </Tooltip>
-      </Group>
-    </Group>
+      }
+    />
   );
 }

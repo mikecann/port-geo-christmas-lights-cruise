@@ -1,34 +1,31 @@
-import { Modal, Stack, Text } from "@mantine/core";
+import { Group, Stack, Text } from "@mantine/core";
+import { InfoTip } from "../PageHeader";
 
-interface EntryNameGuidelinesModalProps {
-  opened: boolean;
-  onClose: () => void;
-}
-
-export default function EntryNameGuidelinesModal({
-  opened,
-  onClose,
-}: EntryNameGuidelinesModalProps) {
+// "Entry name" with the naming guidelines behind an ⓘ, so they're there when
+// someone wonders what to call it without taking up the form
+export default function EntryNameLabel() {
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title="Entry Name Guidelines"
-      centered
-    >
-      <Stack gap="md">
-        <Text size="sm">
-          New this year! Our website now includes an interactive map to help
-          voters easily view and locate their favourite displays to vote.
-        </Text>
-        <Text size="sm">
-          Each entry is shown by its entrant number and entry name only.
-        </Text>
-        <Text size="sm">
-          Please avoid using your full name or home address as your entry name -
-          instead, give your display a fun, festive title.
-        </Text>
-      </Stack>
-    </Modal>
+    <Group component="span" gap={6} display="inline-flex" wrap="nowrap">
+      Entry name
+      {/* It sits inside the input's <label>, so stop a tap on it from
+          focusing the input and opening the phone keyboard */}
+      <span
+        style={{ display: "inline-flex" }}
+        onClick={(e) => e.preventDefault()}
+      >
+        <InfoTip size={14}>
+          <Stack gap={6}>
+            <Text size="sm">
+              Each entry is shown by its entrant number and entry name only, on
+              the site and the map.
+            </Text>
+            <Text size="sm">
+              Please avoid using your full name or home address as your entry
+              name. Instead, give your display a fun, festive title.
+            </Text>
+          </Stack>
+        </InfoTip>
+      </span>
+    </Group>
   );
 }
