@@ -1,5 +1,9 @@
-import { useConvexAuth, useQuery } from "convex/react";
-import { useState } from "react";
+import {
+  type RequestForQueries,
+  useConvexAuth,
+  useQueries,
+} from "convex/react";
+import { useMemo, useState } from "react";
 import { track } from "../analytics/client";
 import { shareLink } from "../analytics/privacy";
 import { api } from "../../convex/_generated/api";
@@ -26,10 +30,21 @@ export function useShareEntry(entry: ShareEntry, entryId: Id<"entries">) {
   const { isAuthenticated } = useConvexAuth();
   // Public entries don't say who entered, so it asks whether this one is
   // ours. Only for signed-in visitors, and up front, so sharing never waits
-  // on it and the analytics always have the answer. (The same check main
-  // used, in the share list.)
-  const mine = useQuery(api.my.entries.find, isAuthenticated ? {} : "skip");
-  const isEntrant = mine?._id === entryId;
+  // on it and the analytics always have the answer. useQueries hands back an
+  // error instead of throwing, so a stale session (e.g. a deleted user) can't
+  // take down this public page over an analytics detail. The request is
+  // memoised: a new object every render re-subscribes in a loop (React
+  // error 301), which is what took the page down in #44.
+  const queries = useMemo((): RequestForQueries => {
+    if (!isAuthenticated) return {};
+    return { mine: { query: api.my.entries.find, args: {} } };
+  }, [isAuthenticated]);
+  const mine: unknown = useQueries(queries).mine;
+  const isEntrant =
+    typeof mine === "object" &&
+    mine !== null &&
+    !(mine instanceof Error) &&
+    (mine as { _id: string })._id === entryId;
   const properties: ShareProperties = {
     entry_id: entryId,
     competition_id: entry.competitionId,
