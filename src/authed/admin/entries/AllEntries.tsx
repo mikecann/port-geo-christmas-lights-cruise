@@ -10,15 +10,15 @@ import {
   Table,
   Text,
   TextInput,
-  Tooltip,
 } from "@mantine/core";
-import { IconFlag, IconSearch } from "@tabler/icons-react";
+import { IconSearch } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { AdminEntryRow } from "../../../../convex/admin/competition/entries";
 import { routes } from "../../../routes";
 import EntryStatusBadge from "../../EntryStatusBadge";
+import EntryNumberCell from "./EntryNumberCell";
 
 // "All" leaves out entries nobody has sent in yet: they're often abandoned
 // drafts and would bury the real entries. They have their own chip.
@@ -209,20 +209,10 @@ function EntryRow({ entry }: { entry: AdminEntryRow }) {
       style={{ cursor: "pointer" }}
     >
       <Table.Td>
-        {entry.entryNumber === undefined ? (
-          <Text c="dimmed">–</Text>
-        ) : entry.isNumberOutsideRange ? (
-          <Tooltip label="No printed sign: this number is outside the number range">
-            <Group gap={4} wrap="nowrap">
-              <Text c="orange.5" fw={500}>
-                #{entry.entryNumber}
-              </Text>
-              <IconFlag size={14} color="var(--mantine-color-orange-5)" />
-            </Group>
-          </Tooltip>
-        ) : (
-          <Text>#{entry.entryNumber}</Text>
-        )}
+        <EntryNumberCell
+          entryNumber={entry.entryNumber}
+          isOutsideRange={entry.isNumberOutsideRange}
+        />
       </Table.Td>
       <Table.Td>
         <Anchor
