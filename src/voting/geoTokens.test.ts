@@ -98,3 +98,17 @@ describe("createVoteTokens", () => {
     expect(await tokens.forVote()).toBeNull();
   });
 });
+
+describe("ifQuick", () => {
+  it("tries once, falls back to the spare, and never retries", async () => {
+    let calls = 0;
+    const tokens = createVoteTokens(async () => {
+      calls++;
+      return null;
+    });
+    tokens.keepSpare("spare");
+    expect(await tokens.ifQuick()).toBe("spare");
+    expect(await tokens.ifQuick()).toBeNull();
+    expect(calls).toBe(2);
+  });
+});

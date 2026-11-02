@@ -79,5 +79,12 @@ export function createVoteTokens(
       }
       return null;
     },
+    // For a vote that doesn't need to be in person: the location is still
+    // sent when there's one to hand, so admins can see where People's Choice
+    // votes came from, but it's tried once and never held up for retries
+    async ifQuick() {
+      const token = await fetchOnce();
+      return token ?? takeSpare();
+    },
   };
 }

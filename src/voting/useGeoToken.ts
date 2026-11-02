@@ -49,6 +49,7 @@ export function useGeoToken() {
   // that check passed, and dropping it would hide the in-person buttons and
   // quietly turn their next tap into a People's Choice vote
   const forVote = useCallback(() => voteTokens.current.forVote(), []);
+  const ifQuick = useCallback(() => voteTokens.current.ifQuick(), []);
 
-  return { token, status, retry, forVote };
+  return { token, status, retry, forVote, ifQuick };
 }
