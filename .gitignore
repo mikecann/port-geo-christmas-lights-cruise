@@ -147,3 +147,6 @@ dist
 
 # The state machines package, vendored until it is on npm
 !vendor/*.tgz
+
+# Generated sign artwork (scripts/signs)
+/work/
