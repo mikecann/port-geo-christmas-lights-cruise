@@ -1,10 +1,12 @@
-import { Button, Card, Group, Stack, Text, Badge, Center } from "@mantine/core";
+import { Button, Card, Group, Stack, Text } from "@mantine/core";
 import { IconAward } from "@tabler/icons-react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { routes } from "../../routes";
-import { votingClosedMessage } from "../../../shared/eventStatus";
+import { eventForYear } from "../../../shared/event";
+import { votingClosedCopy, votingPhase } from "../../../shared/voting";
+import { InfoTip } from "../../authed/PageHeader";
 
 type Props = {
   entryId: Id<"entries">;
@@ -34,22 +36,25 @@ export default function EntryVoting({ entryId, competitionId }: Props) {
     );
   }
 
-  if (!competition.votingOpen)
+  const phase = votingPhase(competition);
+  if (phase !== "open") {
+    const { title, detail } = votingClosedCopy(
+      phase,
+      eventForYear(competition.year),
+    );
     return (
       <Card data-testid="voting-closed" withBorder radius="md" p="lg">
-        <Stack gap="sm" align="center">
-          <Group gap="xs">
-            <IconAward size={20} color="var(--mantine-color-yellow-6)" />
-            <Text fw={600} size="lg">
-              Voting Closed
-            </Text>
-          </Group>
+        <Stack gap={4} align="center">
+          <Text fw={600} size="lg">
+            {title}
+          </Text>
           <Text c="dimmed" size="sm" ta="center">
-            {votingClosedMessage(competition.year)}
+            {detail}
           </Text>
         </Stack>
       </Card>
     );
+  }
 
   return <VotingControls entryId={entryId} />;
 }
@@ -67,31 +72,26 @@ function VotingControls({ entryId }: { entryId: Id<"entries"> }) {
         <Group gap="xs">
           <IconAward size={20} color="var(--mantine-color-yellow-6)" />
           <Text fw={600} size="lg">
-            Public Vote
+            Public vote
           </Text>
-          {votedHere && (
-            <Badge color="green" variant="light" size="sm">
-              Your vote
-            </Badge>
-          )}
+          <InfoTip>
+            Everyone gets a vote for best display. If you've seen the display in
+            person, you can vote Most Jolly too.
+          </InfoTip>
         </Group>
 
-        <Text c="dimmed" size="sm" ta="center">
-          Everyone gets a vote for best display. If you've seen the display in
-          person, you can vote Most Jolly too.
-        </Text>
-
-        <Center>
-          <Button
-            data-testid="vote-entry"
-            size="md"
-            color="yellow"
-            variant="filled"
-            onClick={() => routes.entryVote({ entryId }).push()}
-          >
-            {votedHere ? "See my votes" : "Vote for this Entry"}
-          </Button>
-        </Center>
+        <Button
+          data-testid="vote-entry"
+          size="md"
+          color="yellow"
+          variant="filled"
+          // Dark text: white on this orange is too faint to read at night
+          autoContrast
+          // Both go to this entry's vote page, which shows their vote here
+          onClick={() => routes.entryVote({ entryId }).push()}
+        >
+          {votedHere ? "Change my vote" : "Vote"}
+        </Button>
       </Stack>
     </Card>
   );
