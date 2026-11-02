@@ -117,6 +117,8 @@ const scene = houses.replace(
   'viewBox="0 0 1900.27 421.71"',
   'viewBox="480 0 1020 421.71"',
 );
+// The crop is in the scene's own coordinates, so redo it if the art changes
+if (scene === houses) throw new Error("The houses scene's viewBox changed");
 
 function signPage(n) {
   const qr = qrSvg(`${SITE}/v/${n}`);
