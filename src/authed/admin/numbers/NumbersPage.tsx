@@ -19,7 +19,7 @@ import { useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { routes } from "../../../routes";
-import { AdminPageHeader } from "../AdminLayout";
+import { PageHeader } from "../../PageHeader";
 import { ENTRY_STATUS_LABELS } from "../entries/entryStatus";
 import {
   NUMBER_STATES as STATES,
@@ -63,7 +63,7 @@ export default function NumbersPage() {
 
   return (
     <Stack gap="xl">
-      <AdminPageHeader
+      <PageHeader
         title="Numbers"
         info="Every entrant has a number that matches their printed sign and QR code. Numbers stay with the same person every year, so signs can be reused."
         actions={<RangeLink />}

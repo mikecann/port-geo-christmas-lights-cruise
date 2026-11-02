@@ -3,7 +3,7 @@ import { Card, Divider, Group, Stack, Switch, Text } from "@mantine/core";
 import { api } from "../../../../convex/_generated/api";
 import { useConfirmation } from "../../../common/components/confirmation/useConfirmation";
 import { useErrorCatchingMutation } from "../../../common/errors";
-import { InfoTip } from "../AdminLayout";
+import { InfoTip } from "../../PageHeader";
 
 // What each switch means for the public, and what flipping it will do
 const SWITCHES = {

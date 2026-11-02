@@ -18,7 +18,7 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import type { EntryStateKind } from "../../../../convex/features/entries/schema";
 import { useErrorHandler } from "../../../common/errors";
 import { routes } from "../../../routes";
-import { AdminPageHeader } from "../AdminLayout";
+import { PageHeader } from "../../PageHeader";
 import { ENTRY_STATUS_COLORS } from "../entries/entryStatus";
 import EntryMachine from "./EntryMachine";
 import FailedTimers from "./FailedTimers";
@@ -62,7 +62,7 @@ export default function MachinesPage({ entryId }: { entryId?: string }) {
 
   return (
     <Stack gap="xl">
-      <AdminPageHeader
+      <PageHeader
         title="Machines"
         info="The entry state machine, drawn from the rules the app runs, and how it's moving entries. Only system admins can see this page."
         actions={

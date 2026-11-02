@@ -44,6 +44,7 @@ export const MyVotesPage = lazy(
   () => import("../../authed/myVotes/MyVotesPage"),
 );
 
+export const AccountShell = lazy(() => import("../../authed/AccountShell"));
 export const AdminLayout = lazy(() => import("../../authed/admin/AdminLayout"));
 export const AdminHomePage = lazy(
   () => import("../../authed/admin/home/HomePage"),

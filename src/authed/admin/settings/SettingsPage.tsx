@@ -1,5 +1,5 @@
 import { Stack } from "@mantine/core";
-import { AdminPageHeader } from "../AdminLayout";
+import { PageHeader } from "../../PageHeader";
 import InPersonAreaSettings from "./InPersonAreaSettings";
 import NumberRangeCard from "./NumberRangeCard";
 
@@ -8,7 +8,7 @@ import NumberRangeCard from "./NumberRangeCard";
 export default function SettingsPage() {
   return (
     <>
-      <AdminPageHeader
+      <PageHeader
         title="Settings"
         info="Opening and closing entries and voting is on Home."
       />

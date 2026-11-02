@@ -1,6 +1,5 @@
 import {
-  Container,
-  Title,
+  Box,
   Stack,
   LoadingOverlay,
   Loader,
@@ -8,6 +7,7 @@ import {
   Group,
   ActionIcon,
 } from "@mantine/core";
+import { PageHeader } from "../PageHeader";
 import { IconTrophy, IconAlertTriangle } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { useDisclosure } from "@mantine/hooks";
@@ -36,31 +36,33 @@ export default function MyEntriesPage() {
   const isLoading = myEntry === undefined;
 
   return (
-    <Container size="md" py="xl">
+    <Box maw={800} pos="relative">
       <LoadingOverlay visible={isLoading} />
 
-      <Group justify="space-between" mb="xl">
-        <Title order={1}>My Entries</Title>
-        <Group gap="xs">
-          <ActionIcon
-            variant="light"
-            color="yellow"
-            size="lg"
-            onClick={openModal}
-          >
-            <IconAlertTriangle size={18} />
-          </ActionIcon>
-          <Button
-            component="a"
-            {...routes.competitionDetails().link}
-            leftSection={<IconTrophy size={18} />}
-            variant="light"
-            size="sm"
-          >
-            Competition Details
-          </Button>
-        </Group>
-      </Group>
+      <PageHeader
+        title="My entry"
+        actions={
+          <Group gap="xs">
+            <ActionIcon
+              variant="light"
+              color="yellow"
+              size="lg"
+              onClick={openModal}
+            >
+              <IconAlertTriangle size={18} />
+            </ActionIcon>
+            <Button
+              component="a"
+              {...routes.competitionDetails().link}
+              leftSection={<IconTrophy size={18} />}
+              variant="light"
+              size="sm"
+            >
+              Competition Details
+            </Button>
+          </Group>
+        }
+      />
 
       <EntryNameGuidelinesModal opened={modalOpened} onClose={closeModal} />
 
@@ -90,6 +92,6 @@ export default function MyEntriesPage() {
       </Stack>
 
       <PreviousEntrySection previous={previous} />
-    </Container>
+    </Box>
   );
 }
