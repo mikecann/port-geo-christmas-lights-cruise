@@ -1,4 +1,4 @@
-import { useConvex, useConvexAuth } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { useState } from "react";
 import { track } from "../analytics/client";
 import { shareLink } from "../analytics/privacy";
@@ -23,18 +23,12 @@ const canNativeShare = () =>
 // fallback list in `modal` when there isn't one
 export function useShareEntry(entry: ShareEntry, entryId: Id<"entries">) {
   const [opened, setOpened] = useState(false);
-  const convex = useConvex();
   const { isAuthenticated } = useConvexAuth();
   // Public entries don't say who entered, so it asks whether this one is
-  // ours, but only once they tap Share: most visits never share
-  const [isEntrant, setIsEntrant] = useState(false);
-  const checkIsEntrant = () =>
-    isAuthenticated
-      ? convex
-          .query(api.my.entries.find, {})
-          .then((mine) => mine?._id === entryId)
-          .catch(() => false)
-      : Promise.resolve(false);
+  // ours. Only for signed-in visitors, and up front, so sharing never waits
+  // on it and the analytics always have the answer.
+  const mine = useQuery(api.my.entries.find, isAuthenticated ? {} : "skip");
+  const isEntrant = mine?._id === entryId;
   const properties: ShareProperties = {
     entry_id: entryId,
     competition_id: entry.competitionId,
@@ -44,12 +38,9 @@ export function useShareEntry(entry: ShareEntry, entryId: Id<"entries">) {
   const shareText = `${shareTitle} in the Port Geographe Christmas Lights competition!`;
 
   const share = async () => {
-    const isEntrantCheck = checkIsEntrant();
-    void isEntrantCheck.then(setIsEntrant);
     if (!canNativeShare()) return setOpened(true);
-    // Phones only open the sheet straight from a tap, so it's opened before
-    // waiting on the check. Its result is caught here so a quick cancel
-    // isn't reported as an unhandled rejection meanwhile.
+    // Its result is caught here so a quick cancel isn't reported as an
+    // unhandled rejection
     const outcome = navigator
       .share({
         title: shareTitle,
@@ -60,11 +51,7 @@ export function useShareEntry(entry: ShareEntry, entryId: Id<"entries">) {
         () => ({ ok: true as const }),
         (error: unknown) => ({ ok: false as const, error }),
       );
-    const tracked = {
-      ...properties,
-      is_entrant: await isEntrantCheck,
-      source: "native" as const,
-    };
+    const tracked = { ...properties, source: "native" as const };
     track("share_intent", tracked);
     const result = await outcome;
     if (result.ok) track("native_share_resolved", tracked);
