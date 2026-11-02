@@ -15,6 +15,11 @@ import { pickEntryNumber } from "./numbers";
 // and effects can use it: the model sends the machine events, so the machine
 // importing the model would be an import cycle.
 
+// Whether an entry holds its number. A rejected one doesn't, unless it was
+// withdrawn after approval: its sign and QR code are already out there.
+export const holdsNumber = (state: Doc<"entries">["state"]) =>
+  state.kind !== "rejected" || state.approvedAt !== undefined;
+
 export const ENTRY_UNAVAILABLE_MESSAGE =
   "Sorry, that entry isn't available. It may have been removed from the competition.";
 
@@ -148,7 +153,7 @@ export function entriesQuery(context: ReaderCtx) {
       for (const entry of competitionEntries)
         if (
           entry._id !== excludeEntryId &&
-          entry.state.kind !== "rejected" &&
+          holdsNumber(entry.state) &&
           entry.state.entryNumber !== undefined
         )
           held.add(entry.state.entryNumber);
@@ -230,8 +235,7 @@ export function entriesQuery(context: ReaderCtx) {
         .take(10);
       return (
         withNumber.find(
-          (entry) =>
-            entry._id !== excludeEntryId && entry.state.kind !== "rejected",
+          (entry) => entry._id !== excludeEntryId && holdsNumber(entry.state),
         ) ?? null
       );
     },

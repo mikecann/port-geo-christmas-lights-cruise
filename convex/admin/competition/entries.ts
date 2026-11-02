@@ -3,6 +3,7 @@ import {
   competitionAdminQuery,
 } from "../../features/common/auth";
 import { entries } from "../../features/entries/model";
+import { holdsNumber } from "../../features/entries/queries";
 import { photos } from "../../features/photos/model";
 import { email } from "../../features/email/model";
 import { ConvexError, v } from "convex/values";
@@ -184,10 +185,9 @@ export const listAll = competitionAdminQuery
           status: entry.state.kind,
           name: entry.state.name ?? "",
           address: entry.state.houseAddress?.address ?? "",
-          entryNumber:
-            entry.state.kind === "rejected"
-              ? undefined
-              : entry.state.entryNumber,
+          entryNumber: holdsNumber(entry.state)
+            ? entry.state.entryNumber
+            : undefined,
           submitterName: submitter?.name,
           submitterEmail: submitter?.email,
           previous: previous && {
@@ -267,10 +267,9 @@ export const getAllEntriesForExport = competitionAdminQuery
         return {
           userEmail: user?.email || "",
           userName: user?.name || "",
-          entryNumber:
-            entry.state.kind === "rejected"
-              ? undefined
-              : entry.state.entryNumber,
+          entryNumber: holdsNumber(entry.state)
+            ? entry.state.entryNumber
+            : undefined,
           entryName: entry.state.name || "",
           entryAddress: entry.state.houseAddress?.address ?? "",
         };

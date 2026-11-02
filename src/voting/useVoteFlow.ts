@@ -191,7 +191,11 @@ export function useVoteFlow(
   const sawInPerson =
     seen?.entryId === entry._id
       ? seen.answer
-      : (seenAnswerFromVotes(votes, entry._id) ?? (presumeSeen ? true : null));
+      : (seenAnswerFromVotes(votes, entry._id) ??
+        // Only once the location check passes: before that the question isn't
+        // shown, and a vote held over sign-in mustn't carry an answer they
+        // never gave
+        (presumeSeen && inPersonAllowed === true ? true : null));
   // The vote button waits for this, so nobody is counted as "not seen" by
   // missing the question
   const needsSeenAnswer = inPersonAllowed === true && sawInPerson === null;

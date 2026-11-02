@@ -230,7 +230,9 @@ export const email = {
       from: email.adminFromAddress,
       to: args.to,
       replyTo: [email.replyToAddress],
-      subject: "Update on Your Christmas Lights Entry Application",
+      subject: args.wasApproved
+        ? "Your Christmas Lights entry has been withdrawn"
+        : "Update on Your Christmas Lights Entry Application",
       html: email.rejectionHtml(args),
     });
   },

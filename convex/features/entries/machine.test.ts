@@ -11,6 +11,7 @@ import {
 import type { ConvexTest } from "../common/tests/testingHelpers.vitest";
 import { entry, machines } from "../../machines";
 import { SUBMITTING_TIMEOUT_MS } from "./machine";
+import { entriesQuery } from "./queries";
 import { ensure } from "../../../shared/ensure";
 
 const inside = { latitude: -33.633, longitude: 115.39 };
@@ -163,6 +164,19 @@ describe("the entry machine", () => {
     expect((await historyOf(t, entryId)).slice(-1)).toEqual([
       "approved REJECT rejected by admin",
     ]);
+    // Its sign is out there, so the number stays held and isn't reissued
+    const { competitionId } = await getEntry(t, entryId);
+    const held = await t.run(async (ctx) => [
+      ...(await entriesQuery(ctx).listHeldNumbers(competitionId)),
+    ]);
+    expect(held).toContain(entryNumber);
+
+    // Sent back for review, it keeps its number
+    await asAdmin.mutation(api.admin.competition.entries.reopen, { entryId });
+    expect((await getEntry(t, entryId)).state).toMatchObject({
+      kind: "submitted",
+      entryNumber,
+    });
   });
 
   it("goes back to draft when the address can't be found", async () => {

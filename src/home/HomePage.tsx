@@ -65,8 +65,9 @@ export default function HomePage() {
       </Box>
       <Trees />
       <Stack bg="#02051A" gap={0}>
-        <QuickLinks season={season} />
-        {season === "cruises" ? (
+        {/* Held until the competition loads, so the order doesn't flip */}
+        {competition !== undefined && <QuickLinks season={season} />}
+        {competition === undefined ? null : season === "cruises" ? (
           <>
             <CruiseSection />
             <CompetitionSection />

@@ -290,14 +290,20 @@ export const entry = defineMachine(
         houseAddress: state.houseAddress,
         name: state.name,
         ...withNumber(state.entryNumber),
+        // A withdrawn entry keeps holding its number (its sign is out there)
+        ...(state.kind === "approved" ? { approvedAt: state.approvedAt } : {}),
       }),
-      // Back in the review queue. Its old number may have gone to someone
-      // else, so approval picks again.
+      // Back in the review queue. A rejected entry's old number may have gone
+      // to someone else, so approval picks again. A withdrawn one still holds
+      // its number, so it keeps it.
       reopen: async (_ctx, { state }) => ({
         kind: "submitted",
         submittedAt: state.submittedAt,
         houseAddress: state.houseAddress,
         name: state.name,
+        ...(state.approvedAt === undefined
+          ? {}
+          : withNumber(state.entryNumber)),
       }),
       rename: async (_ctx, { state, event }) => ({
         ...state,

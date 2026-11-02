@@ -19,6 +19,9 @@ export default function RejectedEntryState({ entry }: RejectedEntryStateProps) {
   const photos = useQuery(api.my.photos.list) ?? [];
   const reason =
     entry.state.kind === "rejected" ? entry.state.rejectedReason.trim() : "";
+  // Approved first, then taken out of the competition
+  const wasWithdrawn =
+    entry.state.kind === "rejected" && entry.state.approvedAt !== undefined;
 
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -35,7 +38,7 @@ export default function RejectedEntryState({ entry }: RejectedEntryStateProps) {
         {reason && (
           <Stack gap={4}>
             <Text size="sm" fw={500}>
-              Why it wasn't approved
+              {wasWithdrawn ? "Why it was withdrawn" : "Why it wasn't approved"}
             </Text>
             <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
               {reason}

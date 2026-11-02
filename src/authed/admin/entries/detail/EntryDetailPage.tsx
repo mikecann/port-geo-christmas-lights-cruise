@@ -193,6 +193,7 @@ export default function EntryDetailPage({
         <RejectedNotice
           entryId={entry._id}
           reason={entry.state.rejectedReason}
+          wasWithdrawn={entry.state.approvedAt !== undefined}
           canReopen={isCurrent}
         />
       )}
@@ -265,10 +266,12 @@ export default function EntryDetailPage({
 function RejectedNotice({
   entryId,
   reason,
+  wasWithdrawn,
   canReopen,
 }: {
   entryId: Id<"entries">;
   reason: string;
+  wasWithdrawn: boolean;
   canReopen: boolean;
 }) {
   const { confirm } = useConfirmation();
@@ -277,7 +280,11 @@ function RejectedNotice({
   );
 
   return (
-    <Alert color="red" variant="light" title="Why it was rejected">
+    <Alert
+      color="red"
+      variant="light"
+      title={wasWithdrawn ? "Why it was withdrawn" : "Why it was rejected"}
+    >
       <Stack gap="sm" align="flex-start">
         <Text size="sm">{reason}</Text>
         {canReopen && (

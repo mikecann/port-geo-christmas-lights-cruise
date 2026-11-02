@@ -16,7 +16,7 @@ stateDiagram-v2
   state "approved" as approved
   approved : submittedAt, approvedAt, entryNumber, houseAddress, name
   state "rejected" as rejected
-  rejected : rejectedAt, rejectedReason, submittedAt, houseAddress, name, entryNumber?
+  rejected : rejectedAt, rejectedReason, submittedAt, houseAddress, name, entryNumber?, approvedAt?
   [*] --> draft : ENTER (owner) [entriesOpen, notEnteredYet] / startDraft
   draft --> draft : EDIT(name?, houseAddress?) (owner) / edit
   draft --> submitting : SUBMIT (owner) [entriesOpen, hasAddress, hasName, addressIsFree] / startSubmitting

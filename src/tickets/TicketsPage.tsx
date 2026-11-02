@@ -61,7 +61,7 @@ export default function TicketsPage() {
                   <Text>
                     Boards at {cruise.departsFrom.name}.{" "}
                     <Anchor
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cruise.departsFrom.mapsQuery)}`}
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cruise.departsFrom.mapsQuery)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
