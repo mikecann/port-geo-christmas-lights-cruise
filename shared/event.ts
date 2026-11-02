@@ -45,7 +45,8 @@ export const event: EventFacts = {
     operator: "All Sea Charters",
     ticketPrice: 21,
     ticketSeller: "Eventbrite",
-    ticketsUrl: null,
+    ticketsUrl:
+      "https://www.eventbrite.com.au/e/2026-port-geo-christmas-cruise-tickets-2002607083696",
     sailings: [
       sailing("2026-12-04", "7:30pm"),
       sailing("2026-12-05", "7:30pm"),
@@ -63,8 +64,10 @@ export const event: EventFacts = {
       sailing("2026-12-24", "7:30pm", "8:30pm"),
     ],
   },
-  // Proposed Sunday 29 November to Friday 4 December at 35 Keel Retreat, not
-  // confirmed by ARG yet
+  // Proposed Sunday 29 November to Friday 4 December at 35 Keel Retreat. ARG's
+  // entrant email of 2 November says "Monday 30th November to Friday 5th
+  // December", but 5 December 2026 is a Saturday, so it stays null until ARG
+  // confirm which they mean
   signCollection: null,
   // Proposed 4 to 27 December, not confirmed yet
   voting: null,
