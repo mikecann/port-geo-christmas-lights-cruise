@@ -1,4 +1,4 @@
-import { Badge, Button, Group, Select, SimpleGrid, Stack } from "@mantine/core";
+import { Button, Group, Select, Stack } from "@mantine/core";
 import { IconDownload } from "@tabler/icons-react";
 import { useQuery, useAction } from "convex/react";
 import { useState } from "react";
@@ -6,17 +6,13 @@ import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { useErrorHandler } from "../../../common/errors";
 import { downloadCsv } from "../../../common/utils/csv";
-import { routes } from "../../../routes";
 import { AdminPageHeader } from "../AdminLayout";
-import StatTile from "../overview/StatTile";
-import InPersonAreaSettings from "./InPersonAreaSettings";
 import VoteList from "./VoteList";
 import VoteResults from "./VoteResults";
 import { votesToCsv } from "./votesCsv";
 
 export default function VotesPage() {
   const competitionList = useQuery(api.public.competitions.list, {});
-  const overview = useQuery(api.admin.competition.competitions.overview);
   // Unset means the current competition
   const [competitionId, setCompetitionId] = useState<Id<"competitions">>();
   const [isExporting, setIsExporting] = useState(false);
@@ -27,14 +23,13 @@ export default function VotesPage() {
 
   const currentId = competitionList?.[0]?._id;
   const selectedId = competitionId ?? currentId;
-  const isCurrent = selectedId === currentId;
   const year = competitionList?.find((c) => c._id === selectedId)?.year;
 
   return (
     <Stack gap="xl">
       <AdminPageHeader
-        title="Votes and results"
-        description="Who's ahead for the three public prizes, and every vote with where it came from. New Entrants and Judges' Favourites are judged, so they aren't voted on here."
+        title="Votes"
+        info="Who's ahead for the three public prizes, and every vote with where it came from. New Entrants and Judges' Favourites are judged, so they aren't voted on here. Where in-person votes can come from is on Settings."
         actions={
           <Group gap="xs">
             <Select
@@ -66,52 +61,14 @@ export default function VotesPage() {
                   .finally(() => setIsExporting(false));
               }}
             >
-              Download votes (CSV)
+              Download CSV
             </Button>
           </Group>
         }
       />
 
-      {isCurrent && overview && (
-        <Stack gap="xs">
-          <Group>
-            <Badge
-              size="lg"
-              color={overview.votingOpen ? "green" : "gray"}
-              variant={overview.votingOpen ? "filled" : "light"}
-            >
-              Voting is {overview.votingOpen ? "open" : "closed"}
-            </Badge>
-          </Group>
-          <SimpleGrid cols={{ base: 2, sm: 4 }}>
-            <StatTile
-              label="In-Person Favourites"
-              help="Best display votes from people who saw it"
-              value={overview.votes.inPerson}
-              color="grape"
-              link={routes.adminVotes().link}
-            />
-            <StatTile
-              label="People's Choice"
-              help="Best display votes from everyone else"
-              value={overview.votes.online}
-              color="blue"
-              link={routes.adminVotes().link}
-            />
-            <StatTile
-              label="Most Jolly"
-              help="Votes from people who saw it"
-              value={overview.votes.mostJolly}
-              color="red"
-              link={routes.adminVotes().link}
-            />
-          </SimpleGrid>
-        </Stack>
-      )}
-
       <VoteResults competitionId={selectedId} />
       <VoteList competitionId={selectedId} />
-      {isCurrent && <InPersonAreaSettings />}
     </Stack>
   );
 }

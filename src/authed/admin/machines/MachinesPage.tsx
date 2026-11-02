@@ -64,7 +64,7 @@ export default function MachinesPage({ entryId }: { entryId?: string }) {
     <Stack gap="xl">
       <AdminPageHeader
         title="Machines"
-        description="The entry state machine, drawn from the rules the app runs, and how it's moving entries. Only system admins can see this page."
+        info="The entry state machine, drawn from the rules the app runs, and how it's moving entries. Only system admins can see this page."
         actions={
           <Select
             aria-label="Competition year"

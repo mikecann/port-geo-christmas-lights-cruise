@@ -6,11 +6,14 @@ import type { PhotoDoc } from "../../../../convex/features/photos/schema";
 export function PhotoImage({
   photo,
   onImageClick,
+  height = 80,
 }: {
   photo: PhotoDoc;
   onImageClick: (imageUrl: string) => void;
+  height?: number;
 }) {
-  const imageUrl = usePhotoUrl(photo, { size: "xs" }); // Small thumbnails for admin cards
+  // Small sizes for admin cards; the lightbox opens the same URL
+  const imageUrl = usePhotoUrl(photo, { size: height > 100 ? "sm" : "xs" });
 
   if (!imageUrl) return null;
 
@@ -18,12 +21,13 @@ export function PhotoImage({
     <Image
       src={imageUrl}
       alt="Entry photo"
-      h={80}
+      h={height}
       radius="sm"
-      fit="contain"
+      fit="cover"
       style={{
         cursor: "pointer",
         transition: "transform 0.2s ease",
+        position: "relative",
       }}
       bg="dark.7"
       onClick={() => onImageClick(imageUrl)}

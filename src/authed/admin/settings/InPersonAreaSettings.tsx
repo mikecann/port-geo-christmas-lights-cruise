@@ -35,9 +35,7 @@ function AreaForm({ area }: { area: Area }) {
   return (
     <Card padding="lg" radius="md" withBorder>
       <Stack gap="xs">
-        <Text size="lg" fw={500}>
-          Where in-person votes can come from
-        </Text>
+        <Text fw={600}>Where in-person votes can come from</Text>
         <Text size="sm" c="dimmed">
           We check roughly where a voter's internet connection is. Best display
           votes from outside this area count for People's Choice, and can't be

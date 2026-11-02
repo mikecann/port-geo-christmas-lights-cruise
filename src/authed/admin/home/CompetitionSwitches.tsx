@@ -1,20 +1,14 @@
-import {
-  Badge,
-  Button,
-  Card,
-  Group,
-  SimpleGrid,
-  Stack,
-  Text,
-} from "@mantine/core";
+import type { ReactNode } from "react";
+import { Card, Divider, Group, Stack, Switch, Text } from "@mantine/core";
 import { api } from "../../../../convex/_generated/api";
 import { useConfirmation } from "../../../common/components/confirmation/useConfirmation";
 import { useErrorCatchingMutation } from "../../../common/errors";
+import { InfoTip } from "../AdminLayout";
 
 // What each switch means for the public, and what flipping it will do
 const SWITCHES = {
   entries: {
-    title: "Entries",
+    title: "Entries are",
     open: {
       now: "People can start an entry and send it in for review.",
       confirmTitle: "Close entries?",
@@ -36,7 +30,7 @@ const SWITCHES = {
     },
   },
   voting: {
-    title: "Voting",
+    title: "Voting is",
     open: {
       now: "People can vote for approved entries, and change their votes.",
       confirmTitle: "Close voting?",
@@ -58,27 +52,36 @@ const SWITCHES = {
   },
 } as const;
 
+// Whether entries and voting are open, as plain sentences with a switch each.
+// Flipping one still asks first, as it changes the public site straight away.
 export default function CompetitionSwitches({
   entriesOpen,
   votingOpen,
+  entriesSummary,
+  votingSummary,
 }: {
   entriesOpen: boolean;
   votingOpen: boolean;
+  entriesSummary: ReactNode;
+  votingSummary: ReactNode;
 }) {
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2 }}>
-      <Switch kind="entries" isOpen={entriesOpen} />
-      <Switch kind="voting" isOpen={votingOpen} />
-    </SimpleGrid>
+    <Card withBorder radius="md" padding={0}>
+      <SwitchRow kind="entries" isOpen={entriesOpen} summary={entriesSummary} />
+      <Divider />
+      <SwitchRow kind="voting" isOpen={votingOpen} summary={votingSummary} />
+    </Card>
   );
 }
 
-function Switch({
+function SwitchRow({
   kind,
   isOpen,
+  summary,
 }: {
   kind: keyof typeof SWITCHES;
   isOpen: boolean;
+  summary: ReactNode;
 }) {
   const { confirm } = useConfirmation();
   const [setOpen, isSaving] = useErrorCatchingMutation(
@@ -89,54 +92,51 @@ function Switch({
   const details = SWITCHES[kind];
   const state = isOpen ? details.open : details.closed;
 
-  return (
-    <Card withBorder radius="md" padding="lg">
-      <Stack gap="sm" h="100%" justify="space-between">
-        <Stack gap={6}>
-          <Group justify="space-between">
-            <Text fw={600} size="lg">
-              {details.title}
+  const flip = async () => {
+    const confirmed = await confirm({
+      title: state.confirmTitle,
+      content: (
+        <Stack gap="xs">
+          {state.effect.map((line) => (
+            <Text key={line} size="sm">
+              {line}
             </Text>
-            <Badge
-              size="lg"
-              color={isOpen ? "green" : "gray"}
-              variant={isOpen ? "filled" : "light"}
-            >
-              {isOpen ? "Open" : "Closed"}
-            </Badge>
-          </Group>
+          ))}
           <Text size="sm" c="dimmed">
-            {state.now}
+            You can change this back at any time.
           </Text>
         </Stack>
-        <Button
-          variant={isOpen ? "default" : "filled"}
-          color={isOpen ? undefined : "green"}
-          loading={isSaving}
-          onClick={async () => {
-            const confirmed = await confirm({
-              title: state.confirmTitle,
-              content: (
-                <Stack gap="xs">
-                  {state.effect.map((line) => (
-                    <Text key={line} size="sm">
-                      {line}
-                    </Text>
-                  ))}
-                  <Text size="sm" c="dimmed">
-                    You can change this back at any time.
-                  </Text>
-                </Stack>
-              ),
-              confirmButton: state.button,
-              confirmButtonColor: isOpen ? "red" : "green",
-            });
-            if (confirmed) await setOpen({ open: !isOpen });
-          }}
-        >
-          {state.button}
-        </Button>
+      ),
+      confirmButton: state.button,
+      confirmButtonColor: isOpen ? "red" : "green",
+    });
+    if (confirmed) await setOpen({ open: !isOpen });
+  };
+
+  return (
+    <Group justify="space-between" wrap="nowrap" px="lg" py="md" gap="md">
+      <Stack gap={2} style={{ minWidth: 0 }}>
+        <Group gap={6} wrap="nowrap">
+          <Text>
+            {details.title}{" "}
+            <Text span fw={700} c={isOpen ? "green.5" : undefined}>
+              {isOpen ? "open" : "closed"}
+            </Text>
+          </Text>
+          <InfoTip>{state.now}</InfoTip>
+        </Group>
+        <Text size="sm" c="dimmed">
+          {summary}
+        </Text>
       </Stack>
-    </Card>
+      <Switch
+        size="md"
+        color="green"
+        checked={isOpen}
+        disabled={isSaving}
+        onChange={() => void flip()}
+        aria-label={state.button}
+      />
+    </Group>
   );
 }

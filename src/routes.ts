@@ -59,6 +59,8 @@ export const { RouteProvider, useRoute, routes } = createRouter({
   adminNumbers: admin.extend("/numbers"),
   adminVotes: admin.extend("/votes"),
   adminPeople: admin.extend("/people"),
+  // Everything that changes how the competition runs, in one place
+  adminSettings: admin.extend("/settings"),
   // System admins only: testing tools and wipes
   adminSystem: admin.extend("/system"),
   // System admins only: the state machines on live data
@@ -80,6 +82,7 @@ export const routeGroups = {
     routes.adminNumbers,
     routes.adminVotes,
     routes.adminPeople,
+    routes.adminSettings,
     routes.adminSystem,
     routes.adminMachines,
   ]),
@@ -98,6 +101,7 @@ export const routeGroups = {
     routes.adminNumbers,
     routes.adminVotes,
     routes.adminPeople,
+    routes.adminSettings,
     routes.adminSystem,
     routes.adminMachines,
   ]),
