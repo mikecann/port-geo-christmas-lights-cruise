@@ -1,6 +1,7 @@
 import { competitionAdminQuery } from "../../features/common/auth";
 import { competitions } from "../../features/competitions/model";
 import { entries } from "../../features/entries/model";
+import { holdsNumber } from "../../features/entries/queries";
 import { describeNumbers } from "../../features/entries/numbers";
 import type { Id } from "../../_generated/dataModel";
 import type { EntryStateKind } from "../../features/entries/schema";
@@ -29,10 +30,7 @@ export const list = competitionAdminQuery
       }
     >();
     for (const entry of competitionEntries)
-      if (
-        entry.state.kind !== "rejected" &&
-        entry.state.entryNumber !== undefined
-      ) {
+      if (holdsNumber(entry.state) && entry.state.entryNumber !== undefined) {
         const submitter = await context.db.get(entry.submittedByUserId);
         holders.set(entry.state.entryNumber, {
           entryId: entry._id,

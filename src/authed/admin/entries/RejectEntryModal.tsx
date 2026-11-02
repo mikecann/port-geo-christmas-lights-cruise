@@ -37,12 +37,15 @@ export default function RejectEntryModal({
   onConfirm,
   entryName,
   loading,
+  withdraw = false,
 }: {
   opened: boolean;
   onClose: () => void;
   onConfirm: (reason: string) => void;
   entryName: string;
   loading: boolean;
+  // An approved entry being taken out of the competition
+  withdraw?: boolean;
 }) {
   const [reason, setReason] = useState("");
 
@@ -53,13 +56,14 @@ export default function RejectEntryModal({
         setReason("");
         onClose();
       }}
-      title={`Reject "${entryName}"?`}
+      title={`${withdraw ? "Withdraw" : "Reject"} "${entryName}"?`}
       centered
     >
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          The entrant gets an email with your reason. Pick one below or write
-          your own.
+          {withdraw
+            ? "It comes off the site and the map straight away, and the entrant gets an email with your reason. Pick one below or write your own."
+            : "The entrant gets an email with your reason. Pick one below or write your own."}
         </Text>
         <Group gap="xs">
           {REASONS.map((preset) => (
@@ -75,7 +79,11 @@ export default function RejectEntryModal({
         </Group>
         <Textarea
           label="Reason"
-          placeholder="Tell them why their entry wasn't approved"
+          placeholder={
+            withdraw
+              ? "Tell them why their entry has been withdrawn"
+              : "Tell them why their entry wasn't approved"
+          }
           value={reason}
           maxLength={MAX_REJECTED_REASON_LENGTH}
           onChange={(e) => setReason(e.currentTarget.value)}
@@ -104,7 +112,7 @@ export default function RejectEntryModal({
             disabled={!reason.trim() || loading}
             loading={loading}
           >
-            Reject and email them
+            {withdraw ? "Withdraw and email them" : "Reject and email them"}
           </Button>
         </Group>
       </Stack>

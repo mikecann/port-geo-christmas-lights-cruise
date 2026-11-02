@@ -16,7 +16,7 @@ stateDiagram-v2
   state "approved" as approved
   approved : submittedAt, approvedAt, entryNumber, houseAddress, name
   state "rejected" as rejected
-  rejected : rejectedAt, rejectedReason, submittedAt, houseAddress, name, entryNumber?
+  rejected : rejectedAt, rejectedReason, submittedAt, houseAddress, name, entryNumber?, approvedAt?
   [*] --> draft : ENTER (owner) [entriesOpen, notEnteredYet] / startDraft
   draft --> draft : EDIT(name?, houseAddress?) (owner) / edit
   draft --> submitting : SUBMIT (owner) [entriesOpen, hasAddress, hasName, addressIsFree] / startSubmitting
@@ -35,6 +35,7 @@ stateDiagram-v2
   submitted --> submitted : RENUMBER(entryNumber) (server) / setNumber
   submitted --> submitted : LINK_PREVIOUS(previousEntryId) (admin) [isEarlierApprovedEntry, previousNumberIsFree] / linkPrevious
   approved --> approved : RENAME(name) (owner) / rename
+  approved --> rejected : REJECT(rejectedReason) (admin) / reject
   approved --> approved : SET_NUMBER(entryNumber) (admin) [numberIsFree] / setNumber
   approved --> approved : RENUMBER(entryNumber) (server) / setNumber
   approved --> approved : LINK_PREVIOUS(previousEntryId) (admin) [isEarlierApprovedEntry, previousNumberIsFree] / linkPrevious

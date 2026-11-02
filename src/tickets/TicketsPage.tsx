@@ -1,5 +1,14 @@
-import { Button, Card, Container, Stack, Text, Title } from "@mantine/core";
-import { IconTicket } from "@tabler/icons-react";
+import {
+  Anchor,
+  Button,
+  Card,
+  Container,
+  Group,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
+import { IconClock, IconMapPin, IconTicket } from "@tabler/icons-react";
 import CruiseSchedule from "./CruiseSchedule";
 import { event, formatMoney } from "../../shared/event";
 
@@ -40,8 +49,36 @@ export default function TicketsPage() {
           </Stack>
         </Card>
 
-        {/* TODO(Mike): add where the boat leaves from and how long a cruise
-            takes once ARG confirm them. Not guessed here on purpose. */}
+        {(cruise.departsFrom || cruise.duration) && (
+          <Card withBorder radius="md" p="lg">
+            <Stack gap="xs">
+              {cruise.departsFrom && (
+                <Group gap="xs" wrap="nowrap" align="flex-start">
+                  <IconMapPin
+                    size={18}
+                    style={{ flexShrink: 0, marginTop: 3 }}
+                  />
+                  <Text>
+                    Boards at {cruise.departsFrom.name}.{" "}
+                    <Anchor
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cruise.departsFrom.mapsQuery)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Directions
+                    </Anchor>
+                  </Text>
+                </Group>
+              )}
+              {cruise.duration && (
+                <Group gap="xs" wrap="nowrap">
+                  <IconClock size={18} style={{ flexShrink: 0 }} />
+                  <Text>Each cruise takes {cruise.duration}.</Text>
+                </Group>
+              )}
+            </Stack>
+          </Card>
+        )}
         <Card withBorder radius="md" p="xl">
           <Title order={2} size="h3" mb="md">
             {event.year} cruise times

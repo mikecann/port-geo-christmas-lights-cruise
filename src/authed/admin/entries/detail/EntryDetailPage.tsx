@@ -19,6 +19,7 @@ import {
   IconMapPin,
   IconRotate,
   IconTrash,
+  IconBan,
 } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
@@ -30,6 +31,8 @@ import { routes } from "../../../../routes";
 import EntryChecks from "../EntryChecks";
 import EntryStatusBadge from "../../../EntryStatusBadge";
 import ReviewActions from "../ReviewActions";
+import RejectEntryModal from "../RejectEntryModal";
+import { InfoTip } from "../../../PageHeader";
 import EntryHistory from "./EntryHistory";
 import EntryNumberSection from "./EntryNumberSection";
 import EntryPhotosSection from "./EntryPhotosSection";
@@ -97,7 +100,9 @@ export default function EntryDetailPage({
 
   const { entry, submitter, isCurrent } = detail;
   const hasNumber =
-    entry.state.kind !== "rejected" && entry.state.entryNumber !== undefined;
+    // A withdrawn entry still holds its number (its sign is out there)
+    (entry.state.kind !== "rejected" || entry.state.approvedAt !== undefined) &&
+    entry.state.entryNumber !== undefined;
   // Rejected entries give their number back, and past years are a record
   const canChangeNumber = isCurrent && entry.state.kind !== "rejected";
 
@@ -190,6 +195,7 @@ export default function EntryDetailPage({
         <RejectedNotice
           entryId={entry._id}
           reason={entry.state.rejectedReason}
+          wasWithdrawn={entry.state.approvedAt !== undefined}
           canReopen={isCurrent}
         />
       )}
@@ -248,6 +254,10 @@ export default function EntryDetailPage({
         <EntryHistory entry={entry} earlierEntries={detail.earlierEntries} />
       </Section>
 
+      {entry.state.kind === "approved" && isCurrent && (
+        <WithdrawEntryCard entryId={entry._id} entryName={entry.state.name} />
+      )}
+
       {me?.isSystemAdmin && isCurrent && (
         <DeleteEntryCard entryId={entry._id} />
       )}
@@ -258,10 +268,12 @@ export default function EntryDetailPage({
 function RejectedNotice({
   entryId,
   reason,
+  wasWithdrawn,
   canReopen,
 }: {
   entryId: Id<"entries">;
   reason: string;
+  wasWithdrawn: boolean;
   canReopen: boolean;
 }) {
   const { confirm } = useConfirmation();
@@ -270,7 +282,11 @@ function RejectedNotice({
   );
 
   return (
-    <Alert color="red" variant="light" title="Why it was rejected">
+    <Alert
+      color="red"
+      variant="light"
+      title={wasWithdrawn ? "Why it was withdrawn" : "Why it was rejected"}
+    >
       <Stack gap="sm" align="flex-start">
         <Text size="sm">{reason}</Text>
         {canReopen && (
@@ -294,6 +310,54 @@ function RejectedNotice({
         )}
       </Stack>
     </Alert>
+  );
+}
+
+// For an approved entry that turns out to be unsuitable. It becomes rejected
+// with a reason (so it can be sent back for review if it was a mistake), comes
+// off the site and the map, and the entrant gets an email saying why.
+function WithdrawEntryCard({
+  entryId,
+  entryName,
+}: {
+  entryId: Id<"entries">;
+  entryName: string;
+}) {
+  const [opened, setOpened] = useState(false);
+  const [rejectEntry, isRejecting] = useErrorCatchingMutation(
+    api.admin.competition.entries.reject,
+  );
+  return (
+    <Card withBorder radius="md" padding="lg">
+      <Group justify="space-between" gap="sm">
+        <Group gap={6}>
+          <Text fw={600}>Withdraw from the competition</Text>
+          <InfoTip>
+            Takes it off the site and the map, and emails the entrant your
+            reason. You can send it back for review later if it was a mistake.
+          </InfoTip>
+        </Group>
+        <Button
+          color="red"
+          variant="outline"
+          leftSection={<IconBan size={16} />}
+          onClick={() => setOpened(true)}
+        >
+          Withdraw
+        </Button>
+      </Group>
+      <RejectEntryModal
+        withdraw
+        opened={opened}
+        onClose={() => setOpened(false)}
+        entryName={entryName}
+        loading={isRejecting}
+        onConfirm={async (reason) => {
+          if (await rejectEntry({ entryId, rejectedReason: reason }))
+            setOpened(false);
+        }}
+      />
+    </Card>
   );
 }
 

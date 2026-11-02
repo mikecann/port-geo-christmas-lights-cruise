@@ -1,3 +1,4 @@
+import { holdsNumber } from "../../features/entries/queries";
 import { stateDiagram } from "@convex-dev/state-machines";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
@@ -62,7 +63,8 @@ export const findByNumber = systemAdminQuery
           .eq("competitionId", competitionId)
           .eq("state.entryNumber", input.entryNumber),
       )) {
-      if (row.state.kind !== "rejected") return row._id;
+      // A withdrawn entry still holds its number, so it wins over old rejections
+      if (holdsNumber(row.state)) return row._id;
       firstRejected ??= row._id;
     }
     return firstRejected ?? null;

@@ -11,9 +11,12 @@ import { api } from "../../convex/_generated/api";
 import { HomeEntryMarker } from "./HomeEntryMarker";
 import { useEffect, useRef, useState } from "react";
 import styles from "./HomePage.module.css";
+import { homeSeason } from "./season";
 
 export default function HomePage() {
   const randomEntries = useQuery(api.public.entries.getRandomThree, {});
+  const competition = useQuery(api.public.competitions.current, {});
+  const season = homeSeason(competition ?? undefined);
   const housesRef = useRef<HTMLDivElement>(null);
   const [isOffscreen, setIsOffscreen] = useState(false);
 
@@ -62,9 +65,19 @@ export default function HomePage() {
       </Box>
       <Trees />
       <Stack bg="#02051A" gap={0}>
-        <QuickLinks />
-        <CompetitionSection />
-        <CruiseSection />
+        {/* Held until the competition loads, so the order doesn't flip */}
+        {competition !== undefined && <QuickLinks season={season} />}
+        {competition === undefined ? null : season === "cruises" ? (
+          <>
+            <CruiseSection />
+            <CompetitionSection />
+          </>
+        ) : (
+          <>
+            <CompetitionSection />
+            <CruiseSection />
+          </>
+        )}
       </Stack>
     </Box>
   );

@@ -218,23 +218,39 @@ export const email = {
 
   async sendEntryRejectionEmail(
     ctx: MutationCtx,
-    args: { to: string; entry: Doc<"entries">; rejectedReason: string },
+    args: {
+      to: string;
+      entry: Doc<"entries">;
+      rejectedReason: string;
+      // It had been approved, so it's being taken out of the competition
+      wasApproved?: boolean;
+    },
   ) {
     await resend.sendEmail(ctx, {
       from: email.adminFromAddress,
       to: args.to,
       replyTo: [email.replyToAddress],
-      subject: "Update on Your Christmas Lights Entry Application",
+      subject: args.wasApproved
+        ? "Your Christmas Lights entry has been withdrawn"
+        : "Update on Your Christmas Lights Entry Application",
       html: email.rejectionHtml(args),
     });
   },
 
-  rejectionHtml(args: { entry: Doc<"entries">; rejectedReason: string }) {
+  rejectionHtml(args: {
+    entry: Doc<"entries">;
+    rejectedReason: string;
+    wasApproved?: boolean;
+  }) {
     return `
-        <h2>Update on Your Entry Application</h2>
+        <h2>Update on Your Entry${args.wasApproved ? "" : " Application"}</h2>
         <p>Thank you for your interest in participating in the Port Geographe Christmas Lights Cruise.</p>
         
-        <p>Unfortunately, we are unable to approve your entry at this time.</p>
+        <p>${
+          args.wasApproved
+            ? "Unfortunately, we've had to withdraw your entry from this year's competition, so it no longer shows on the site or the map."
+            : "Unfortunately, we are unable to approve your entry at this time."
+        }</p>
 
       <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
           <p><strong>Property Name:</strong> ${escapeHtml(args.entry.state.name)}</p>

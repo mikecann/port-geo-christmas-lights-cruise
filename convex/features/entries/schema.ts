@@ -68,8 +68,13 @@ export const entryState = v.union(
     submittedAt: v.number(),
     houseAddress: homeAddressValidator,
     name: v.string(),
-    // Kept as a record, but a rejected entry doesn't hold its number
+    // Kept as a record, but a rejected entry doesn't hold its number,
+    // unless it was withdrawn after approval (see approvedAt)
     entryNumber: reservedEntryNumber,
+    // Set when an approved entry was withdrawn. Its sign (and QR code) is
+    // already out there, so it keeps holding its number rather than the
+    // number going to someone else's display.
+    approvedAt: v.optional(v.number()),
   }),
 );
 
