@@ -214,9 +214,17 @@ export function useVoteFlow(entry: VoteFlowEntry) {
     setLocationFailed(null);
     void measured(
       async () => {
+        // Only an in-person vote needs a location token. Fetching one can
+        // retry for a while on a bad connection, so the rest don't wait.
+        const needsToken =
+          !peoplesChoice && inPersonAllowed === true && answer === true;
         const args = peoplesChoice
           ? { sawInPerson: false, geoToken: undefined }
-          : voteToSend(answer, inPersonAllowed, await geo.forVote());
+          : voteToSend(
+              answer,
+              inPersonAllowed,
+              needsToken ? await geo.forVote() : null,
+            );
         // The page's location check is left as it was, so the in-person
         // buttons and their answer stay put for another go
         if (!args) throw new LocationUnconfirmed();

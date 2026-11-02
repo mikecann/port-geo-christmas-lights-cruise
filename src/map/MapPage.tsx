@@ -81,7 +81,9 @@ export default function MapPage({
             streetViewControl={false}
             cameraControl={false}
           >
-            <FitBoundsToEntries entries={entries} skip={!!selectedEntryId} />
+            {/* Skip only when the entry was found: a stale or unpublished link
+                should still open on every entry */}
+            <FitBoundsToEntries entries={entries} skip={!!targetEntry} />
             {targetEntry ? <CenterOnEntry entry={targetEntry} /> : null}
             <WatchZoom onChange={setIsZoomedIn} />
             <MapDebugInfo />

@@ -1,22 +1,28 @@
 import { ActionIcon, Tooltip } from "@mantine/core";
-import type { ReactNode } from "react";
+import {
+  forwardRef,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+} from "react";
 
 // One round button in the corner of the map, styled like Google's own map
 // controls. Every location state draws the same button with a different icon.
-export function LocateButton({
-  label,
-  onClick,
-  loading,
-  active,
-  children,
-}: {
-  label: string;
-  onClick?: () => void;
-  loading?: boolean;
-  // Following you around: the icon goes solid blue
-  active?: boolean;
-  children: ReactNode;
-}) {
+// It forwards its ref and any extra props to the ActionIcon so it can be a
+// Popover.Target itself, which puts aria-expanded on the real button.
+export const LocateButton = forwardRef<
+  HTMLButtonElement,
+  {
+    label: string;
+    onClick?: () => void;
+    loading?: boolean;
+    // Following you around: the icon goes solid blue
+    active?: boolean;
+    children: ReactNode;
+  } & Omit<ComponentPropsWithoutRef<"button">, "children" | "onClick">
+>(function LocateButton(
+  { label, onClick, loading, active, children, ...rest },
+  ref,
+) {
   return (
     <Tooltip
       label={label}
@@ -25,6 +31,8 @@ export function LocateButton({
       events={{ hover: true, focus: false, touch: false }}
     >
       <ActionIcon
+        {...rest}
+        ref={ref}
         size={44}
         radius="xl"
         variant={active ? "filled" : "white"}
@@ -38,4 +46,4 @@ export function LocateButton({
       </ActionIcon>
     </Tooltip>
   );
-}
+});

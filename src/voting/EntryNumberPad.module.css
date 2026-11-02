@@ -48,14 +48,20 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Quieter than a number but still readable on the dark box */
 .display[data-empty] {
-  color: var(--mantine-color-dark-3);
+  color: var(--mantine-color-dark-2);
 }
 
 /* Holds its height so the keys never move as the name comes and goes.
-   Pulled up to sit just under the number it names. */
+   Pulled up to sit just under the number it names, but never by more than
+   the pad's gap, which shrinks on short phones, so it can't overlap it. */
 .match {
   margin-top: calc(var(--mantine-spacing-xs) * -1);
+  margin-top: max(
+    calc(var(--mantine-spacing-xs) * -1),
+    calc(clamp(0.5rem, 1.75dvh, 1rem) * -1)
+  );
   display: flex;
   align-items: center;
   justify-content: center;

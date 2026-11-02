@@ -357,7 +357,8 @@ export function CastVoteButton({
         }
         loading={isBusy}
         disabled={disabled}
-        aria-disabled={isWaiting || undefined}
+        // No aria-disabled: it does something when tapped (points at the
+        // question), so a screen reader shouldn't announce it as dead
         mod={{ waiting: isWaiting }}
         className={classes.castVote}
         onClick={onClick}

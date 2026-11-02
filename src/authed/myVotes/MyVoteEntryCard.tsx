@@ -1,4 +1,5 @@
-import { Anchor, Box, Group, Image, Stack, Text } from "@mantine/core";
+import { Anchor, Box, Center, Group, Image, Stack, Text } from "@mantine/core";
+import { IconPhotoOff } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -65,6 +66,8 @@ export default function MyVoteRow({
         <Anchor
           size="sm"
           style={{ flex: "none" }}
+          // Both rows say Change, so the category tells them apart
+          aria-label={`Change ${title} vote`}
           {...routes.voteByNumber({
             entryNumber: String(vote.entry.entryNumber),
           }).link}
@@ -98,7 +101,7 @@ function Thumbnail({
         borderRadius: "var(--mantine-radius-sm)",
       }}
     >
-      {url && (
+      {url ? (
         <Image
           src={url}
           alt={name}
@@ -108,6 +111,13 @@ function Thumbnail({
           loading="lazy"
           decoding="async"
         />
+      ) : (
+        // Once loaded with no photo, say so, so it doesn't look stuck loading
+        entryWithPhotos !== undefined && (
+          <Center h="100%" role="img" aria-label="No photo">
+            <IconPhotoOff size={20} color="var(--mantine-color-dark-2)" />
+          </Center>
+        )
       )}
     </Box>
   );

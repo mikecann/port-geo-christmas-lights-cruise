@@ -36,7 +36,12 @@ export const TrackingStatus: React.FC = () => {
     <LocateButton
       label={followMe ? "Following you" : "Show where I am"}
       active={followMe}
-      onClick={() => setFollowMe(true)}
+      onClick={() => {
+        setFollowMe(true);
+        // Centre here too: picking an entry moves the map without a drag, so
+        // followMe can already be true and the effect above wouldn't rerun
+        map.setCenter({ lat: position.latitude, lng: position.longitude });
+      }}
     >
       <IconCurrentLocation size={22} />
     </LocateButton>

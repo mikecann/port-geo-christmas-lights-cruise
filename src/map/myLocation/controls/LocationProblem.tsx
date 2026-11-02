@@ -10,14 +10,12 @@ export function LocationProblem({ message }: { message: string }) {
   return (
     <Popover position="left-end" withArrow shadow="md" width={240}>
       <Popover.Target>
-        <div>
-          <LocateButton label="Can't show where you are">
-            <IconCurrentLocationOff
-              size={22}
-              color="var(--mantine-color-orange-7)"
-            />
-          </LocateButton>
-        </div>
+        <LocateButton label="Can't show where you are">
+          <IconCurrentLocationOff
+            size={22}
+            color="var(--mantine-color-orange-7)"
+          />
+        </LocateButton>
       </Popover.Target>
       <Popover.Dropdown>
         <Stack gap="xs">
