@@ -77,13 +77,22 @@ function findChrome() {
 function qrSvg(text) {
   const qr = QRCode.create(text, { errorCorrectionLevel: "M" });
   const size = qr.modules.size;
+  // get() is (row, column), so y comes first. Swapping them draws the code
+  // mirrored across its diagonal: forgiving readers still decode it, but
+  // plenty of phone cameras won't.
+  const dark = (x, y) => qr.modules.get(y, x);
   let d = "";
   for (let y = 0; y < size; y++)
-    for (let x = 0; x < size; x++)
-      if (qr.modules.get(x, y)) d += `M${x} ${y}h1v1h-1z`;
+    for (let x = 0; x < size; x++) if (dark(x, y)) d += `M${x} ${y}h1v1h-1z`;
   return {
     size,
     version: qr.version,
+    darkCells: () => {
+      const cells = new Set();
+      for (let y = 0; y < size; y++)
+        for (let x = 0; x < size; x++) if (dark(x, y)) cells.add(`${x},${y}`);
+      return cells;
+    },
     svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><path d="${d}" fill="#000"/></svg>`,
   };
 }
@@ -123,7 +132,7 @@ const css = `
 html, body { background: #0b1c3a; }
 .sign {
   position: relative; width: ${W}mm; height: ${H}mm; overflow: hidden;
-  background: #0b1c3a; color: #fff; font-family: "Merriweather Sans"; font-weight: 800;
+  background: #0b1c3a; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: "Merriweather Sans"; font-weight: 800;
   page-break-after: always; break-after: page;
 }
 .left { position: absolute; left: ${MARGIN}mm; top: 45mm; width: ${LEFT_W}mm; }
@@ -139,6 +148,32 @@ html, body { background: #0b1c3a; }
 
 function htmlDoc(pages) {
   return `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${pages.join("\n")}</body></html>`;
+}
+
+// The dark squares as the QR library's own SVG renderer draws them, which is
+// known to be the right way round. Each row is "M0 <y+0.5>" then runs of
+// "m<gap> 0" (skip) and "h<length>" (dark).
+async function libraryDarkCells(text) {
+  const svg = await QRCode.toString(text, {
+    type: "svg",
+    errorCorrectionLevel: "M",
+    margin: 0,
+  });
+  const path = svg.match(/stroke="#000000" d="([^"]+)"/)[1];
+  const cells = new Set();
+  let x = 0;
+  let y = 0;
+  for (const [, op, a, b] of path.matchAll(/([Mmh])([\d.]+)(?: ([\d.]+))?/g)) {
+    if (op === "M") {
+      x = Number(a);
+      y = Math.floor(Number(b));
+    } else if (op === "m") x += Number(a);
+    else {
+      for (let i = 0; i < Number(a); i++) cells.add(`${x + i},${y}`);
+      x += Number(a);
+    }
+  }
+  return cells;
 }
 
 const chrome = findChrome();
@@ -164,6 +199,12 @@ const pages = [];
 const versions = new Set();
 for (const n of numbers) {
   const { html, qr } = signPage(n);
+  // A flipped code still decodes in forgiving readers (jsQR did), so compare
+  // every square with the library's own drawing instead of trusting a decode
+  const ours = qr.darkCells();
+  const theirs = await libraryDarkCells(`${SITE}/v/${n}`);
+  if (ours.size !== theirs.size || [...ours].some((c) => !theirs.has(c)))
+    throw new Error(`The QR code for sign ${n} doesn't match the library's`);
   versions.add(`v${qr.version} (${qr.size}x${qr.size})`);
   pages.push(html);
   const htmlPath = join(outDir, `sign-${n}.html`);
