@@ -74,10 +74,8 @@ Resend won't send from dev, so set `AUTH_LOG_SIGNIN_CODES=true` on the dev deplo
 
 Outside the season two flags close sign-ups:
 
-- `IS_SIGNUP_DISABLED=true` on the Convex deployment. This is the actual lock: existing accounts (admins included) can still sign in with Google or an email code, but neither can create new ones.
-- `VITE_IS_SIGNUP_DISABLED=true` in the frontend build. This only swaps the sign-in page for an "under construction" message. Admins can still reach the sign-in options at `/signin?returnTo=/admin&unlock=true`.
-
-Turn both off when sign-ups open.
+- `IS_SIGNUP_DISABLED=true` on the Convex deployment. This is the actual lock: existing accounts (admins included) can still sign in with Google or an email code, but neither can create new ones. It lifts by itself while the current (newest) competition has entries or voting open, since both need an account, so it can stay on all year.
+- `VITE_IS_SIGNUP_DISABLED=true` in the frontend build. This only swaps the sign-in page for an "under construction" message. Admins can still reach the sign-in options at `/signin?returnTo=/admin&unlock=true`. It doesn't follow the competition, so leave it off in the frontend build whenever entries or voting are open.
 
 #### Letting named people in, and making admins
 

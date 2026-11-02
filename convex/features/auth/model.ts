@@ -21,6 +21,7 @@ import {
   SIGN_IN_CODE_LIFETIME_MINUTES,
 } from "../../../shared/auth";
 import { ensure } from "../../../shared/ensure";
+import { competitions } from "../competitions/model";
 import { email } from "../email/model";
 import { enforceRateLimit } from "../rateLimits/lib";
 
@@ -69,14 +70,24 @@ export const signInAccess = {
   // only UI; this is what enforces it.
   isSignupDisabled: () => isEnvFlagOn("IS_SIGNUP_DISABLED"),
 
+  // Entering and voting both need an account, so the lock steps aside while
+  // the current competition takes either. In 2026 it was left on after
+  // entries opened and turned new entrants away; this way nobody has to
+  // remember to flip it. No competition at all counts as off-season.
+  async isSeasonOpen(db: DatabaseReader) {
+    const [current] = await competitions.query({ db }).listNewestFirst(1);
+    return current !== undefined && (current.entriesOpen || current.votingOpen);
+  },
+
   isCompetitionAdminEmail: (address: string) =>
     emailList("COMPETITION_ADMIN_EMAILS").includes(normalizeEmail(address)),
 
   // People on SIGNUP_ALLOWED_EMAILS can make an account while sign-ups are
   // closed. Admins-to-be on COMPETITION_ADMIN_EMAILS can too, so they don't
   // need listing twice.
-  canSignUp(address: string | undefined) {
+  async canSignUp(db: DatabaseReader, address: string | undefined) {
     if (!signInAccess.isSignupDisabled()) return true;
+    if (await signInAccess.isSeasonOpen(db)) return true;
     if (address === undefined) return false;
     return (
       emailList("SIGNUP_ALLOWED_EMAILS").includes(normalizeEmail(address)) ||
@@ -211,7 +222,10 @@ export async function createOrUpdateUser(
       throw new ConvexError(INVALID_EMAIL_MESSAGE);
     await enforceRateLimit(ctx, "sendSignInCode", address);
     if (args.existingUserId !== null) return args.existingUserId;
-    if (verifiedPeople.length === 0 && !signInAccess.canSignUp(address))
+    if (
+      verifiedPeople.length === 0 &&
+      !(await signInAccess.canSignUp(ctx.db, address))
+    )
       throw new ConvexError(SIGNUPS_CLOSED_MESSAGE);
     return await ctx.db.insert("users", {
       email: address,
@@ -233,7 +247,7 @@ export async function createOrUpdateUser(
   }
   const isNewPerson = userId === null || userId === standIn;
 
-  if (isNewPerson && !signInAccess.canSignUp(address))
+  if (isNewPerson && !(await signInAccess.canSignUp(ctx.db, address)))
     throw new ConvexError(SIGNUPS_CLOSED_MESSAGE);
   // An unchecked email can't take over one that's already in use
   if (userId === null && !isVerified && people.length > 0)
