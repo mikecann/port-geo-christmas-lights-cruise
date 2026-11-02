@@ -83,7 +83,9 @@ export default function PhotoTile({
             )}
           </UnstyledButton>
         </AspectRatio>
-        {onRemove && !isUploading && (
+        {/* Stays up while uploading, so a stalled upload can still be cleared
+            out of its slot */}
+        {onRemove && (
           <ActionIcon
             // A big enough target for a thumb, but dark and quiet so it
             // doesn't shout over the photo

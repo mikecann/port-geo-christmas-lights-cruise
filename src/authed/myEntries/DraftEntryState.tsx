@@ -2,9 +2,9 @@ import { measured } from "../../analytics/client";
 import { Alert, Card, Stack, Button, TextInput, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconCheck } from "@tabler/icons-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useMutation, useAction, useQuery } from "convex/react";
-import { useDebounce } from "use-debounce";
+import { useDebouncedCallback } from "use-debounce";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { useConfirmation } from "../../common/components/confirmation/useConfirmation";
@@ -56,24 +56,31 @@ export default function DraftEntryState({
     entry.state.kind === "draft" ? entry.state.houseAddress : undefined,
   );
 
-  // Debounce form values for auto-save
-  const [debouncedName] = useDebounce(name, 500);
-
-  // Track if this is the first render to avoid saving on mount
-  const isFirstRender = useRef(true);
-
-  // // Auto-save effect
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
-    updateEntry({
-      houseAddress: selectedAddress,
-      name: debouncedName,
-    });
-  }, [debouncedName, selectedAddress, updateEntry]);
+  // The draft saves itself: typing waits for a pause, picking an address
+  // saves at once. The last save is kept so sending it in can wait for it,
+  // and isNamePending keeps the header on "Saving…" until a typed name has
+  // actually gone off.
+  const lastSave = useRef<Promise<boolean>>(Promise.resolve(true));
+  const [isNamePending, setIsNamePending] = useState(false);
+  const save = (fields: {
+    name: string;
+    houseAddress: typeof selectedAddress;
+  }) => {
+    setIsNamePending(false);
+    lastSave.current = updateEntry(fields);
+    return lastSave.current;
+  };
+  const saveName = useDebouncedCallback(
+    (value: string) => save({ name: value, houseAddress: selectedAddress }),
+    500,
+    // Leaving the page straight after typing still saves it
+    { flushOnExit: true },
+  );
+  const saveAddress = (houseAddress: typeof selectedAddress) => {
+    // This save carries the latest name too, so a waiting one isn't needed
+    saveName.cancel();
+    void save({ name, houseAddress });
+  };
 
   const hasAddress = !!selectedAddress?.placeId;
   const hasName = !!name.trim();
@@ -94,7 +101,7 @@ export default function DraftEntryState({
         <DraftEntryHeader
           entry={entry}
           name={name}
-          isSaving={isSaving}
+          isSaving={isSaving || isNamePending}
           previousYear={isKeepingNumber ? previous?.year : undefined}
           onRemove={async () => {
             const confirmed = await confirm({
@@ -142,11 +149,16 @@ export default function DraftEntryState({
                 setAddress(value);
                 // Once the text is edited it's no longer the address that
                 // was picked, so drop it rather than save the old one
-                if (selectedAddress && value !== selectedAddress.address)
+                if (selectedAddress && value !== selectedAddress.address) {
                   setSelectedAddress(undefined);
+                  saveAddress(undefined);
+                }
               }}
               maxLength={MAX_ENTRY_ADDRESS_LENGTH}
-              onSelect={(val) => setSelectedAddress(val)}
+              onSelect={(val) => {
+                setSelectedAddress(val);
+                saveAddress(val);
+              }}
               error={
                 hasAddress || !(addressTouched || triedToSubmit)
                   ? null
@@ -160,7 +172,11 @@ export default function DraftEntryState({
             required
             value={name}
             maxLength={MAX_ENTRY_NAME_LENGTH}
-            onChange={(e) => setName(e.currentTarget.value)}
+            onChange={(e) => {
+              setName(e.currentTarget.value);
+              setIsNamePending(true);
+              saveName(e.currentTarget.value);
+            }}
             error={triedToSubmit && !hasName ? "Add a name" : null}
           />
 
@@ -181,12 +197,19 @@ export default function DraftEntryState({
             size="lg"
             disabled={isPhotosUploading}
             loading={isSubmitting}
-            onClick={() => {
+            onClick={async () => {
               if (missing) {
                 setTriedToSubmit(true);
                 return;
               }
               setIsSubmitting(true);
+              // Sending it in checks the saved draft, so a name typed in the
+              // last half second has to be saved first
+              saveName.flush();
+              if (!(await lastSave.current)) {
+                setIsSubmitting(false);
+                return;
+              }
               measured(() => submitMyEntry(), "entry_submit", {
                 entry_id: entry._id,
                 competition_id: entry.competitionId,

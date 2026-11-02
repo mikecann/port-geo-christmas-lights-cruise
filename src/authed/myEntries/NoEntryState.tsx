@@ -71,12 +71,9 @@ export default function NoEntryState({
             : "Enter your house in the Christmas lights competition to show off your display and be in the running for prizes."}
         </Text>
         <Button mt="md" loading={isEntering} onClick={enter} size="md">
-          {/* Last year's numbers are held for the people who had them, so
-              it's theirs unless an admin gave it away. The draft says so if
-              it was. */}
-          {previous
-            ? `Enter again as #${previous.entry.entryNumber}`
-            : "Enter the competition"}
+          {/* No number here: it's usually theirs again, but an admin may
+              have given it away, and the draft says which once it exists */}
+          {previous ? "Enter again" : "Enter the competition"}
         </Button>
       </Stack>
     </Card>

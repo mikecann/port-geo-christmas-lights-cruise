@@ -16,12 +16,12 @@ export default function EntryNameLabel() {
         <InfoTip size={14}>
           <Stack gap={6}>
             <Text size="sm">
-              Each entry is shown by its entrant number and entry name only, on
-              the site and the map.
+              Your entry name, number and address are shown on the site and the
+              map, so people can find your display.
             </Text>
             <Text size="sm">
-              Please avoid using your full name or home address as your entry
-              name. Instead, give your display a fun, festive title.
+              Please avoid using your own name as your entry name. Instead, give
+              your display a fun, festive title.
             </Text>
           </Stack>
         </InfoTip>

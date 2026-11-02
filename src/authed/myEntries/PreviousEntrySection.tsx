@@ -45,9 +45,11 @@ export default function PreviousEntrySection({
       <UnstyledButton
         onClick={() => setIsOpen((open) => !open)}
         aria-expanded={isOpen}
+        maw="100%"
       >
         <Group gap={4} wrap="nowrap">
-          <Text size="sm" c="dimmed">
+          {/* Truncated so a long name can't push the page wider than a phone */}
+          <Text size="sm" c="dimmed" truncate miw={0}>
             Your {year} entry: {entry.name}, #{entry.entryNumber}
           </Text>
           <IconChevronRight
@@ -74,7 +76,7 @@ function PreviousEntryCard({ previous }: { previous: PreviousEntry }) {
     <Card padding="lg" radius="md" withBorder>
       <Stack gap="sm">
         <Group justify="space-between" align="flex-start" wrap="nowrap">
-          <Text fw={600} size="lg">
+          <Text fw={600} size="lg" miw={0} style={{ overflowWrap: "anywhere" }}>
             {entry.name}
           </Text>
           <Text fz={24} fw={700} lh={1} c="dimmed">

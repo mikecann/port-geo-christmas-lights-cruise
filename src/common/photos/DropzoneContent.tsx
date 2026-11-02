@@ -1,5 +1,6 @@
 import { Group, Text } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
+import { useMediaQuery } from "@mantine/hooks";
 import { IconUpload, IconX, IconPhotoPlus } from "@tabler/icons-react";
 
 interface DropzoneContentProps {
@@ -8,13 +9,14 @@ interface DropzoneContentProps {
   remainingPhotos: number;
 }
 
-// Most people add photos from a phone, so it says tap. Dragging still works
-// on a computer without needing to be spelled out.
+// Most people add photos from a phone, so it says tap there. With a mouse
+// (admins on a computer, mostly) it says click or drop instead.
 export default function DropzoneContent({
   isUploading,
   uploadingCount,
   remainingPhotos,
 }: DropzoneContentProps) {
+  const hasMouse = useMediaQuery("(hover: hover) and (pointer: fine)");
   return (
     <Group
       justify="center"
@@ -44,7 +46,7 @@ export default function DropzoneContent({
       <Text size="sm">
         {isUploading
           ? `Uploading ${uploadingCount} photo${uploadingCount === 1 ? "" : "s"}…`
-          : `Tap to add photos (up to ${remainingPhotos})`}
+          : `${hasMouse ? "Click or drop photos here" : "Tap to add photos"} (up to ${remainingPhotos})`}
       </Text>
     </Group>
   );
