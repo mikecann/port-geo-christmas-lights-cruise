@@ -7,7 +7,7 @@ import {
   Group,
   Text,
 } from "@mantine/core";
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { routes } from "../../routes";
 import FooterNavigation from "./FooterNavigation";
 import FooterEventInfo from "./FooterEventInfo";
@@ -44,6 +44,8 @@ export default function Footer() {
   );
 }
 
+const DOT_WIDTH = 8;
+
 // The columns stack into a whole screen of footer on a phone, on every page,
 // so phones get one row of links instead
 function PhoneFooter() {
@@ -67,18 +69,22 @@ function PhoneFooter() {
   ];
   return (
     <Stack gap="sm" hiddenFrom="md">
-      <Group gap={8} style={{ rowGap: 4 }}>
-        {links.map((link, i) => (
-          <Fragment key={i}>
-            {i > 0 && (
-              <Text c="dimmed" size="sm" aria-hidden>
+      {/* Every link carries a dot in front, and the row is pulled left by
+          one dot so the first dot on each line sits outside the clipped box.
+          That way a wrapped line never starts or ends on a dot. The padding
+          keeps the links' focus rings inside the clip. */}
+      <Box style={{ overflow: "hidden" }} ml={-4} pl={4}>
+        <Group gap={8} style={{ rowGap: 4, marginLeft: -(DOT_WIDTH + 8) }}>
+          {links.map((link, i) => (
+            <Group key={i} gap={8} wrap="nowrap">
+              <Text c="dimmed" size="sm" w={DOT_WIDTH} ta="center" aria-hidden>
                 ·
               </Text>
-            )}
-            {link}
-          </Fragment>
-        ))}
-      </Group>
+              {link}
+            </Group>
+          ))}
+        </Group>
+      </Box>
       <Group justify="space-between" align="center" wrap="nowrap">
         <Copyright />
         <ContactIcons />

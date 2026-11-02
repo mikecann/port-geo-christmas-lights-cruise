@@ -24,11 +24,12 @@ export function FooterLink({
 }
 
 // Signed in it goes to your entry, signed out via sign-in, and while entries
-// are closed it explains that instead
+// are closed it explains that instead. Still loading counts as closed, so
+// the link can't be followed before we know entries are open.
 export function EnterCompetitionLink({ children }: { children: ReactNode }) {
   const competition = useQuery(api.public.competitions.current, {});
 
-  if (competition?.entriesOpen === false)
+  if (competition?.entriesOpen !== true)
     return <EntrySignupUnavailableButton link label={children} />;
 
   return (

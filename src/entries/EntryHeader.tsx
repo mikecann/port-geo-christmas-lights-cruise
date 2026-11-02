@@ -24,7 +24,15 @@ export default function EntryHeader({ entry, entryId }: EntryHeaderProps) {
       <Stack gap="md">
         <Stack gap={6}>
           <Group gap="sm" align="center" wrap="nowrap">
-            <Title order={1} fz={{ base: 26, sm: 32 }} lh={1.2}>
+            {/* Shrinks and breaks anywhere, so a long name can't push the
+                card wider than a phone */}
+            <Title
+              order={1}
+              fz={{ base: 26, sm: 32 }}
+              lh={1.2}
+              miw={0}
+              style={{ overflowWrap: "anywhere" }}
+            >
               {entry.name}
             </Title>
             <EntryNumber
