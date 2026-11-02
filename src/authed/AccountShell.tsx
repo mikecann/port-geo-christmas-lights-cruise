@@ -358,6 +358,8 @@ function Status({ label, isOpen }: { label: string; isOpen: boolean }) {
       gap={4}
       wrap="nowrap"
       title={`${label} ${isOpen ? "open" : "closed"}`}
+      aria-label={`${label} ${isOpen ? "open" : "closed"}`}
+      role="img"
     >
       <Box
         w={6}
