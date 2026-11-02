@@ -16,36 +16,18 @@ import {
 } from "@mantine/core";
 import { IconAlertTriangle, IconInfoCircle } from "@tabler/icons-react";
 import { useQuery } from "convex/react";
-import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { routes } from "../../../routes";
 import { AdminPageHeader } from "../AdminLayout";
 import { ENTRY_STATUS_LABELS } from "../entries/entryStatus";
-import NumberRangeCard from "./NumberRangeCard";
-
-type NumberRow = FunctionReturnType<
-  typeof api.admin.competition.numbers.list
->["numbers"][number];
-
-type State = "used" | "pending" | "kept" | "free";
-
-const STATES: Record<State, { label: string; color: string }> = {
-  used: { label: "Used by an approved entry", color: "green" },
-  pending: { label: "Held by an entry not approved yet", color: "yellow" },
-  kept: { label: "Kept for last year's entrant", color: "blue" },
-  free: { label: "Free", color: "gray" },
-};
-
-const stateOf = (row: NumberRow): State => {
-  if (row.holder) return row.holder.status === "approved" ? "used" : "pending";
-  if (row.reservedFor) return "kept";
-  return "free";
-};
-
-// Something an admin should sort out: a number in use with no sign printed
-const needsAttention = (row: NumberRow) =>
-  row.isOutsideRange && stateOf(row) !== "free";
+import {
+  NUMBER_STATES as STATES,
+  needsAttention,
+  stateOf,
+  type NumberRow,
+  type NumberState as State,
+} from "./numberState";
 
 // The grid shows every number, so the list starts on the ones in use
 const FILTERS = [
@@ -83,10 +65,9 @@ export default function NumbersPage() {
     <Stack gap="xl">
       <AdminPageHeader
         title="Numbers"
-        description="Every entrant has a number that matches their printed sign and QR code. Numbers stay with the same person every year, so signs can be reused."
+        info="Every entrant has a number that matches their printed sign and QR code. Numbers stay with the same person every year, so signs can be reused."
+        actions={<RangeLink />}
       />
-
-      <NumberRangeCard />
 
       {flagged.length > 0 && (
         <Alert
@@ -235,5 +216,20 @@ function NumberListRow({ row }: { row: NumberRow }) {
         </Stack>
       </Group>
     </Paper>
+  );
+}
+
+// The range is set on Settings with the other competition settings; it's
+// shown here because it decides which numbers have a sign
+function RangeLink() {
+  const range = useQuery(
+    api.admin.competition.competitions.getEntryNumberRange,
+  );
+  if (!range) return null;
+  return (
+    <Text size="sm" c="dimmed">
+      Signs printed for {range.min} to {range.max}.{" "}
+      <Anchor {...routes.adminSettings().link}>Change</Anchor>
+    </Text>
   );
 }

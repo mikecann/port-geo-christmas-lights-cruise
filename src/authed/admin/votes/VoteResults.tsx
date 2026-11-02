@@ -1,4 +1,13 @@
-import { Card, SimpleGrid, Stack, Table, Text, Title } from "@mantine/core";
+import {
+  Card,
+  Group,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+  Title,
+} from "@mantine/core";
+import { InfoTip } from "../AdminLayout";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../../../convex/_generated/api";
@@ -7,6 +16,9 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 type Ranking = FunctionReturnType<
   typeof api.admin.competition.votes.results
 >["peoplesChoice"];
+
+const votesLabel = (count: number) =>
+  `${count} ${count === 1 ? "vote" : "votes"}`;
 
 function RankingTable({
   title,
@@ -20,21 +32,26 @@ function RankingTable({
   return (
     <Card withBorder radius="md" padding="lg">
       <Stack gap="xs">
-        <Title order={3} fz="lg">
-          {title}
-        </Title>
-        <Text size="sm" c="dimmed">
-          {description}
-        </Text>
+        <Group justify="space-between" wrap="nowrap">
+          <Group gap={6} wrap="nowrap">
+            <Title order={3} fz="lg">
+              {title}
+            </Title>
+            <InfoTip>{description}</InfoTip>
+          </Group>
+          <Text size="sm" c="dimmed">
+            {votesLabel(ranking.reduce((total, row) => total + row.votes, 0))}
+          </Text>
+        </Group>
         {ranking.length === 0 ? (
           <Text size="sm" c="dimmed">
             No votes yet.
           </Text>
         ) : (
-          <Table striped withTableBorder>
+          <Table verticalSpacing={6}>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>Place</Table.Th>
+                <Table.Th w={40}>#</Table.Th>
                 <Table.Th>Entry</Table.Th>
                 <Table.Th ta="right">Votes</Table.Th>
               </Table.Tr>
@@ -42,9 +59,12 @@ function RankingTable({
             <Table.Tbody>
               {ranking.map((row) => (
                 <Table.Tr key={row.entryId}>
-                  <Table.Td>{row.rank}</Table.Td>
+                  <Table.Td c="dimmed">{row.rank}</Table.Td>
                   <Table.Td>
-                    #{row.entryNumber} {row.entryName}
+                    <Text span c="dimmed" size="sm">
+                      #{row.entryNumber}
+                    </Text>{" "}
+                    {row.entryName}
                   </Table.Td>
                   <Table.Td ta="right">{row.votes}</Table.Td>
                 </Table.Tr>

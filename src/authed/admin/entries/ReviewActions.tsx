@@ -1,4 +1,5 @@
-import { Button, Group } from "@mantine/core";
+import type { ReactNode } from "react";
+import { Button, Group, Stack } from "@mantine/core";
 import { IconCheck, IconX } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { api } from "../../../../convex/_generated/api";
@@ -10,9 +11,12 @@ import RejectEntryModal from "./RejectEntryModal";
 export default function ReviewActions({
   entryId,
   entryName,
+  stacked = false,
 }: {
   entryId: Id<"entries">;
   entryName: string;
+  // Approve above Reject, for the narrow column on the review cards
+  stacked?: boolean;
 }) {
   const [rejectOpened, { open: openReject, close: closeReject }] =
     useDisclosure(false);
@@ -25,7 +29,7 @@ export default function ReviewActions({
 
   return (
     <>
-      <Group gap="sm" grow>
+      <Buttons stacked={stacked}>
         <Button
           leftSection={<IconCheck size={18} />}
           color="green"
@@ -46,7 +50,7 @@ export default function ReviewActions({
         >
           Reject
         </Button>
-      </Group>
+      </Buttons>
 
       <RejectEntryModal
         opened={rejectOpened}
@@ -59,5 +63,23 @@ export default function ReviewActions({
         loading={isRejecting}
       />
     </>
+  );
+}
+
+// Side by side on an entry's page; Approve above Reject in the review cards'
+// narrow column
+function Buttons({
+  stacked,
+  children,
+}: {
+  stacked: boolean;
+  children: ReactNode;
+}) {
+  return stacked ? (
+    <Stack gap="sm">{children}</Stack>
+  ) : (
+    <Group gap="sm" grow>
+      {children}
+    </Group>
   );
 }

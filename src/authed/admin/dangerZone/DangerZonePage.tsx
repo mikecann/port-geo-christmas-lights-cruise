@@ -57,7 +57,7 @@ export default function DangerZonePage() {
     <Stack gap="xl">
       <AdminPageHeader
         title="Danger zone"
-        description="Tools for testing and looking after the site. Only system admins can see this page."
+        info="Tools for testing and looking after the site. Only system admins can see this page."
       />
 
       <Alert color="red" variant="light" icon={<IconAlertTriangle size={16} />}>

@@ -82,7 +82,7 @@ function AdminRoutes({ route }: { route: Route<typeof routeGroups.admin> }) {
 }
 
 function AdminPage({ route }: { route: Route<typeof routeGroups.admin> }) {
-  if (route.name === "admin") return <LazyPages.AdminOverviewPage />;
+  if (route.name === "admin") return <LazyPages.AdminHomePage />;
   if (route.name === "adminEntries") return <LazyPages.AdminEntriesPage />;
   if (route.name === "adminEntry")
     return (
@@ -93,6 +93,7 @@ function AdminPage({ route }: { route: Route<typeof routeGroups.admin> }) {
   if (route.name === "adminNumbers") return <LazyPages.AdminNumbersPage />;
   if (route.name === "adminVotes") return <LazyPages.AdminVotesPage />;
   if (route.name === "adminPeople") return <LazyPages.AdminPeoplePage />;
+  if (route.name === "adminSettings") return <LazyPages.AdminSettingsPage />;
   if (route.name === "adminSystem") return <LazyPages.AdminDangerZonePage />;
   if (route.name === "adminMachines")
     return <LazyPages.AdminMachinesPage entryId={route.params.entry} />;

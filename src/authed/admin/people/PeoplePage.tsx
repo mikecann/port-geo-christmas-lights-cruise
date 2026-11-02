@@ -24,7 +24,7 @@ export default function PeoplePage() {
     <Stack gap="xl">
       <AdminPageHeader
         title="People"
-        description="Everyone who has signed in to the site. Make someone an admin here once they've signed in."
+        info="Everyone who has signed in to the site. Make someone an admin here once they've signed in."
       />
 
       <Card withBorder radius="md" padding="lg">

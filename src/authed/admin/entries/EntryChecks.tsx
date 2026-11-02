@@ -98,31 +98,45 @@ export default function EntryChecks({
 
       {previous ? (
         <Check tone="info" icon={<IconRepeat size={14} />}>
-          Returning entrant: #{previous.entryNumber} in {previous.year} as{" "}
+          Returning: #{previous.entryNumber} in {previous.year}
+          {/* Some 2025 entries were saved without a name */}
+          {previous.name ? " as " : ", "}
           <Anchor {...routes.adminEntry({ entryId: previous._id }).link}>
-            {previous.name}
+            {previous.name || "see that entry"}
           </Anchor>
         </Check>
       ) : (
         <Check tone="info" icon={<IconSparkles size={14} />}>
-          New entrant: no approved entry in earlier years
+          New entrant
         </Check>
       )}
 
       {checks.previousNumberHeldBy && previous && (
         <Check tone="warn" icon={<IconAlertTriangle size={14} />}>
-          Last year's number #{previous.entryNumber} is now used by{" "}
+          Last year's #{previous.entryNumber} is now used by{" "}
           <Anchor
             {...routes.adminEntry({ entryId: checks.previousNumberHeldBy._id })
               .link}
           >
             {checks.previousNumberHeldBy.name || "another entry"}
           </Anchor>
-          , so they'll get a different number.
+          , so they{" "}
+          {entry.state.kind !== "rejected" &&
+          entry.state.entryNumber !== undefined
+            ? `get #${entry.state.entryNumber} instead`
+            : "get a different number"}
+          .
         </Check>
       )}
 
       {entry.state.kind !== "rejected" &&
+        // The clash line above already says which number they get
+        !(
+          checks.previousNumberHeldBy &&
+          previous &&
+          entry.state.entryNumber !== undefined &&
+          !isNumberOutsideRange
+        ) &&
         (entry.state.entryNumber === undefined ? (
           <Check tone="info" icon={<IconHash size={14} />}>
             Gets a free number when you approve it

@@ -45,8 +45,8 @@ export const MyVotesPage = lazy(
 );
 
 export const AdminLayout = lazy(() => import("../../authed/admin/AdminLayout"));
-export const AdminOverviewPage = lazy(
-  () => import("../../authed/admin/overview/OverviewPage"),
+export const AdminHomePage = lazy(
+  () => import("../../authed/admin/home/HomePage"),
 );
 export const AdminEntriesPage = lazy(
   () => import("../../authed/admin/entries/EntriesPage"),
@@ -62,6 +62,9 @@ export const AdminVotesPage = lazy(
 );
 export const AdminPeoplePage = lazy(
   () => import("../../authed/admin/people/PeoplePage"),
+);
+export const AdminSettingsPage = lazy(
+  () => import("../../authed/admin/settings/SettingsPage"),
 );
 export const AdminDangerZonePage = lazy(
   () => import("../../authed/admin/dangerZone/DangerZonePage"),
