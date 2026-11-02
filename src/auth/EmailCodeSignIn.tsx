@@ -21,17 +21,69 @@ const SEND_FAILED_MESSAGE =
 const WRONG_CODE_MESSAGE =
   "That code didn't work. Check it and try again, or send a new one.";
 
+// Which address a code went to, kept for the tab. iPhones often reload the
+// tab while someone is over in Mail fetching the code, which would otherwise
+// put them back at the email step with a code they can't type in.
+const SENT_KEY = "pg-email-code-sent-v1";
+
+type SentCode = { email: string; sentAt: number };
+
+const sentCodes = {
+  read(): SentCode | null {
+    try {
+      const saved: unknown = JSON.parse(
+        window.sessionStorage.getItem(SENT_KEY) ?? "null",
+      );
+      if (typeof saved !== "object" || saved === null) return null;
+      const { email, sentAt } = saved as Record<string, unknown>;
+      if (typeof email !== "string" || typeof sentAt !== "number") return null;
+      // Only while the code still works
+      if (Date.now() - sentAt > SIGN_IN_CODE_LIFETIME_MINUTES * 60_000)
+        return null;
+      return { email, sentAt };
+    } catch {
+      return null;
+    }
+  },
+  save(email: string) {
+    try {
+      window.sessionStorage.setItem(
+        SENT_KEY,
+        JSON.stringify({ email, sentAt: Date.now() } satisfies SentCode),
+      );
+    } catch {
+      /* Storage unavailable: it just won't survive a reload. */
+    }
+  },
+  clear() {
+    try {
+      window.sessionStorage.removeItem(SENT_KEY);
+    } catch {
+      /* Nothing to clear. */
+    }
+  },
+};
+
+const secondsUntilResend = (sent: SentCode | null) =>
+  sent
+    ? Math.max(
+        0,
+        Math.ceil(RESEND_AFTER_SECONDS - (Date.now() - sent.sentAt) / 1000),
+      )
+    : 0;
+
 // Signing in moves the page on by itself (see SignInPage), so this only has
 // to get the code checked. Compact is the vote page's sheet, which keeps the
 // words to a minimum.
 export function EmailCodeSignIn({ compact = false }: { compact?: boolean }) {
   const { signIn } = useAuthActions();
-  const [email, setEmail] = useState("");
-  const [sentTo, setSentTo] = useState<string>();
+  const [restored] = useState(sentCodes.read);
+  const [email, setEmail] = useState(restored?.email ?? "");
+  const [sentTo, setSentTo] = useState(restored?.email);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string>();
   const [isBusy, setIsBusy] = useState(false);
-  const [resendIn, setResendIn] = useState(0);
+  const [resendIn, setResendIn] = useState(() => secondsUntilResend(restored));
   const resendLabel = compact ? "Resend" : "Resend code";
 
   useEffect(() => {
@@ -46,6 +98,7 @@ export function EmailCodeSignIn({ compact = false }: { compact?: boolean }) {
     authStarted();
     try {
       await signIn(EMAIL_CODE_PROVIDER_ID, { email: address });
+      sentCodes.save(address);
       setSentTo(address);
       setCode("");
       setResendIn(RESEND_AFTER_SECONDS);
@@ -67,7 +120,10 @@ export function EmailCodeSignIn({ compact = false }: { compact?: boolean }) {
         email: sentTo,
         code: value,
       });
-      if (signingIn) return;
+      if (signingIn) {
+        sentCodes.clear();
+        return;
+      }
     } catch (checkError) {
       message = getErrorMessage(checkError, WRONG_CODE_MESSAGE);
     }
@@ -177,6 +233,7 @@ export function EmailCodeSignIn({ compact = false }: { compact?: boolean }) {
             variant="subtle"
             size="compact-sm"
             onClick={() => {
+              sentCodes.clear();
               setSentTo(undefined);
               setCode("");
               setError(undefined);
