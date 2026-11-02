@@ -8,6 +8,8 @@ import { TopLogo } from "./TopLogo";
 import { MenuItem } from "../components/MenuItem";
 import Footer from "../footer/Footer";
 import { useScrolledPast } from "../hooks/useScrolledPast";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 interface MobileNavbarProps {
   children: React.ReactNode;
@@ -34,7 +36,8 @@ export function MainAppShell({ children }: MobileNavbarProps) {
       header={{ height: 60 }}
       navbar={{
         width: 300,
-        breakpoint: "xs",
+        // Four menu items and the sign-in button need more room than "xs" gives
+        breakpoint: "sm",
         collapsed: { desktop: true, mobile: !opened },
       }}
       padding="md"
@@ -60,7 +63,7 @@ export function MainAppShell({ children }: MobileNavbarProps) {
             <Burger
               opened={opened}
               onClick={toggle}
-              hiddenFrom="xs"
+              hiddenFrom="sm"
               size="sm"
             />
             <Group justify="space-between" style={{ flex: 1 }}>
@@ -73,11 +76,11 @@ export function MainAppShell({ children }: MobileNavbarProps) {
               >
                 <TopLogo />
               </div>
-              <Group gap={"xs"} visibleFrom="xs">
+              <Group gap={"xs"} visibleFrom="sm">
                 <MenuItems />
                 <MeOrSignIn />
               </Group>
-              <Group gap={0} hiddenFrom="xs">
+              <Group gap={0} hiddenFrom="sm">
                 <MeOrSignIn />
               </Group>
             </Group>
@@ -113,10 +116,15 @@ export function MainAppShell({ children }: MobileNavbarProps) {
 }
 
 function MenuItems() {
+  const competition = useQuery(api.public.competitions.current, {});
   return (
     <>
       <MenuItem link={routes.entries().link}>Entries</MenuItem>
       <MenuItem link={routes.map().link}>Map</MenuItem>
+      <MenuItem link={routes.tickets().link}>Tickets</MenuItem>
+      {competition?.votingOpen && (
+        <MenuItem link={routes.voteLanding().link}>Vote</MenuItem>
+      )}
     </>
   );
 }

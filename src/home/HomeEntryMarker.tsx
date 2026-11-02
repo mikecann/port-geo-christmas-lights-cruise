@@ -4,6 +4,7 @@ import { usePhotoUrl } from "../common/hooks/usePhotoUrl";
 import { routes } from "../routes";
 import { useState } from "react";
 import styles from "./HomeEntryMarker.module.css";
+import { ENTRY_NUMBER_BG, EntryNumber } from "../common/components/EntryNumber";
 
 interface HomeEntryMarkerProps {
   entry: EntryWithFirstPhoto;
@@ -51,8 +52,8 @@ export function HomeEntryMarker({ entry, position }: HomeEntryMarkerProps) {
               width: "60px",
               height: "60px",
               borderRadius: "50%",
-              border: "3px solid #228be6",
-              background: "white",
+              border: `3px solid ${ENTRY_NUMBER_BG}`,
+              background: "#0b1c3b",
               overflow: "hidden",
               display: "flex",
               alignItems: "center",
@@ -75,29 +76,21 @@ export function HomeEntryMarker({ entry, position }: HomeEntryMarkerProps) {
                 }}
               />
             ) : (
-              <div style={{ color: "#228be6", fontSize: "24px" }}>🎄</div>
+              <div style={{ fontSize: "24px" }}>🎄</div>
             )}
           </div>
 
-          {/* Entry number badge */}
-          <div
+          <EntryNumber
+            number={entryNumber}
+            size="xs"
             style={{
               position: "absolute",
-              bottom: "2px",
-              right: "-2px",
-              backgroundColor: "#228be6",
-              color: "white",
-              borderRadius: "14px",
-              padding: "0px 4px",
-              fontSize: "12px",
-              fontWeight: "bold",
-              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.4)",
+              bottom: 0,
+              right: -8,
               zIndex: 3,
-              border: "2px solid white",
+              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.4)",
             }}
-          >
-            #{entryNumber}
-          </div>
+          />
 
           {/* Triangular point */}
           <div
@@ -110,7 +103,7 @@ export function HomeEntryMarker({ entry, position }: HomeEntryMarkerProps) {
               height: "0",
               borderLeft: "12px solid transparent",
               borderRight: "12px solid transparent",
-              borderTop: "14px solid #228be6",
+              borderTop: `14px solid ${ENTRY_NUMBER_BG}`,
               zIndex: 1,
               filter: "drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3))",
             }}

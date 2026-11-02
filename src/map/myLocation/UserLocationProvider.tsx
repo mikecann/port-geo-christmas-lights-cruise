@@ -40,6 +40,9 @@ export function UserLocationProvider({ children }: UserLocationProviderProps) {
           kind: error.code === 1 ? "denied" : "prompt",
         });
         setShouldTrack(false);
+        // Saying no is a choice, not an error: the crossed-out locate button
+        // explains it, so there's no error toast for it
+        if (error.code === 1) return;
         onError(`${error.code}: ${error.message}`);
       },
       {

@@ -1,5 +1,6 @@
-import { Stack, Text, Anchor } from "@mantine/core";
+import { Stack, Text } from "@mantine/core";
 import { routes } from "../../routes";
+import { FooterLink } from "./FooterLink";
 
 export default function FooterCompetition() {
   return (
@@ -7,16 +8,10 @@ export default function FooterCompetition() {
       <Text fw={600} c="white" size="lg">
         Competition
       </Text>
-      <Stack gap="xs">
-        <Anchor
-          component="a"
-          {...routes.competitionDetails().link}
-          c="gray.4"
-          td="none"
-          style={{ fontSize: 14 }}
-        >
-          Competition Details
-        </Anchor>
+      <Stack gap="xs" align="flex-start">
+        <FooterLink link={routes.competitionDetails().link}>
+          Competition details
+        </FooterLink>
       </Stack>
     </Stack>
   );

@@ -1,231 +1,85 @@
 import { track } from "../analytics/client";
 import { shareLink, type ShareSource } from "../analytics/privacy";
-import {
-  Modal,
-  Stack,
-  Title,
-  Button,
-  Group,
-  Text,
-  CopyButton,
-  ActionIcon,
-  Tooltip,
-  Card,
-} from "@mantine/core";
+import { Modal, Stack, Button, Group, CopyButton } from "@mantine/core";
 import {
   IconBrandFacebook,
-  IconBrandX,
   IconBrandWhatsapp,
-  IconBrandLinkedin,
-  IconMail,
   IconCopy,
   IconCheck,
-  IconShare,
 } from "@tabler/icons-react";
-import { useConvexAuth, useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
-type ShareModalProps = {
-  opened: boolean;
-  onClose: () => void;
-  entry: {
-    name: string;
-    competitionId?: string;
-    entryNumber: number;
-  };
-  entryId: Id<"entries">;
+export type ShareProperties = {
+  entry_id: Id<"entries">;
+  competition_id?: string;
+  is_entrant: boolean;
 };
 
+// The short list for when there is no share sheet to open
 export default function ShareModal({
   opened,
   onClose,
-  entry,
   entryId,
-}: ShareModalProps) {
-  const { isAuthenticated } = useConvexAuth();
-  // Public entries don't say who entered, so ask whether this one is ours
-  const myEntry = useQuery(
-    api.my.entries.find,
-    opened && isAuthenticated ? {} : "skip",
-  );
-  const properties = {
-    entry_id: entryId,
-    competition_id: entry.competitionId,
-    is_entrant: myEntry?._id === entryId,
-  };
-  const entryUrl = shareLink(window.location.origin, entryId, "copy");
-  const shareTitle = `Check out ${entry.name} - Entry #${entry.entryNumber}`;
-  const shareText = `${shareTitle} in the Port Geographe Christmas Lights competition!`;
+  shareText,
+  properties,
+}: {
+  opened: boolean;
+  onClose: () => void;
+  entryId: Id<"entries">;
+  shareText: string;
+  properties: ShareProperties;
+}) {
+  const copyUrl = shareLink(window.location.origin, entryId, "copy");
 
-  // Check if Web Share API is supported
-  const canWebShare = navigator.share !== undefined;
-
-  const handleSocialShare = (platform: ShareSource) => {
+  const openShareSite = (platform: ShareSource) => {
     track("share_intent", { ...properties, source: platform });
-    const encodedUrl = encodeURIComponent(
+    const url = encodeURIComponent(
       shareLink(window.location.origin, entryId, platform),
     );
-    const encodedText = encodeURIComponent(shareText);
-
-    let shareUrl = "";
-
-    if (platform === "facebook")
-      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-    else if (platform === "twitter")
-      shareUrl = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
-    else if (platform === "whatsapp")
-      shareUrl = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
-    else if (platform === "linkedin")
-      shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
-    else if (platform === "email")
-      shareUrl = `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodedText}%20${encodedUrl}`;
-
-    if (shareUrl) window.open(shareUrl, "_blank", "noopener,noreferrer");
+    const text = encodeURIComponent(shareText);
+    const shareUrl =
+      platform === "facebook"
+        ? `https://www.facebook.com/sharer/sharer.php?u=${url}`
+        : `https://wa.me/?text=${text}%20${url}`;
+    window.open(shareUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Share Entry" centered>
-      <Stack gap="lg">
-        <div>
-          <Title order={4} mb="xs">
-            {entry.name}
-          </Title>
-          <Text size="sm" c="dimmed">
-            Entry #{entry.entryNumber}
-          </Text>
-        </div>
-
-        {/* Web Share API button (mobile) */}
-        {canWebShare && (
+    <Modal opened={opened} onClose={onClose} title="Share" centered size="xs">
+      <Stack gap="sm">
+        <Group grow>
           <Button
-            leftSection={<IconShare size={16} />}
-            onClick={async () => {
-              if (canWebShare)
-                try {
-                  track("share_intent", { ...properties, source: "native" });
-                  await navigator.share({
-                    title: shareTitle,
-                    text: shareText,
-                    url: shareLink(window.location.origin, entryId, "native"),
-                  });
-                  track("native_share_resolved", {
-                    ...properties,
-                    source: "native",
-                  });
-                } catch {
-                  // User cancelled or error occurred
-                  console.log("Share cancelled or failed");
-                }
-            }}
-            variant="filled"
-            color="blue"
-            fullWidth
+            leftSection={<IconBrandFacebook size={16} />}
+            onClick={() => openShareSite("facebook")}
+            variant="default"
           >
-            Share
+            Facebook
           </Button>
-        )}
-
-        {/* Social media buttons */}
-        <Stack gap="md">
-          <Text size="sm" fw={500}>
-            Share on social media:
-          </Text>
-
-          <Group grow>
-            <Button
-              leftSection={<IconBrandFacebook size={16} />}
-              onClick={() => handleSocialShare("facebook")}
-              color="blue"
-              variant="light"
-            >
-              Facebook
-            </Button>
-
-            <Button
-              leftSection={<IconBrandX size={16} />}
-              onClick={() => handleSocialShare("twitter")}
-              color="dark"
-              variant="light"
-            >
-              X
-            </Button>
-          </Group>
-
-          <Group grow>
-            <Button
-              leftSection={<IconBrandWhatsapp size={16} />}
-              onClick={() => handleSocialShare("whatsapp")}
-              color="green"
-              variant="light"
-            >
-              WhatsApp
-            </Button>
-
-            <Button
-              leftSection={<IconBrandLinkedin size={16} />}
-              onClick={() => handleSocialShare("linkedin")}
-              color="blue"
-              variant="light"
-            >
-              LinkedIn
-            </Button>
-          </Group>
-
           <Button
-            leftSection={<IconMail size={16} />}
-            onClick={() => handleSocialShare("email")}
-            color="gray"
-            variant="light"
-            fullWidth
+            leftSection={<IconBrandWhatsapp size={16} />}
+            onClick={() => openShareSite("whatsapp")}
+            variant="default"
           >
-            Email
+            WhatsApp
           </Button>
-        </Stack>
-
-        {/* Copy link section */}
-        <Card withBorder p="md">
-          <Stack gap="xs">
-            <Text size="sm" fw={500}>
-              Or copy link:
-            </Text>
-            <Group gap="xs">
-              <Text
-                size="sm"
-                style={{
-                  flex: 1,
-                  wordBreak: "break-all",
-                  fontFamily: "monospace",
-                }}
-                c="dimmed"
-              >
-                {entryUrl}
-              </Text>
-              <CopyButton value={entryUrl}>
-                {({ copied, copy }) => (
-                  <Tooltip label={copied ? "Copied!" : "Copy"}>
-                    <ActionIcon
-                      color={copied ? "teal" : "gray"}
-                      onClick={() => {
-                        track("share_intent", {
-                          ...properties,
-                          source: "copy",
-                        });
-                        copy();
-                      }}
-                    >
-                      {copied ? (
-                        <IconCheck size={16} />
-                      ) : (
-                        <IconCopy size={16} />
-                      )}
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-              </CopyButton>
-            </Group>
-          </Stack>
-        </Card>
+        </Group>
+        <CopyButton value={copyUrl}>
+          {({ copied, copy }) => (
+            <Button
+              variant="default"
+              leftSection={
+                copied ? <IconCheck size={16} /> : <IconCopy size={16} />
+              }
+              color={copied ? "teal" : undefined}
+              onClick={() => {
+                track("share_intent", { ...properties, source: "copy" });
+                copy();
+              }}
+            >
+              {copied ? "Link copied" : "Copy link"}
+            </Button>
+          )}
+        </CopyButton>
       </Stack>
     </Modal>
   );

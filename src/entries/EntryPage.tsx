@@ -15,7 +15,6 @@ import EntryHeader from "./EntryHeader";
 import SystemAdminSection from "./SystemAdminSection";
 import EntryVoting from "./voting/EntryVoting";
 import VoteScreen from "../voting/VoteScreen";
-import ShareModal from "./ShareModal";
 import { PhotoSlide } from "./PhotoSlide";
 import { NotFoundPage } from "../common/NotFoundPage";
 import { ENTRY_PHOTO } from "../../shared/photoUrls";
@@ -28,7 +27,6 @@ export default function EntryPage({
 }) {
   const [lightboxOpened, setLightboxOpened] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
-  const [shareModalOpened, setShareModalOpened] = useState(false);
 
   const entryId = route.params.entryId as Id<"entries">;
 
@@ -47,8 +45,8 @@ export default function EntryPage({
   if (entryWithPhotos === null)
     return (
       <NotFoundPage
-        title="Entry Not Found"
-        message="Sorry, that entry isn't available. It may have been removed from the competition."
+        title="We couldn't find that display"
+        message="It may have left the competition. Plenty of others are still lit up."
       />
     );
 
@@ -125,11 +123,7 @@ export default function EntryPage({
         {/* Entry Info and Voting Section */}
         <Grid>
           <Grid.Col span={{ base: 12, md: 8 }}>
-            <EntryHeader
-              entry={entry}
-              entryId={entryId}
-              onShareClick={() => setShareModalOpened(true)}
-            />
+            <EntryHeader entry={entry} entryId={entryId} />
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 4 }}>
             <EntryVoting
@@ -150,14 +144,6 @@ export default function EntryPage({
           setSelectedImageUrl(null);
         }}
         imageUrl={selectedImageUrl}
-      />
-
-      {/* Share Modal */}
-      <ShareModal
-        opened={shareModalOpened}
-        onClose={() => setShareModalOpened(false)}
-        entry={entry}
-        entryId={entryId}
       />
     </Container>
   );

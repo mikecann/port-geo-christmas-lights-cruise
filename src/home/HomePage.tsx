@@ -5,6 +5,7 @@ import { Houses } from "./Houses";
 import { Trees } from "./Trees";
 import CompetitionSection from "./CompetitionSection";
 import CruiseSection from "./CruiseSection";
+import QuickLinks from "./QuickLinks";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { HomeEntryMarker } from "./HomeEntryMarker";
@@ -61,6 +62,7 @@ export default function HomePage() {
       </Box>
       <Trees />
       <Stack bg="#02051A" gap={0}>
+        <QuickLinks />
         <CompetitionSection />
         <CruiseSection />
       </Stack>

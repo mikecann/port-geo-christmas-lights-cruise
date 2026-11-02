@@ -13,6 +13,9 @@ import type { PublicEntry } from "../../../convex/features/entries/schema";
 import type { PublicPhoto } from "../../../convex/features/photos/schema";
 import { routes } from "../../routes";
 import { usePhotoSrcSet } from "../../common/hooks/usePhotoUrl";
+import { EntryNumber } from "../../common/components/EntryNumber";
+import { shortAddress } from "../../common/utils/address";
+import styles from "./EntryGalleryCard.module.css";
 
 // One column on phones, two from sm and three from lg, in a size="xl" container
 const CARD_PHOTO = {
@@ -34,31 +37,15 @@ export default function EntryGalleryCard({
 
   return (
     <Card
+      component="a"
+      {...routes.entry({ entryId: entry._id }).link}
       data-testid="entry-gallery-card"
       data-entry-number={entry.entryNumber}
       shadow="sm"
       padding={0}
       radius="lg"
       withBorder
-      style={{
-        transition:
-          "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
-        cursor: "pointer",
-        overflow: "hidden",
-      }}
-      onClick={() => {
-        routes.entry({ entryId: entry._id }).push();
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-4px)";
-        e.currentTarget.style.boxShadow = "0 12px 30px rgba(251, 175, 93, 0.2)";
-        e.currentTarget.style.borderColor = "#FBAF5D";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = "";
-        e.currentTarget.style.borderColor = "";
-      }}
+      className={styles.card}
     >
       <Stack gap={0}>
         {/* First Photo with Entry Number Overlay */}
@@ -86,23 +73,16 @@ export default function EntryGalleryCard({
               </Center>
             </AspectRatio>
           )}
-          {/* Prominent Entry Number Badge */}
-          <Box
+          <EntryNumber
+            number={entry.entryNumber}
+            size="md"
             style={{
               position: "absolute",
               top: 12,
               right: 12,
-              backgroundColor: "#FBAF5D",
-              color: "#0b1c3b",
-              padding: "6px 12px",
-              borderRadius: "var(--mantine-radius-md)",
-              fontWeight: 700,
-              fontSize: "1rem",
               boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
             }}
-          >
-            #{entry.entryNumber}
-          </Box>
+          />
         </Box>
 
         {/* Entry Info */}
@@ -118,7 +98,7 @@ export default function EntryGalleryCard({
               style={{ marginTop: 2, flexShrink: 0 }}
             />
             <Text size="md" c="dimmed" lineClamp={2} style={{ flex: 1 }}>
-              {entry.houseAddress.address}
+              {shortAddress(entry.houseAddress.address)}
             </Text>
           </Group>
         </Stack>

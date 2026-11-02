@@ -1,16 +1,10 @@
 import * as React from "react";
-import { Paper } from "@mantine/core";
+import { IconCurrentLocation } from "@tabler/icons-react";
+import { LocateButton } from "./LocateButton";
 
-export const RequestedStatus: React.FC = () => {
-  return (
-    <Paper
-      withBorder
-      p="xs"
-      radius="md"
-      shadow="sm"
-      style={{ backdropFilter: "blur(4px)" }}
-    >
-      Requested
-    </Paper>
-  );
-};
+// Waiting for the browser to ask, or for the first fix
+export const RequestedStatus: React.FC = () => (
+  <LocateButton label="Finding where you are" loading>
+    <IconCurrentLocation size={22} />
+  </LocateButton>
+);

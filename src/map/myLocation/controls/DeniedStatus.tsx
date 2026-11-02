@@ -1,16 +1,6 @@
 import * as React from "react";
-import { Paper } from "@mantine/core";
+import { LocationProblem } from "./LocationProblem";
 
-export const DeniedStatus: React.FC = () => {
-  return (
-    <Paper
-      withBorder
-      p="xs"
-      radius="md"
-      shadow="sm"
-      style={{ backdropFilter: "blur(4px)" }}
-    >
-      Denied
-    </Paper>
-  );
-};
+export const DeniedStatus: React.FC = () => (
+  <LocationProblem message="Your browser isn't sharing your location with this site. Allow it in your browser or phone settings to see where you are on the map." />
+);

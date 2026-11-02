@@ -1,4 +1,4 @@
-import { Badge, Group, Paper, SimpleGrid, Stack, Text } from "@mantine/core";
+import { Group, Paper, SimpleGrid, Stack, Text } from "@mantine/core";
 import { event, formatAward } from "../../shared/event";
 
 export default function PrizeList() {
@@ -7,17 +7,18 @@ export default function PrizeList() {
       {event.prizes.map((prize) => (
         <Paper key={prize.name} withBorder p="md" radius="md">
           <Stack gap="xs">
-            <Group justify="space-between" gap="xs" wrap="nowrap">
+            <Group
+              justify="space-between"
+              gap="xs"
+              wrap="nowrap"
+              align="baseline"
+            >
               <Text fw={700} size="lg">
                 {prize.name}
               </Text>
-              <Badge
-                variant="light"
-                color={prize.votedOnSite ? "yellow" : "gray"}
-                style={{ flexShrink: 0 }}
-              >
+              <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
                 {prize.votedOnSite ? "Public vote" : "Judged"}
-              </Badge>
+              </Text>
             </Group>
             <Text fw={600} c="#FBAF5D">
               {prize.awards.map(formatAward).join(" · ")}

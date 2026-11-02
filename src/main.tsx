@@ -23,7 +23,9 @@ initSentry().catch(() => {});
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 const theme = createTheme({
-  // Add custom theme overrides if needed
+  // Filled buttons and badges pick black or white text from their background,
+  // so white text never sits on the light orange (#FBAF5D) or yellow at ~2:1
+  autoContrast: true,
 });
 
 const rootElement = document.getElementById("root");
