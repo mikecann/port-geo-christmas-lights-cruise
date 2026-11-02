@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Box,
+  Group,
   Loader,
   SegmentedControl,
   Stack,
@@ -21,8 +22,10 @@ export default function MachineDiagram({ diagram }: { diagram: string }) {
     "drawing",
   );
   // Full size keeps the labels readable and scrolls sideways. Fit shows the
-  // whole shape at once, which is handier on a phone.
-  const [size, setSize] = useState<"full" | "fit">("full");
+  // whole shape at once, which is handier on a phone, so phones start on it.
+  const [size, setSize] = useState<"full" | "fit">(() =>
+    window.matchMedia("(max-width: 48em)").matches ? "fit" : "full",
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -68,7 +71,14 @@ export default function MachineDiagram({ diagram }: { diagram: string }) {
         ]}
       />
       <Box style={{ overflowX: "auto" }}>
-        {status === "drawing" && <Loader size="sm" />}
+        {status === "drawing" && (
+          <Group gap="xs">
+            <Loader size="xs" />
+            <Text size="sm" c="dimmed">
+              Drawing…
+            </Text>
+          </Group>
+        )}
         {status === "failed" && (
           <Text size="sm" c="red">
             The diagram couldn't be drawn. The error is in the console.
