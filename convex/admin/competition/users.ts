@@ -1,29 +1,76 @@
 import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
-import type { Doc } from "../../_generated/dataModel";
+import type { Doc, Id } from "../../_generated/dataModel";
+import type { DatabaseReader } from "../../_generated/server";
 import {
   competitionAdminMutation,
   competitionAdminQuery,
 } from "../../features/common/auth";
 import { users } from "../../features/users/model";
+import { competitions } from "../../features/competitions/model";
 
-// Only what the People page shows
-const toPerson = (user: Doc<"users">) => ({
-  _id: user._id,
-  _creationTime: user._creationTime,
-  name: user.name,
-  email: user.email,
-  image: user.image,
-  isCompetitionAdmin: user.isCompetitionAdmin === true,
-  isSystemAdmin: user.isSystemAdmin === true,
-});
+// Only what the People page shows, with this year's entry and vote count so
+// staff can see who someone is to the competition. Each is one indexed read
+// (someone has at most one entry a year and a vote per category), so a page of
+// people stays cheap.
+const toPerson = async (
+  db: DatabaseReader,
+  competitionId: Id<"competitions">,
+  user: Doc<"users">,
+) => {
+  const entry = await db
+    .query("entries")
+    .withIndex("by_competitionId_and_submittedByUserId", (q) =>
+      q.eq("competitionId", competitionId).eq("submittedByUserId", user._id),
+    )
+    .unique();
+  const votes = await db
+    .query("votes")
+    .withIndex("by_votingUserId_and_competitionId_and_category", (q) =>
+      q.eq("votingUserId", user._id).eq("competitionId", competitionId),
+    )
+    .collect();
+  return {
+    _id: user._id,
+    _creationTime: user._creationTime,
+    name: user.name,
+    email: user.email,
+    image: user.image,
+    isCompetitionAdmin: user.isCompetitionAdmin === true,
+    isSystemAdmin: user.isSystemAdmin === true,
+    entry: entry
+      ? {
+          entryId: entry._id,
+          name: entry.state.name ?? "",
+          // A rejected entry's number goes back in the pool
+          entryNumber:
+            entry.state.kind === "rejected"
+              ? undefined
+              : entry.state.entryNumber,
+          status: entry.state.kind,
+        }
+      : null,
+    voteCount: votes.length,
+  };
+};
 
-export type Person = ReturnType<typeof toPerson>;
+export type Person = Awaited<ReturnType<typeof toPerson>>;
+
+const toPeople = async (
+  context: { db: DatabaseReader },
+  list: Doc<"users">[],
+) => {
+  const competition = await competitions.query(context).current();
+  return await Promise.all(
+    list.map((user) => toPerson(context.db, competition._id, user)),
+  );
+};
 
 export const listAdmins = competitionAdminQuery
   .input({})
-  .handler(async (context) =>
-    (await users.listAdmins(context.db)).map(toPerson),
+  .handler(
+    async (context) =>
+      await toPeople(context, await users.listAdmins(context.db)),
   )
   .public();
 
@@ -35,7 +82,7 @@ export const listPage = competitionAdminQuery
       .query("users")
       .order("desc")
       .paginate(input.paginationOpts);
-    return { ...result, page: result.page.map(toPerson) };
+    return { ...result, page: await toPeople(context, result.page) };
   })
   .public();
 
@@ -44,7 +91,7 @@ export const search = competitionAdminQuery
   .handler(async (context, input) => {
     const text = input.text.trim();
     if (!text) return [];
-    return (await users.search(context.db, text)).map(toPerson);
+    return await toPeople(context, await users.search(context.db, text));
   })
   .public();
 
