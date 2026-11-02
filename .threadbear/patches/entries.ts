@@ -66,12 +66,12 @@ const n = (states: Record<string, number>, state: string) => states[state] ?? 0;
 export default {
   icon: "sparkles",
   actions: [
-    { title: "Admin", icon: "person.badge.key", run: `open ${SITE}/admin` },
-    { title: "Live site", icon: "safari", run: `open ${SITE}/` },
+    { title: "Admin", icon: "person.badge.key", url: `${SITE}/admin` },
+    { title: "Live site", icon: "safari", url: `${SITE}/` },
     {
       title: "Sentry",
       icon: "exclamationmark.triangle",
-      run: "open 'https://mikec.sentry.io/issues/?project=4512336957734912'",
+      url: "https://mikec.sentry.io/issues/?project=4512336957734912",
     },
   ],
   panels: [
