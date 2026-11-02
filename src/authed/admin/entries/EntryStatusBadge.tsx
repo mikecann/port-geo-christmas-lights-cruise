@@ -21,6 +21,9 @@ export default function EntryStatusBadge({
       title={labelFrom ? ENTRY_STATUS_LABELS[status] : undefined}
     >
       <Box
+        // When the words are hidden on a phone, the dot carries the status
+        role={labelFrom ? "img" : undefined}
+        aria-label={labelFrom ? ENTRY_STATUS_LABELS[status] : undefined}
         w={8}
         h={8}
         bg={`${ENTRY_STATUS_COLORS[status]}.6`}

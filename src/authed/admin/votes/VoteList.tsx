@@ -75,14 +75,16 @@ export default function VoteList({
                       {vote.entryName}
                     </Table.Td>
                     <Table.Td>
-                      <Tooltip
-                        label={vote.voterEmail}
-                        disabled={!vote.voterEmail}
-                      >
-                        <Text size="sm" truncate maw={200}>
-                          {vote.voterName ?? vote.voterEmail ?? "No name"}
+                      <Text size="sm">{vote.voterName ?? "No name"}</Text>
+                      {vote.voterEmail && (
+                        <Text
+                          size="xs"
+                          c="dimmed"
+                          style={{ wordBreak: "break-all" }}
+                        >
+                          {vote.voterEmail}
                         </Text>
-                      </Tooltip>
+                      )}
                     </Table.Td>
                     <Table.Td>
                       {countsFor(vote)}
@@ -102,6 +104,10 @@ export default function VoteList({
                               label={LOCATION_CHECK_LABELS[vote.locationCheck]}
                             >
                               <IconFlag
+                                role="img"
+                                aria-label={
+                                  LOCATION_CHECK_LABELS[vote.locationCheck]
+                                }
                                 size={14}
                                 color="var(--mantine-color-orange-5)"
                               />

@@ -135,7 +135,7 @@ function SwitchRow({
         checked={isOpen}
         disabled={isSaving}
         onChange={() => void flip()}
-        aria-label={state.button}
+        aria-label={details.title.replace(/ (are|is)$/, " open")}
       />
     </Group>
   );

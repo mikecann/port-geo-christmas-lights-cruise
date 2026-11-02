@@ -12,8 +12,10 @@ export function PhotoImage({
   onImageClick: (imageUrl: string) => void;
   height?: number;
 }) {
-  // Small sizes for admin cards; the lightbox opens the same URL
+  // Small sizes for the cards, and the full size for the lightbox, where
+  // admins judge the photo
   const imageUrl = usePhotoUrl(photo, { size: height > 100 ? "sm" : "xs" });
+  const fullUrl = usePhotoUrl(photo, { size: "lg" });
 
   if (!imageUrl) return null;
 
@@ -30,7 +32,7 @@ export function PhotoImage({
         position: "relative",
       }}
       bg="dark.7"
-      onClick={() => onImageClick(imageUrl)}
+      onClick={() => onImageClick(fullUrl ?? imageUrl)}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = "scale(1.05)";
       }}

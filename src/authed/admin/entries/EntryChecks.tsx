@@ -131,7 +131,12 @@ export default function EntryChecks({
 
       {entry.state.kind !== "rejected" &&
         // The clash line above already says which number they get
-        !(checks.previousNumberHeldBy && previous && !isNumberOutsideRange) &&
+        !(
+          checks.previousNumberHeldBy &&
+          previous &&
+          entry.state.entryNumber !== undefined &&
+          !isNumberOutsideRange
+        ) &&
         (entry.state.entryNumber === undefined ? (
           <Check tone="info" icon={<IconHash size={14} />}>
             Gets a free number when you approve it

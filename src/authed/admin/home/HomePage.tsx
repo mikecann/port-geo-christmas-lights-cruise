@@ -33,7 +33,9 @@ export default function HomePage() {
   });
   const numbers = useQuery(api.admin.competition.numbers.list);
 
-  if (!overview)
+  // Wait for everything the to-do list needs, so it never says "All done"
+  // before it knows
+  if (!overview || !waiting || !numbers)
     return (
       <Center py="xl">
         <Loader />

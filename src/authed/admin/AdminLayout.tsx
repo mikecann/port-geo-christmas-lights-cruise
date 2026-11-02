@@ -265,13 +265,9 @@ function Sidebar({
             <Text size="xs" c="dimmed">
               System admins
             </Text>
-            <Tooltip
-              label="Only system admins see these. Competition admins never need them."
-              multiline
-              w={220}
-            >
-              <IconInfoCircle size={12} color="var(--mantine-color-dimmed)" />
-            </Tooltip>
+            <InfoTip size={12}>
+              Only system admins see these. Competition admins never need them.
+            </InfoTip>
           </Group>
           {system.map((item) => (
             <SidebarLink
@@ -391,7 +387,13 @@ export function AdminPageHeader({
   );
 }
 
-export function InfoTip({ children }: { children: ReactNode }) {
+export function InfoTip({
+  children,
+  size = 16,
+}: {
+  children: ReactNode;
+  size?: number;
+}) {
   return (
     <Tooltip
       label={children}
@@ -402,9 +404,11 @@ export function InfoTip({ children }: { children: ReactNode }) {
       <Box
         component="span"
         tabIndex={0}
+        role="img"
+        aria-label="More information"
         style={{ display: "inline-flex", alignSelf: "center", cursor: "help" }}
       >
-        <IconInfoCircle size={16} color="var(--mantine-color-dimmed)" />
+        <IconInfoCircle size={size} color="var(--mantine-color-dimmed)" />
       </Box>
     </Tooltip>
   );

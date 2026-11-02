@@ -178,7 +178,12 @@ export default function AllEntries({
         <Text size="xs" c="dimmed">
           {hiddenUnsent} not sent in yet{" "}
           {hiddenUnsent === 1 ? "isn't" : "aren't"} shown in All.{" "}
-          <Anchor size="xs" onClick={() => setStatus("unsent")}>
+          <Anchor
+            component="button"
+            type="button"
+            size="xs"
+            onClick={() => setStatus("unsent")}
+          >
             Show them
           </Anchor>
         </Text>
@@ -195,6 +200,10 @@ function EntryRow({ entry }: { entry: AdminEntryRow }) {
       // keyboards and opening in a new tab
       onClick={(event) => {
         if ((event.target as HTMLElement).closest("a")) return;
+        // Leave modified clicks and text selection alone
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+          return;
+        if (window.getSelection()?.toString()) return;
         routes.adminEntry({ entryId: entry._id }).push();
       }}
       style={{ cursor: "pointer" }}
