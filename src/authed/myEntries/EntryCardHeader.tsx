@@ -23,7 +23,10 @@ export default function EntryCardHeader({
   const name = entry.state.name?.trim();
   // A rejected entry's number goes back in the pool, so it isn't theirs
   const entryNumber =
-    entry.state.kind === "rejected" ? undefined : entry.state.entryNumber;
+    // A withdrawn entry still holds its number (its sign is out there)
+    entry.state.kind === "rejected" && entry.state.approvedAt === undefined
+      ? undefined
+      : entry.state.entryNumber;
 
   return (
     <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">

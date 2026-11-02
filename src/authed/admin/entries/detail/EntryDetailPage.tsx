@@ -100,7 +100,9 @@ export default function EntryDetailPage({
 
   const { entry, submitter, isCurrent } = detail;
   const hasNumber =
-    entry.state.kind !== "rejected" && entry.state.entryNumber !== undefined;
+    // A withdrawn entry still holds its number (its sign is out there)
+    (entry.state.kind !== "rejected" || entry.state.approvedAt !== undefined) &&
+    entry.state.entryNumber !== undefined;
   // Rejected entries give their number back, and past years are a record
   const canChangeNumber = isCurrent && entry.state.kind !== "rejected";
 
