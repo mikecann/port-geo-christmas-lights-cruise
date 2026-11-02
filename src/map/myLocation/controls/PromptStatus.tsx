@@ -1,26 +1,13 @@
 import * as React from "react";
-import { Paper, Button } from "@mantine/core";
-import { IconMapPin } from "@tabler/icons-react";
+import { IconCurrentLocation } from "@tabler/icons-react";
 import { useUserLocationContext } from "../useUserLocationContext";
+import { LocateButton } from "./LocateButton";
 
 export const PromptStatus: React.FC = () => {
   const { startTracking } = useUserLocationContext();
   return (
-    <Paper
-      withBorder
-      p="xs"
-      radius="md"
-      shadow="sm"
-      style={{ backdropFilter: "blur(4px)" }}
-    >
-      <Button
-        size="sm"
-        variant="filled"
-        leftSection={<IconMapPin size={16} />}
-        onClick={() => startTracking()}
-      >
-        Show Me
-      </Button>
-    </Paper>
+    <LocateButton label="Show where I am" onClick={() => startTracking()}>
+      <IconCurrentLocation size={22} />
+    </LocateButton>
   );
 };
