@@ -37,7 +37,7 @@
     "@tabler/icons-react": "^3.49.0",
     "@vis.gl/react-google-maps": "^1.10.1",
     "browser-image-compression": "^2.0.2",
-    "convex": "^1.47.0",
+    "convex": "^1.49.0",
     "convex-helpers": "^0.1.128",
     "embla-carousel": "^8.6.0",
     "embla-carousel-autoplay": "^8.6.0",
