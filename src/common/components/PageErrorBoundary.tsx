@@ -8,16 +8,25 @@ interface Props {
 }
 
 interface State {
-  error: unknown;
+  // A flag rather than the error itself, since anything can be thrown
+  hasError: boolean;
+  resetKey: string;
 }
 
 // Without this, an error while rendering a page (a page that failed to load,
 // say) unmounts the whole app and leaves a blank screen until a reload
 export class PageErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  state: State = { hasError: false, resetKey: this.props.resetKey };
 
-  static getDerivedStateFromError(error: unknown): State {
-    return { error };
+  // Cleared during the render that navigates, rather than after it commits,
+  // so a page that fails straight away is caught and reported only once
+  static getDerivedStateFromProps(props: Props, state: State) {
+    if (props.resetKey === state.resetKey) return null;
+    return { hasError: false, resetKey: props.resetKey };
+  }
+
+  static getDerivedStateFromError(): Partial<State> {
+    return { hasError: true };
   }
 
   componentDidCatch(error: unknown, _info: ErrorInfo) {
@@ -27,13 +36,8 @@ export class PageErrorBoundary extends Component<Props, State> {
     if (typeof reportError === "function") reportError(error);
   }
 
-  componentDidUpdate(prevProps: Props) {
-    if (this.state.error && prevProps.resetKey !== this.props.resetKey)
-      this.setState({ error: null });
-  }
-
   render() {
-    if (!this.state.error) return this.props.children;
+    if (!this.state.hasError) return this.props.children;
     return (
       <Stack align="center" gap="md" py="xl" ta="center">
         <Title order={2}>This page didn't load</Title>

@@ -30,17 +30,19 @@ function browserDeps(): ReloadDeps {
   };
 }
 
-function reloadedRecently(deps: ReloadDeps): boolean {
+// True if it's OK to reload now, in which case it records the reload, so
+// only call it right before reloading
+function claimReload(deps: ReloadDeps): boolean {
   const { storage } = deps;
   // Without storage there's no way to tell a second failure from the first
-  if (!storage) return true;
+  if (!storage) return false;
   try {
     const last = Number(storage.getItem(RELOADED_AT_KEY));
-    if (last && deps.now() - last < RETRY_AFTER_MS) return true;
+    if (last && deps.now() - last < RETRY_AFTER_MS) return false;
     storage.setItem(RELOADED_AT_KEY, String(deps.now()));
-    return false;
-  } catch {
     return true;
+  } catch {
+    return false;
   }
 }
 
@@ -52,7 +54,7 @@ export function recoverFromFailedPageLoad(
   deps: ReloadDeps = browserDeps(),
 ): Promise<never> {
   // Offline, a reload would only swap the site for the browser's offline page
-  if (!deps.online || reloadedRecently(deps)) return Promise.reject(error);
+  if (!deps.online || !claimReload(deps)) return Promise.reject(error);
   deps.reload();
   return new Promise<never>(() => {});
 }
