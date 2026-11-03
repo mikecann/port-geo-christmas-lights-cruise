@@ -1,75 +1,77 @@
-import { lazy } from "react";
+import { lazyPage } from "./lazyPage";
 
-export const HomePage = lazy(() => import("../../home/HomePage"));
+export const HomePage = lazyPage(() => import("../../home/HomePage"));
 
-export const SignInPage = lazy(() =>
+export const SignInPage = lazyPage(() =>
   import("../../auth/SignInPage").then((module) => ({
     default: module.SignInPage,
   })),
 );
 
-export const NotFoundPage = lazy(() =>
+export const NotFoundPage = lazyPage(() =>
   import("../NotFoundPage").then((module) => ({
     default: module.NotFoundPage,
   })),
 );
 
-export const TicketsPage = lazy(() => import("../../tickets/TicketsPage"));
+export const TicketsPage = lazyPage(() => import("../../tickets/TicketsPage"));
 
-export const CompetitionDetailsPage = lazy(
+export const CompetitionDetailsPage = lazyPage(
   () => import("../../competition/CompetitionDetailsPage"),
 );
 
-export const EntriesGalleryPage = lazy(
+export const EntriesGalleryPage = lazyPage(
   () => import("../../entries/gallery/EntriesGalleryPage"),
 );
-export const EntryPage = lazy(() => import("../../entries/EntryPage"));
+export const EntryPage = lazyPage(() => import("../../entries/EntryPage"));
 
-export const VoteByNumberPage = lazy(
+export const VoteByNumberPage = lazyPage(
   () => import("../../voting/VoteByNumberPage"),
 );
-export const VoteLandingPage = lazy(
+export const VoteLandingPage = lazyPage(
   () => import("../../voting/VoteLandingPage"),
 );
 
-export const MapPage = lazy(() => import("../../map/MapPage"));
+export const MapPage = lazyPage(() => import("../../map/MapPage"));
 
-export const SettingsPage = lazy(
+export const SettingsPage = lazyPage(
   () => import("../../authed/settings/SettingsPage"),
 );
-export const MyEntriesPage = lazy(
+export const MyEntriesPage = lazyPage(
   () => import("../../authed/myEntries/MyEntriesPage"),
 );
-export const MyVotesPage = lazy(
+export const MyVotesPage = lazyPage(
   () => import("../../authed/myVotes/MyVotesPage"),
 );
 
-export const AccountShell = lazy(() => import("../../authed/AccountShell"));
-export const AdminLayout = lazy(() => import("../../authed/admin/AdminLayout"));
-export const AdminHomePage = lazy(
+export const AccountShell = lazyPage(() => import("../../authed/AccountShell"));
+export const AdminLayout = lazyPage(
+  () => import("../../authed/admin/AdminLayout"),
+);
+export const AdminHomePage = lazyPage(
   () => import("../../authed/admin/home/HomePage"),
 );
-export const AdminEntriesPage = lazy(
+export const AdminEntriesPage = lazyPage(
   () => import("../../authed/admin/entries/EntriesPage"),
 );
-export const AdminEntryPage = lazy(
+export const AdminEntryPage = lazyPage(
   () => import("../../authed/admin/entries/detail/EntryDetailPage"),
 );
-export const AdminNumbersPage = lazy(
+export const AdminNumbersPage = lazyPage(
   () => import("../../authed/admin/numbers/NumbersPage"),
 );
-export const AdminVotesPage = lazy(
+export const AdminVotesPage = lazyPage(
   () => import("../../authed/admin/votes/VotesPage"),
 );
-export const AdminPeoplePage = lazy(
+export const AdminPeoplePage = lazyPage(
   () => import("../../authed/admin/people/PeoplePage"),
 );
-export const AdminSettingsPage = lazy(
+export const AdminSettingsPage = lazyPage(
   () => import("../../authed/admin/settings/SettingsPage"),
 );
-export const AdminDangerZonePage = lazy(
+export const AdminDangerZonePage = lazyPage(
   () => import("../../authed/admin/dangerZone/DangerZonePage"),
 );
-export const AdminMachinesPage = lazy(
+export const AdminMachinesPage = lazyPage(
   () => import("../../authed/admin/machines/MachinesPage"),
 );

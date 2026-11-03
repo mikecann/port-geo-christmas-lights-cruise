@@ -8,6 +8,7 @@ import {
 } from "./og";
 import { GEO_PATH, handleGeoRequest } from "./geo";
 import { withSecurityHeaders } from "./securityHeaders";
+import { notFoundForMissingAsset } from "./missingAsset";
 
 export interface Env {
   ASSETS: Fetcher;
@@ -48,9 +49,10 @@ export default {
           })
         : null;
 
-    const originResponse = env.ASSETS
-      ? await env.ASSETS.fetch(request)
-      : await fetch(request);
+    const originResponse = notFoundForMissingAsset(
+      url.pathname,
+      env.ASSETS ? await env.ASSETS.fetch(request) : await fetch(request),
+    );
 
     const response = await maybeInjectOg(request, originResponse, og);
 
