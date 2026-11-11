@@ -20,6 +20,7 @@ import type * as admin_system_entries from "../admin/system/entries.js";
 import type * as admin_system_lib from "../admin/system/lib.js";
 import type * as admin_system_machines from "../admin/system/machines.js";
 import type * as admin_system_users from "../admin/system/users.js";
+import type * as admin_system_viewer from "../admin/system/viewer.js";
 import type * as admin_system_votes from "../admin/system/votes.js";
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
@@ -79,6 +80,7 @@ declare const fullApi: ApiFromModules<{
   "admin/system/lib": typeof admin_system_lib;
   "admin/system/machines": typeof admin_system_machines;
   "admin/system/users": typeof admin_system_users;
+  "admin/system/viewer": typeof admin_system_viewer;
   "admin/system/votes": typeof admin_system_votes;
   auth: typeof auth;
   crons: typeof crons;

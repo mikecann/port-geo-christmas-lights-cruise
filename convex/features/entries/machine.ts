@@ -13,12 +13,28 @@ import { draftHomeAddressValidator } from "./schema";
 export const SUBMITTING_TIMEOUT_MS = 10 * 60 * 1000;
 
 // Kept as constants so states that take the same event share its transition
-const backToDraft = { to: "draft", effect: "backToDraft" } as const;
-const setNumber = { guard: "numberIsFree", effect: "setNumber" } as const;
-const renumber = { effect: "setNumber" } as const;
+const backToDraft = {
+  to: "draft",
+  effect: "backToDraft",
+  description:
+    "The address lookup failed or never reported back, so the entry goes back to being a draft and lets go of its address.",
+} as const;
+const setNumber = {
+  guard: "numberIsFree",
+  effect: "setNumber",
+  description:
+    "An admin gives the entry a number of their choosing, if no other entry this year has it.",
+} as const;
+const renumber = {
+  effect: "setNumber",
+  description:
+    "A repair job gives a returning entrant's entry the number they had in an earlier year.",
+} as const;
 const linkPrevious = {
   guard: ["isEarlierApprovedEntry", "previousNumberIsFree"],
   effect: "linkPrevious",
+  description:
+    "An admin links the entry to the same household's approved entry from an earlier year, made with another account, and it takes that entry's number.",
 } as const;
 // What an admin can do to any entry that isn't rejected
 const numbering = {
@@ -35,6 +51,8 @@ export const entry = defineMachine(
   {
     name: "entry",
     table: "entries",
+    description:
+      "A house's entry in the year's Christmas lights competition, from the entrant starting it to an admin approving it with a number for its sign.",
     callers: {
       owner: "Only the person who made this entry can do that.",
       admin: "You don't have permission to do that.",
@@ -84,27 +102,47 @@ export const entry = defineMachine(
             to: "draft",
             guard: ["entriesOpen", "notEnteredYet"],
             effect: "startDraft",
+            description:
+              "Someone starts their entry for this year while entries are open; a returning entrant starts from last time's name and address.",
           },
         },
       },
       draft: {
+        description:
+          "The entrant is filling in its name and house address; it doesn't hold the address yet, so another entry could still take it.",
         on: {
-          EDIT: { effect: "edit" },
+          EDIT: {
+            effect: "edit",
+            description:
+              "The entrant changes the entry's name or house address.",
+          },
           SUBMIT: {
             to: "submitting",
             guard: ["entriesOpen", "hasAddress", "hasName", "addressIsFree"],
             effect: "startSubmitting",
+            description:
+              "The entrant submits a named entry for an address no other entry holds, so the address is looked up with Google.",
           },
           ...numbering,
         },
       },
       submitting: {
-        timers: { TIMED_OUT: { after: SUBMITTING_TIMEOUT_MS } },
+        description:
+          "Its address is being looked up with Google; it holds the address meanwhile, so nobody else can enter that house.",
+        timers: {
+          TIMED_OUT: {
+            after: SUBMITTING_TIMEOUT_MS,
+            description:
+              "Ten minutes have passed with no word from the address lookup, so it must have been lost.",
+          },
+        },
         on: {
           GEOCODED: {
             to: "submitted",
             guard: ["addressIsFree", "withinBoundary"],
             effect: "finishSubmission",
+            description:
+              "Google found the address, inside the competition area and still free, so the entry goes to the admins for review.",
           },
           SUBMIT_FAILED: backToDraft,
           TIMED_OUT: backToDraft,
@@ -112,23 +150,52 @@ export const entry = defineMachine(
         },
       },
       submitted: {
+        description:
+          "Waiting for a competition admin to review it; it holds its address, so nobody else can enter that house.",
         on: {
-          APPROVE: { to: "approved", effect: "approve" },
-          REJECT: { to: "rejected", effect: "reject" },
+          APPROVE: {
+            to: "approved",
+            effect: "approve",
+            description:
+              "An admin approves it and it gets its number: one it already has, a returning entrant's old one if free, or the next one available.",
+          },
+          REJECT: {
+            to: "rejected",
+            effect: "reject",
+            description:
+              "An admin rejects it with a reason, which the entrant is emailed.",
+          },
           ...numbering,
         },
       },
       approved: {
+        description:
+          "In the competition, with its number for the house sign that people vote with.",
         on: {
-          RENAME: { effect: "rename" },
-          // Withdrawing an approved entry (e.g. the display turns out to be
-          // unsuitable) is the same as rejecting it, reason and email included
-          REJECT: { to: "rejected", effect: "reject" },
+          RENAME: {
+            effect: "rename",
+            description: "The entrant renames their approved entry.",
+          },
+          REJECT: {
+            to: "rejected",
+            effect: "reject",
+            description:
+              "An admin withdraws the entry, say if the display turns out unsuitable; it's the same as rejecting it, reason and email included.",
+          },
           ...numbering,
         },
       },
       rejected: {
-        on: { REOPEN: { to: "submitted", effect: "reopen" } },
+        description:
+          "Turned down or withdrawn by an admin, with a reason; it lets go of its address, but a withdrawn entry keeps its number as its sign is out there.",
+        on: {
+          REOPEN: {
+            to: "submitted",
+            effect: "reopen",
+            description:
+              "An admin undoes the rejection, so it's back for review; a withdrawn entry keeps its number, and a rejected one gets one when approved.",
+          },
+        },
       },
     },
   },
