@@ -11,6 +11,8 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
+import { MachinesViewer } from "@convex-dev/state-machines/viewer";
+import "@convex-dev/state-machines/viewer.css";
 import { IconSearch } from "@tabler/icons-react";
 import { useConvex, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
@@ -22,7 +24,6 @@ import { PageHeader } from "../../PageHeader";
 import { ENTRY_STATUS_COLORS } from "../../entryStatus";
 import EntryMachine from "./EntryMachine";
 import FailedTimers from "./FailedTimers";
-import MachineDiagram from "./MachineDiagram";
 
 function Section({
   title,
@@ -50,6 +51,26 @@ function Section({
   );
 }
 
+// The state machines viewer, from the library itself: every machine drawn from
+// the rules the app runs, with live counts, the entries in each state and one
+// entry's history. It reads through convex/admin/system/viewer.ts, which
+// answers system admins only, and can't move anything. It routes by the URL's
+// hash (#/t/..., #/r/...), so this page stays /admin/machines underneath it.
+// The app is dark only, so it starts dark.
+function StateMachinesViewer() {
+  return (
+    <div className="machines-viewer">
+      <MachinesViewer
+        functions={api.admin.system.viewer}
+        config={{
+          settings: { theme: "dark" },
+          tables: { entries: { name: "Entries" } },
+        }}
+      />
+    </div>
+  );
+}
+
 // System admins only: the app's state machines working on live data
 export default function MachinesPage({ entryId }: { entryId?: string }) {
   const competitionList = useQuery(api.public.competitions.list, {});
@@ -64,7 +85,7 @@ export default function MachinesPage({ entryId }: { entryId?: string }) {
     <Stack gap="xl">
       <PageHeader
         title="Machines"
-        info="The entry state machine, drawn from the rules the app runs, and how it's moving entries. Only system admins can see this page."
+        info="The app's state machines, drawn from the rules the app runs, and how they're moving entries. Only system admins can see this page."
         actions={
           <Select
             aria-label="Competition year"
@@ -84,9 +105,11 @@ export default function MachinesPage({ entryId }: { entryId?: string }) {
         }
       />
 
+      <StateMachinesViewer />
+
       <Section
-        title="The entry machine"
-        help="How many of this competition's entries are in each state, and the rules that move them."
+        title="This competition"
+        help="How many of this competition's entries are in each state."
       >
         <SimpleGrid cols={{ base: 2, xs: 3, sm: 5 }} spacing="sm">
           {overview?.counts.map(({ kind, count }) => (
@@ -103,7 +126,6 @@ export default function MachinesPage({ entryId }: { entryId?: string }) {
             </Card>
           ))}
         </SimpleGrid>
-        {overview && <MachineDiagram diagram={overview.diagram} />}
       </Section>
 
       <Section

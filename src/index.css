@@ -18,3 +18,18 @@
     transform: scale(1.2);
   }
 }
+
+/* The state machines viewer on the Machines page: a framed box in the page.
+   `clip` rather than `hidden`, so its sticky bar still sticks, and below the
+   phone layout's 56px header. */
+.machines-viewer {
+  border: 1px solid var(--mantine-color-dark-4);
+  border-radius: var(--mantine-radius-md);
+  overflow: clip;
+  --mv-top: 0px;
+}
+@media (max-width: 48em) {
+  .machines-viewer {
+    --mv-top: 56px;
+  }
+}
