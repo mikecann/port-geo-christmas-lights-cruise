@@ -130,7 +130,14 @@ export default function AccountShell({
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <Container size="lg" py="lg" px={{ base: "md", sm: "xl" }}>
+        {/* The Machines page draws whole state machines, which need every
+            pixel of width they can get, so it skips the usual column. */}
+        <Container
+          size="lg"
+          fluid={activeName === "adminMachines"}
+          py="lg"
+          px={{ base: "md", sm: "xl" }}
+        >
           <Suspense
             fallback={
               <Center py="xl">
