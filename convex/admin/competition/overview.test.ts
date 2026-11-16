@@ -201,8 +201,69 @@ describe("admin entry review", () => {
     expect(queue.find((entry) => entry._id === entryId)?.checks).toEqual({
       isWithinBoundary: true,
       location: { lat: -33.633, lng: 115.39 },
-      sameAddress: [{ _id: sameAddressId, name: "Next Door" }],
+      sameAddress: [{ _id: sameAddressId, name: "Next Door", isDraft: false }],
+      // Their own entry from last year is the "Returning" line, not this
+      lastYearAtAddress: null,
       previousNumberHeldBy: { _id: holderId, name: "Number Seven" },
+    });
+  });
+
+  it("flags a house that entered last year from another account, and a draft at the address", async () => {
+    const t = createConvexTest();
+    const { asAdmin: admin } = await asAdmin(t);
+    const { entryId, lastYearId, draftId } = await t.run(async (ctx) => {
+      const { past, current } = await ensureTestCompetitions(ctx);
+      const partnerId = await ctx.db.insert("users", { name: "Pat" });
+      const lastYearId = await insertEntry(ctx, {
+        competitionId: past._id,
+        submittedByUserId: partnerId,
+        state: {
+          kind: "approved",
+          approvedAt: Date.now(),
+          entryNumber: 28,
+          name: "Jingle Bell Dock",
+          houseAddress: houseAddress("shared"),
+        },
+      });
+      // The partner has started this year's entry but not sent it
+      const draftId = await ctx.db.insert("entries", {
+        competitionId: current._id,
+        submittedByUserId: partnerId,
+        previousEntryId: lastYearId,
+        state: {
+          kind: "draft",
+          name: "Whoville",
+          entryNumber: 28,
+          // Drafts aren't geocoded yet
+          houseAddress: { address: "shared Keel Retreat", placeId: "shared" },
+        },
+        stateTimers: [],
+      });
+      const entryId = await insertEntry(ctx, {
+        competitionId: current._id,
+        submittedByUserId: await ctx.db.insert("users", {}),
+        state: {
+          kind: "submitted",
+          name: "Whoville",
+          houseAddress: houseAddress("shared"),
+        },
+      });
+      return { entryId, lastYearId, draftId };
+    });
+
+    const queue = await admin.query(api.admin.competition.entries.list, {
+      status: "submitted",
+    });
+    const card = queue.find((entry) => entry._id === entryId);
+    expect(card?.previous).toBeNull();
+    expect(card?.checks).toMatchObject({
+      sameAddress: [{ _id: draftId, name: "Whoville", isDraft: true }],
+      lastYearAtAddress: {
+        _id: lastYearId,
+        entryNumber: 28,
+        name: "Jingle Bell Dock",
+        submitterName: "Pat",
+      },
     });
   });
 

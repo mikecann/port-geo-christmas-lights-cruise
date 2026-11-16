@@ -64,7 +64,7 @@ export default function EntryChecks({
   // when something's wrong. Review cards have no header, so they always show it.
   showNumber?: boolean;
 }) {
-  const { location } = checks;
+  const { location, lastYearAtAddress } = checks;
   const mapLink = location && (
     <Anchor
       href={`https://www.google.com/maps/search/?api=1&query=${location.lat},${location.lng}`}
@@ -93,10 +93,13 @@ export default function EntryChecks({
           tone="warn"
           icon={<IconAlertTriangle size={14} />}
         >
-          Another entry uses this address:{" "}
+          {other.isDraft
+            ? "Someone else has started an entry for this address: "
+            : "Another entry uses this address: "}
           <Anchor {...routes.adminEntry({ entryId: other._id }).link}>
             {other.name || "an unnamed entry"}
           </Anchor>
+          {other.isDraft && " (not sent in yet)"}
         </Check>
       ))}
 
@@ -108,6 +111,20 @@ export default function EntryChecks({
           <Anchor {...routes.adminEntry({ entryId: previous._id }).link}>
             {previous.name || "see that entry"}
           </Anchor>
+        </Check>
+      ) : lastYearAtAddress ? (
+        // Same house as last year, sent in from a different account
+        <Check tone="warn" icon={<IconRepeat size={14} />}>
+          New account, but this house was #{lastYearAtAddress.entryNumber} in{" "}
+          {lastYearAtAddress.year}
+          {lastYearAtAddress.name ? " as " : ", "}
+          <Anchor
+            {...routes.adminEntry({ entryId: lastYearAtAddress._id }).link}
+          >
+            {lastYearAtAddress.name || "see that entry"}
+          </Anchor>
+          {lastYearAtAddress.submitterName &&
+            `, entered by ${lastYearAtAddress.submitterName}`}
         </Check>
       ) : (
         <Check tone="info" icon={<IconSparkles size={14} />}>
