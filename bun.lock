@@ -26,7 +26,7 @@
         "embla-carousel": "^8.6.0",
         "embla-carousel-autoplay": "^8.6.0",
         "embla-carousel-react": "^8.6.0",
-        "fluent-convex": "^0.13.0",
+        "fluent-convex": "^0.15.0",
         "mermaid": "^12.2.0",
         "posthog-js": "^1.438.12",
         "react": "^19.3.1",
@@ -879,7 +879,7 @@
 
     "flatted": ["flatted@3.4.4", "", {}, "sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q=="],
 
-    "fluent-convex": ["fluent-convex@0.13.0", "", { "peerDependencies": { "convex": "^1.31.0", "convex-helpers": ">=0.1.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["convex-helpers", "zod"] }, "sha512-C+9m3ICdGBrY75gbUn5im6r+pJr4G5o06PJc7igL8VXA+KyoNABDsUTnjAwrajGvBxySx6wqNbDnaYun9xzQgg=="],
+    "fluent-convex": ["fluent-convex@0.15.0", "", { "peerDependencies": { "convex": "^1.46.0", "convex-helpers": "^0.1.127", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["convex-helpers", "zod"] }, "sha512-WLgFjo3wUzIFuisnnvepegCOca+k5wRptpd29gZ/ZaKngLfPv4W0O3hIhloUntgThP2mgodF5QEPAtJhxpeHqQ=="],
 
     "for-each": ["for-each@0.3.5", "", { "dependencies": { "is-callable": "^1.2.7" } }, "sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg=="],
 

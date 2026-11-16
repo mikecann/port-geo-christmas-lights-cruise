@@ -42,7 +42,7 @@
     "embla-carousel": "^8.6.0",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
-    "fluent-convex": "^0.13.0",
+    "fluent-convex": "^0.15.0",
     "mermaid": "^12.2.0",
     "posthog-js": "^1.438.12",
     "react": "^19.3.1",
