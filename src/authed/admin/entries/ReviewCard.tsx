@@ -14,6 +14,7 @@ import type { AdminEntry } from "../../../../convex/admin/competition/entries";
 import { routes } from "../../../routes";
 import PhotoLightbox from "../../myEntries/photos/PhotoLightbox";
 import EntryChecks from "./EntryChecks";
+import { entryWarnings } from "./checkLines";
 import { PhotoImage } from "./PhotoImage";
 import ReviewActions from "./ReviewActions";
 
@@ -31,6 +32,14 @@ export default function ReviewCard({ entry }: { entry: AdminEntry }) {
   const { photos, submitter } = entry;
 
   if (entry.state.kind !== "submitted") return null;
+
+  const checksInput = {
+    entry,
+    previous: entry.previous,
+    checks: entry.checks,
+    isNumberOutsideRange: entry.isNumberOutsideRange,
+    showNumber: true,
+  };
 
   return (
     <Card withBorder radius="md" padding="lg">
@@ -81,13 +90,7 @@ export default function ReviewCard({ entry }: { entry: AdminEntry }) {
                 Sent {sentDate(entry.state.submittedAt)}
               </Text>
             </Stack>
-            <EntryChecks
-              entry={entry}
-              previous={entry.previous}
-              checks={entry.checks}
-              isNumberOutsideRange={entry.isNumberOutsideRange}
-              showNumber
-            />
+            <EntryChecks {...checksInput} />
           </Stack>
         </Grid.Col>
 
@@ -96,6 +99,7 @@ export default function ReviewCard({ entry }: { entry: AdminEntry }) {
             <ReviewActions
               entryId={entry._id}
               entryName={entry.state.name}
+              warnings={entryWarnings(checksInput)}
               stacked
             />
             <Box ta="center">
