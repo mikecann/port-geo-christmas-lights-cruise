@@ -29,6 +29,7 @@ import { useConfirmation } from "../../../../common/components/confirmation/useC
 import { useErrorCatchingMutation } from "../../../../common/errors";
 import { routes } from "../../../../routes";
 import EntryChecks from "../EntryChecks";
+import { entryWarnings } from "../checkLines";
 import EntryStatusBadge from "../../../EntryStatusBadge";
 import ReviewActions from "../ReviewActions";
 import RejectEntryModal from "../RejectEntryModal";
@@ -186,7 +187,16 @@ export default function EntryDetailPage({
         <Card withBorder radius="md" padding="lg">
           <Stack gap="sm">
             <Text fw={600}>This entry is waiting for your review</Text>
-            <ReviewActions entryId={entry._id} entryName={entry.state.name} />
+            <ReviewActions
+              entryId={entry._id}
+              entryName={entry.state.name}
+              warnings={entryWarnings({
+                entry,
+                previous: detail.previous,
+                checks: detail.checks,
+                isNumberOutsideRange: detail.isNumberOutsideRange,
+              })}
+            />
           </Stack>
         </Card>
       )}

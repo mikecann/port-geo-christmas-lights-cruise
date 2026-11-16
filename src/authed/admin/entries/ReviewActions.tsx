@@ -6,19 +6,27 @@ import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { useErrorCatchingMutation } from "../../../common/errors";
 import RejectEntryModal from "./RejectEntryModal";
+import ApproveWarningsModal from "./ApproveWarningsModal";
+import type { EntryWarning } from "./checkLines";
 
-// Approve is one tap: it's the usual answer and is easy to follow up on
+// Approve is one tap when nothing's flagged: it's the usual answer and is easy
+// to follow up on. With warnings, each has to be ticked off first.
 export default function ReviewActions({
   entryId,
   entryName,
+  warnings,
   stacked = false,
 }: {
   entryId: Id<"entries">;
   entryName: string;
+  // The orange lines from the entry's checks
+  warnings: EntryWarning[];
   // Approve above Reject, for the narrow column on the review cards
   stacked?: boolean;
 }) {
   const [rejectOpened, { open: openReject, close: closeReject }] =
+    useDisclosure(false);
+  const [approveOpened, { open: openApprove, close: closeApprove }] =
     useDisclosure(false);
   const [approveEntry, isApproving] = useErrorCatchingMutation(
     api.admin.competition.entries.approve,
@@ -34,7 +42,9 @@ export default function ReviewActions({
           leftSection={<IconCheck size={18} />}
           color="green"
           size="md"
-          onClick={() => approveEntry({ entryId })}
+          onClick={() =>
+            warnings.length > 0 ? openApprove() : approveEntry({ entryId })
+          }
           loading={isApproving}
           disabled={isRejecting}
         >
@@ -51,6 +61,17 @@ export default function ReviewActions({
           Reject
         </Button>
       </Buttons>
+
+      <ApproveWarningsModal
+        opened={approveOpened}
+        onClose={closeApprove}
+        onConfirm={async () => {
+          if (await approveEntry({ entryId })) closeApprove();
+        }}
+        entryName={entryName}
+        warnings={warnings}
+        loading={isApproving}
+      />
 
       <RejectEntryModal
         opened={rejectOpened}
