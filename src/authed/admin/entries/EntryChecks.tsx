@@ -106,10 +106,11 @@ export default function EntryChecks({
       {previous ? (
         <Check tone="info" icon={<IconRepeat size={14} />}>
           Returning: #{previous.entryNumber} in {previous.year}
-          {/* Some 2025 entries were saved without a name */}
-          {previous.name ? " as " : ", "}
+          {/* Some 2025 entries were saved without a name, and some with a
+              trailing space, which would land before the comma */}
+          {previous.name?.trim() ? " as " : ", "}
           <Anchor {...routes.adminEntry({ entryId: previous._id }).link}>
-            {previous.name || "see that entry"}
+            {previous.name?.trim() || "see that entry"}
           </Anchor>
         </Check>
       ) : lastYearAtAddress ? (
@@ -117,11 +118,11 @@ export default function EntryChecks({
         <Check tone="warn" icon={<IconRepeat size={14} />}>
           New account, but this house was #{lastYearAtAddress.entryNumber} in{" "}
           {lastYearAtAddress.year}
-          {lastYearAtAddress.name ? " as " : ", "}
+          {lastYearAtAddress.name.trim() ? " as " : ", "}
           <Anchor
             {...routes.adminEntry({ entryId: lastYearAtAddress._id }).link}
           >
-            {lastYearAtAddress.name || "see that entry"}
+            {lastYearAtAddress.name.trim() || "see that entry"}
           </Anchor>
           {lastYearAtAddress.submitterName &&
             `, entered by ${lastYearAtAddress.submitterName}`}
