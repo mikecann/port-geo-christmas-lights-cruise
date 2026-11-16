@@ -4,6 +4,7 @@ import {
 } from "../../features/common/auth";
 import { entries } from "../../features/entries/model";
 import { holdsNumber } from "../../features/entries/queries";
+import { isInState } from "../../features/entries/schema";
 import { photos } from "../../features/photos/model";
 import { email } from "../../features/email/model";
 import { ConvexError, v } from "convex/values";
@@ -71,26 +72,51 @@ const isNumberOutsideRange = (entry: Doc<"entries">, range: EntryNumberRange) =>
   entry.state.entryNumber !== undefined &&
   isOutsideRange(entry.state.entryNumber, range);
 
+// The house's approved entry in the competition before this one, whoever
+// sent it in. A returning house can come back from a different account (a
+// partner, a new owner), and then the entry looks like a new entrant
+const findLastYearAtAddress = async (
+  context: QueryCtx,
+  entry: Doc<"entries">,
+  placeId: string,
+) => {
+  const competition = await competitions
+    .query(context)
+    .forCompetition(entry.competitionId)
+    .get();
+  const [lastCompetition] = await competitions
+    .query(context)
+    .listBeforeYear(competition.year, 1);
+  if (!lastCompetition) return null;
+  const atAddress = await entries
+    .query(context)
+    .findEntriesByPlaceId(lastCompetition._id, placeId);
+  const approved = atAddress.find(isInState("approved"));
+  return approved ? { entry: approved, year: lastCompetition.year } : null;
+};
+
 // What a reviewer should look at before approving
 const describeChecks = async (
   context: QueryCtx,
   entry: Doc<"entries">,
-  previous: { entryNumber: number } | null,
+  previous: { _id: Id<"entries">; entryNumber: number } | null,
 ) => {
   const { houseAddress } = entry.state;
-  // Same rule as submitting: drafts and rejected entries don't block an address
+  // Rejected entries don't count. Drafts don't block the address when
+  // submitting, but two people from one house often both start an entry, so
+  // the reviewer should still hear about one
   const sameAddress = houseAddress
     ? (
         await entries
           .query(context)
           .findEntriesByPlaceId(entry.competitionId, houseAddress.placeId)
       ).filter(
-        (other) =>
-          other._id !== entry._id &&
-          other.state.kind !== "draft" &&
-          other.state.kind !== "rejected",
+        (other) => other._id !== entry._id && other.state.kind !== "rejected",
       )
     : [];
+  const pastAtAddress = houseAddress
+    ? await findLastYearAtAddress(context, entry, houseAddress.placeId)
+    : null;
   const previousNumberHolder =
     previous &&
     entry.state.kind !== "rejected" &&
@@ -116,7 +142,21 @@ const describeChecks = async (
     sameAddress: sameAddress.map((other) => ({
       _id: other._id,
       name: other.state.name ?? "",
+      isDraft: other.state.kind === "draft",
     })),
+    // Their own entry from last year is already the "Returning" line
+    lastYearAtAddress:
+      pastAtAddress && pastAtAddress.entry._id !== previous?._id
+        ? {
+            _id: pastAtAddress.entry._id,
+            year: pastAtAddress.year,
+            entryNumber: pastAtAddress.entry.state.entryNumber,
+            name: pastAtAddress.entry.state.name ?? "",
+            submitterName:
+              (await context.db.get(pastAtAddress.entry.submittedByUserId))
+                ?.name ?? null,
+          }
+        : null,
     previousNumberHeldBy: previousNumberHolder && {
       _id: previousNumberHolder._id,
       name: previousNumberHolder.state.name ?? "",
