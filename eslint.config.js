@@ -1,12 +1,19 @@
+import mikecannLint from "mikecann-lint";
 import js from "@eslint/js";
 import globals from "globals";
-import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 import localPlugin from "./eslint-plugin-local/index.js";
-import machines from "@convex-dev/state-machines/eslint";
 
 export default [
+  // React Compiler rules, Convex rules and the state machine guardrails
+  // (with the convex/machines.ts catalog and test-file exemptions).
+  // scripts/ and worker/ sit outside the tsconfigs; work/ is local scratch.
+  ...(await mikecannLint({
+    root: import.meta.dirname,
+    untyped: ["scripts/**", "worker/**"],
+    ignores: ["work/**"],
+  })),
   {
     ignores: [
       "dist",
@@ -40,12 +47,10 @@ export default [
       globals: globals.browser,
     },
     plugins: {
-      "react-hooks": reactHooks,
       "react-refresh": reactRefresh,
       local: localPlugin,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": [
         "warn",
         { allowConstantExport: true },
@@ -104,29 +109,10 @@ export default [
       "local/no-hoisted-single-use-handlers": "warn",
     },
   },
-  // The state machine package's guardrails: nothing writes a machine's state
-  // round it, and every disable says why. With type information they read
-  // the app's DataModel to find the machines' tables.
+  // Test helpers put rows straight into a state to set up a case, and
+  // convex-test's own helpers reach the internal brand on purpose
   {
-    files: ["convex/**/*.ts"],
-    ignores: ["convex/_generated/**"],
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-    ...machines.configs.recommended,
-  },
-  // The catalog registers the delivery that timers fire through
-  {
-    files: ["convex/machines.ts"],
-    rules: { "machines/no-brand-bypass": ["error", { deliver: false }] },
-  },
-  // Tests and their helpers put rows straight into a state to set up a case,
-  // and convex-test's own helpers reach the internal brand on purpose
-  {
-    files: ["convex/**/*.test.ts", "convex/features/common/tests/**"],
+    files: ["convex/features/common/tests/**"],
     rules: {
       "machines/no-direct-state-writes": "off",
       "machines/no-brand-bypass": "off",

@@ -7,3 +7,4 @@ coverage
 .convex
 build
 
+eslint-suppressions.json
