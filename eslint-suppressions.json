@@ -1,0 +1,256 @@
+{
+  "convex/admin/competition/entries.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 6
+    },
+    "@convex-dev/no-collect-in-query": {
+      "count": 2
+    }
+  },
+  "convex/admin/competition/numbers.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 2
+    },
+    "@convex-dev/no-collect-in-query": {
+      "count": 1
+    }
+  },
+  "convex/admin/competition/photos.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 1
+    }
+  },
+  "convex/admin/competition/users.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 1
+    },
+    "@convex-dev/no-collect-in-query": {
+      "count": 1
+    },
+    "@convex-dev/no-filter-in-query": {
+      "count": 1
+    }
+  },
+  "convex/admin/competition/votes.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 2
+    },
+    "@convex-dev/no-filter-in-query": {
+      "count": 1
+    }
+  },
+  "convex/admin/system/data.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 1
+    },
+    "@convex-dev/no-collect-in-query": {
+      "count": 2
+    }
+  },
+  "convex/admin/system/lib.ts": {
+    "@convex-dev/no-process-env": {
+      "count": 1
+    }
+  },
+  "convex/admin/system/machines.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 1
+    },
+    "@convex-dev/no-collect-in-query": {
+      "count": 1
+    }
+  },
+  "convex/admin/system/users.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 1
+    }
+  },
+  "convex/admin/system/viewer.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 1
+    }
+  },
+  "convex/admin/system/votes.ts": {
+    "@convex-dev/no-collect-in-query": {
+      "count": 1
+    }
+  },
+  "convex/features/auth/model.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 4
+    },
+    "@convex-dev/no-process-env": {
+      "count": 3
+    }
+  },
+  "convex/features/common/auth.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 1
+    }
+  },
+  "convex/features/common/lib.ts": {
+    "@eslint-community/eslint-comments/require-description": {
+      "count": 2
+    }
+  },
+  "convex/features/common/tests/testingHelpers.vitest.ts": {
+    "@eslint-community/eslint-comments/require-description": {
+      "count": 2
+    }
+  },
+  "convex/features/competitions/model.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 5
+    }
+  },
+  "convex/features/email/model.ts": {
+    "@convex-dev/no-process-env": {
+      "count": 3
+    }
+  },
+  "convex/features/entries/machine.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 1
+    }
+  },
+  "convex/features/entries/model.ts": {
+    "@convex-dev/no-collect-in-query": {
+      "count": 1
+    }
+  },
+  "convex/features/entries/queries.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 1
+    },
+    "@convex-dev/no-collect-in-query": {
+      "count": 4
+    }
+  },
+  "convex/features/entries/testing.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 1
+    }
+  },
+  "convex/features/map/lib.ts": {
+    "@convex-dev/no-process-env": {
+      "count": 2
+    }
+  },
+  "convex/features/photos/model.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 9
+    },
+    "@convex-dev/no-collect-in-query": {
+      "count": 1
+    }
+  },
+  "convex/features/users/model.ts": {
+    "@convex-dev/no-collect-in-query": {
+      "count": 2
+    }
+  },
+  "convex/features/votes/location.ts": {
+    "@convex-dev/no-process-env": {
+      "count": 1
+    }
+  },
+  "convex/features/votes/model.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 9
+    },
+    "@convex-dev/no-collect-in-query": {
+      "count": 4
+    }
+  },
+  "convex/features/votes/schema.ts": {
+    "@convex-dev/no-duplicate-indexes": {
+      "count": 1
+    }
+  },
+  "convex/internal/cleanup.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 5
+    },
+    "@convex-dev/no-collect-in-query": {
+      "count": 2
+    }
+  },
+  "convex/internal/entries.ts": {
+    "@convex-dev/no-collect-in-query": {
+      "count": 1
+    }
+  },
+  "convex/internal/photos.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 2
+    }
+  },
+  "convex/internal/users.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 3
+    },
+    "@convex-dev/no-collect-in-query": {
+      "count": 2
+    }
+  },
+  "convex/machines.ts": {
+    "@eslint-community/eslint-comments/require-description": {
+      "count": 1
+    }
+  },
+  "convex/my/photos.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 3
+    }
+  },
+  "convex/my/votes.ts": {
+    "@convex-dev/explicit-table-ids": {
+      "count": 2
+    }
+  },
+  "convex/public/competitions.ts": {
+    "@convex-dev/no-collect-in-query": {
+      "count": 1
+    }
+  },
+  "scripts/signs/build.mjs": {
+    "@eslint-community/eslint-comments/require-description": {
+      "count": 1
+    }
+  },
+  "src/authed/AccountShell.tsx": {
+    "mikecann-lint/click-shows-progress": {
+      "count": 1
+    }
+  },
+  "src/authed/admin/dangerZone/MockDataModal.tsx": {
+    "mikecann-lint/click-shows-progress": {
+      "count": 1
+    }
+  },
+  "src/authed/admin/people/PersonRow.tsx": {
+    "mikecann-lint/click-shows-progress": {
+      "count": 2
+    }
+  },
+  "src/common/layout/UserAvatarDropdown.tsx": {
+    "mikecann-lint/click-shows-progress": {
+      "count": 1
+    }
+  },
+  "src/entries/EntryHeader.tsx": {
+    "mikecann-lint/click-shows-progress": {
+      "count": 1
+    }
+  },
+  "src/map/myLocation/marker/Circle.tsx": {
+    "@eslint-community/eslint-comments/require-description": {
+      "count": 1
+    }
+  },
+  "src/voting/useVoteFlow.ts": {
+    "@eslint-community/eslint-comments/require-description": {
+      "count": 1
+    }
+  }
+}
