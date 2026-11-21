@@ -52,7 +52,7 @@
         "eslint": "^10",
         "eslint-plugin-react-refresh": "^0.5.7",
         "globals": "^17.13.0",
-        "mikecann-lint": "^0.1.1",
+        "mikecann-lint": "^0.2.0",
         "npm-run-all": "^4.1.5",
         "postcss": "^8.5.30",
         "postcss-preset-mantine": "^1.18.0",
@@ -1092,7 +1092,7 @@
 
     "mermaid": ["mermaid@12.2.0", "", { "dependencies": { "@braintree/sanitize-url": "^7.1.2", "@iconify/utils": "^3.0.2", "@mermaid-js/parser": "^2.0.1", "@types/d3": "^7.4.3", "@upsetjs/venn.js": "^2.0.0", "chevrotain": "~13.2.0", "cytoscape": "^3.34.0", "cytoscape-cose-bilkent": "^4.1.0", "cytoscape-fcose": "^2.2.0", "d3": "^7.9.0", "d3-sankey": "^0.12.3", "dagre-d3-es": "7.0.14", "dayjs": "^1.11.21", "dompurify": "^3.4.12", "elkjs": "^0.9.3", "es-toolkit": "^1.45.1", "katex": "^0.18.0", "khroma": "^2.1.0", "marked": "^16.3.0", "roughjs": "^4.6.6", "stylis": "^4.3.6", "ts-dedent": "^2.2.0", "uuid": "^11.1.0 || ^12 || ^13 || ^14.0.0" } }, "sha512-w7nr/SFrLO7BaVTs3dQTvYSV6nYSBj0Yy9DjBhsIJtAcHqRzXSq4Pg32ujHZ/AdWsAMNEvvhbm5dt9E2tOiHzw=="],
 
-    "mikecann-lint": ["mikecann-lint@0.1.1", "", { "dependencies": { "@convex-dev/eslint-plugin": "^5.0.1", "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1", "eslint-plugin-react-hooks": "^7.1.1", "typescript-eslint": "^8.73.0", "typescript6": "npm:typescript@~6.0.3" }, "peerDependencies": { "eslint": "^9.24.0 || ^10.0.0" }, "bin": { "mikecann-lint": "bin/mikecann-lint.js" } }, "sha512-QFf/ucrBJp7/cNGcq5vyQZUzVFu+HrEKZQ+AZn+S6Qw4E+SZrWfz4SVwfC/l+xGFwQGVYdiDJfWE85hx47pxCA=="],
+    "mikecann-lint": ["mikecann-lint@0.2.0", "", { "dependencies": { "@convex-dev/eslint-plugin": "^5.0.1", "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1", "eslint-plugin-react-hooks": "^7.1.1", "typescript-eslint": "^8.73.0", "typescript6": "npm:typescript@~6.0.3" }, "peerDependencies": { "eslint": "^9.24.0 || ^10.0.0" }, "bin": { "mikecann-lint": "bin/mikecann-lint.js" } }, "sha512-ttrhQMyjU2IBwQ6/k0Lj8kXUeWh/rQCsaliwynBFYfWk6Xk44yTaiq0fwolz6Zul20VpVRDxxuLATsEH4oOiNw=="],
 
     "miniflare": ["miniflare@5.20261012.0-beta", "", { "dependencies": { "@cspotcode/source-map-support": "0.8.1", "sharp": "0.35.5", "undici": "7.29.1", "workerd": "1.20261012.1", "ws": "8.21.0", "youch": "4.1.0-beta.10" } }, "sha512-Cjrs+vHHQ7krLO4HYELYpYBJBuMhcnNZD/Z5z/UcQSnFqWSQY3DhtTCFalXgI1/yO1iK+YrRKK8EYkumrEopxg=="],
 
