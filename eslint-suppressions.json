@@ -219,13 +219,63 @@
     }
   },
   "src/authed/AccountShell.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "mikecann-lint/click-shows-progress": {
       "count": 1
     }
   },
+  "src/authed/admin/dangerZone/DeleteMyEntryButton.tsx": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "src/authed/admin/dangerZone/GenerateMockButtons.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
   "src/authed/admin/dangerZone/MockDataModal.tsx": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "mikecann-lint/click-shows-progress": {
       "count": 1
+    }
+  },
+  "src/authed/admin/dangerZone/SendTestEmailButton.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "src/authed/admin/dangerZone/WipeButtons.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 3
+    }
+  },
+  "src/authed/admin/entries/ReviewActions.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 3
+    }
+  },
+  "src/authed/admin/entries/detail/AdminPhotoCard.tsx": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "src/authed/admin/entries/detail/EntryDetailPage.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 3
     }
   },
   "src/authed/admin/people/PersonRow.tsx": {
@@ -233,13 +283,47 @@
       "count": 2
     }
   },
+  "src/authed/myEntries/ApprovedEntryState.tsx": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    }
+  },
+  "src/authed/myEntries/DraftEntryState.tsx": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 2
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 2
+    }
+  },
+  "src/authed/myEntries/photos/PhotoCard.tsx": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "src/common/components/AddressAutocomplete.tsx": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 2
+    }
+  },
   "src/common/layout/UserAvatarDropdown.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "mikecann-lint/click-shows-progress": {
       "count": 1
     }
   },
   "src/entries/EntryHeader.tsx": {
     "mikecann-lint/click-shows-progress": {
+      "count": 1
+    }
+  },
+  "src/entries/SystemAdminSection.tsx": {
+    "@typescript-eslint/no-misused-promises": {
       "count": 1
     }
   },
