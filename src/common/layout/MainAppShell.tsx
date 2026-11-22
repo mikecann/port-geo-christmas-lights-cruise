@@ -4,6 +4,7 @@ import { AppShell, Group, Burger, Container, Box } from "@mantine/core";
 import { routes, routeGroups } from "../../routes";
 import { useRoute } from "../../routes";
 import { MeOrSignIn } from "./MeOrSignIn";
+import { PhoneMenu } from "./PhoneMenu";
 import { TopLogo } from "./TopLogo";
 import { MenuItem } from "../components/MenuItem";
 import Footer from "../footer/Footer";
@@ -32,16 +33,7 @@ export function MainAppShell({ children }: MobileNavbarProps) {
   const isVoteScreen = routeGroups.voteScreen.has(route);
 
   return (
-    <AppShell
-      header={{ height: 60 }}
-      navbar={{
-        width: 300,
-        // Four menu items and the sign-in button need more room than "xs" gives
-        breakpoint: "sm",
-        collapsed: { desktop: true, mobile: !opened },
-      }}
-      padding="md"
-    >
+    <AppShell header={{ height: 60 }} padding="md">
       <AppShell.Header
         style={{
           backgroundColor: isTransparent
@@ -64,7 +56,8 @@ export function MainAppShell({ children }: MobileNavbarProps) {
               opened={opened}
               onClick={toggle}
               hiddenFrom="sm"
-              size="sm"
+              size="md"
+              aria-label="Menu"
             />
             <Group justify="space-between" style={{ flex: 1 }}>
               <div
@@ -81,16 +74,15 @@ export function MainAppShell({ children }: MobileNavbarProps) {
                 <MeOrSignIn />
               </Group>
               <Group gap={0} hiddenFrom="sm">
-                <MeOrSignIn />
+                {/* On a phone your picture opens the one menu, PhoneMenu */}
+                <MeOrSignIn onAvatarClick={toggle} />
               </Group>
             </Group>
           </Group>
         </Container>
       </AppShell.Header>
 
-      <AppShell.Navbar py="md" px={4} maw={200}>
-        <MenuItems />
-      </AppShell.Navbar>
+      <PhoneMenu opened={opened} onClose={close} />
 
       <AppShell.Main
         p={0}
