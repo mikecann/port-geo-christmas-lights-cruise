@@ -66,6 +66,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "@convex-dev/auth@0.0.94": "patches/@convex-dev%2Fauth@0.0.94.patch",
+  },
   "overrides": {
     "convex-helpers": "^0.1.127",
   },
