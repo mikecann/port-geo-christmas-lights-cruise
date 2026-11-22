@@ -5,6 +5,7 @@ import type { Person } from "../../../../convex/admin/competition/users";
 import { useMe } from "../../../auth/useMeHooks";
 import { useConfirmation } from "../../../common/components/confirmation/useConfirmation";
 import { useErrorCatchingMutation } from "../../../common/errors";
+import { useIsPhone } from "../../../common/hooks/useIsPhone";
 import { routes } from "../../../routes";
 import EntryStatusBadge from "../../EntryStatusBadge";
 
@@ -32,6 +33,7 @@ export default function PersonRow({ person }: { person: Person }) {
   // Only system admins can make more, and never on themselves
   const canToggleSystem = me?.isSystemAdmin === true && !isMe;
   const role = roleOf(person);
+  const isPhone = useIsPhone();
 
   const toggleAdmin = async () => {
     const enabled = !person.isCompetitionAdmin;
@@ -67,10 +69,41 @@ export default function PersonRow({ person }: { person: Person }) {
     if (confirmed) await setSystemAdmin({ userId: person._id, enabled });
   };
 
+  const entry = person.entry ? (
+    <Group gap={8} wrap="nowrap">
+      <EntryStatusBadge
+        status={person.entry.status}
+        size={isPhone ? "xs" : "sm"}
+        labelFrom="sm"
+      />
+      <Anchor
+        {...routes.adminEntry({ entryId: person.entry.entryId }).link}
+        size={isPhone ? "xs" : "sm"}
+        c="inherit"
+        underline="hover"
+        miw={0}
+        // A number stays on one line; a draft's name can be long, so it
+        // wraps rather than stretch the table past a phone's width
+        style={
+          person.entry.entryNumber === undefined
+            ? { overflowWrap: "anywhere" }
+            : { whiteSpace: "nowrap" }
+        }
+      >
+        {person.entry.entryNumber === undefined
+          ? person.entry.name || "No name yet"
+          : `#${person.entry.entryNumber}`}
+      </Anchor>
+    </Group>
+  ) : null;
+
   return (
     <Table.Tr>
-      <Table.Td>
-        <Text size="sm" fw={500} style={{ overflowWrap: "anywhere" }}>
+      {/* Names and emails stay on one line, cut short with the whole thing
+          in a tooltip, rather than break mid-word. On a phone this column
+          takes the room that's left. */}
+      <Table.Td w={{ base: "100%", sm: "auto" }} maw={{ base: 0, sm: "none" }}>
+        <Text size="sm" fw={500} truncate title={displayName} maw={{ sm: 300 }}>
           {person.name || person.email || "No name"}
           {isMe && (
             <Text span size="sm" c="dimmed">
@@ -80,7 +113,13 @@ export default function PersonRow({ person }: { person: Person }) {
           )}
         </Text>
         {person.name && person.email && (
-          <Text size="xs" c="dimmed" style={{ overflowWrap: "anywhere" }}>
+          <Text
+            size="xs"
+            c="dimmed"
+            truncate
+            title={person.email}
+            maw={{ sm: 300 }}
+          >
             {person.email}
           </Text>
         )}
@@ -89,31 +128,10 @@ export default function PersonRow({ person }: { person: Person }) {
             {role}
           </Text>
         )}
+        {isPhone && entry}
       </Table.Td>
-      <Table.Td>
-        {person.entry ? (
-          <Group gap={8} wrap="nowrap">
-            <EntryStatusBadge status={person.entry.status} labelFrom="sm" />
-            <Anchor
-              {...routes.adminEntry({ entryId: person.entry.entryId }).link}
-              size="sm"
-              c="inherit"
-              underline="hover"
-              miw={0}
-              // A number stays on one line; a draft's name can be long, so it
-              // wraps rather than stretch the table past a phone's width
-              style={
-                person.entry.entryNumber === undefined
-                  ? { overflowWrap: "anywhere" }
-                  : { whiteSpace: "nowrap" }
-              }
-            >
-              {person.entry.entryNumber === undefined
-                ? person.entry.name || "No name yet"
-                : `#${person.entry.entryNumber}`}
-            </Anchor>
-          </Group>
-        ) : (
+      <Table.Td visibleFrom="sm">
+        {entry ?? (
           <Text size="sm" c="dimmed">
             –
           </Text>
@@ -141,6 +159,8 @@ export default function PersonRow({ person }: { person: Person }) {
           <Menu position="bottom-end" withinPortal>
             <Menu.Target>
               <ActionIcon
+                // Full tap size on a phone
+                size={isPhone ? 44 : "md"}
                 variant="subtle"
                 color="gray"
                 aria-label={`Actions for ${displayName}`}

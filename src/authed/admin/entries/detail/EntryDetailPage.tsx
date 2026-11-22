@@ -231,10 +231,13 @@ export default function EntryDetailPage({
                   {submitter.name || "No name given"}
                 </Text>
                 {submitter.email && (
+                  // One line, cut short with the whole address in a tooltip,
+                  // rather than break mid-word
                   <Anchor
                     size="sm"
                     href={`mailto:${submitter.email}`}
-                    style={{ wordBreak: "break-all" }}
+                    title={submitter.email}
+                    truncate
                   >
                     {submitter.email}
                   </Anchor>

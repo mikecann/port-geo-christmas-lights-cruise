@@ -11,6 +11,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Doc, Id } from "../../../../../convex/_generated/dataModel";
 import { useErrorCatchingMutation } from "../../../../common/errors";
+import { useIsPhone } from "../../../../common/hooks/useIsPhone";
 
 // Changing the number by hand, and linking someone who entered last year
 // with a different account. Opened from "Change number" in the page header,
@@ -33,6 +34,8 @@ export default function EntryNumberSection({
     entry.state.entryNumber ?? "",
   );
   const [isLinkOpen, setIsLinkOpen] = useState(false);
+  // The arrows are too small to hit on a phone, which has a number pad
+  const isPhone = useIsPhone();
   const [previousEntryId, setPreviousEntryId] = useState<string | null>(null);
   const linkable = useQuery(
     api.admin.competition.entries.listLinkablePreviousEntries,
@@ -55,6 +58,7 @@ export default function EntryNumberSection({
             value={newNumber}
             onChange={setNewNumber}
             w={{ base: "100%", xs: 260 }}
+            hideControls={isPhone}
           />
           <Button
             variant="light"

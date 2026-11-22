@@ -1,5 +1,6 @@
 import {
   Anchor,
+  Box,
   Card,
   Center,
   Chip,
@@ -16,6 +17,7 @@ import { useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { AdminEntryRow } from "../../../../convex/admin/competition/entries";
+import { useIsPhone } from "../../../common/hooks/useIsPhone";
 import { routes } from "../../../routes";
 import EntryStatusBadge from "../../EntryStatusBadge";
 import EntryNumberCell from "./EntryNumberCell";
@@ -80,6 +82,7 @@ export default function AllEntries({
     isStatusFilter(initialStatus) ? initialStatus : "all",
   );
   const [kind, setKind] = useState("all");
+  const isPhone = useIsPhone();
 
   if (allEntries === undefined)
     return (
@@ -162,13 +165,14 @@ export default function AllEntries({
                 <Table.Th>Name</Table.Th>
                 <Table.Th visibleFrom="md">Address</Table.Th>
                 <Table.Th visibleFrom="lg">Entrant</Table.Th>
-                <Table.Th>Status</Table.Th>
+                {/* On a phone the status sits under the name instead */}
+                <Table.Th visibleFrom="sm">Status</Table.Th>
                 <Table.Th visibleFrom="sm">Before</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {shown.map((entry) => (
-                <EntryRow key={entry._id} entry={entry} />
+                <EntryRow key={entry._id} entry={entry} isPhone={isPhone} />
               ))}
             </Table.Tbody>
           </Table>
@@ -192,7 +196,13 @@ export default function AllEntries({
   );
 }
 
-function EntryRow({ entry }: { entry: AdminEntryRow }) {
+function EntryRow({
+  entry,
+  isPhone,
+}: {
+  entry: AdminEntryRow;
+  isPhone: boolean;
+}) {
   const link = routes.adminEntry({ entryId: entry._id }).link;
   return (
     <Table.Tr
@@ -214,19 +224,29 @@ function EntryRow({ entry }: { entry: AdminEntryRow }) {
           isOutsideRange={entry.isNumberOutsideRange}
         />
       </Table.Td>
-      <Table.Td>
+      {/* On a phone this column takes the room that's left, and its name
+          wraps and its address truncates rather than push the table past the
+          screen's edge */}
+      <Table.Td w={{ base: "100%", sm: "auto" }} maw={{ base: 0, sm: "none" }}>
         <Anchor
           {...link}
           c="inherit"
           fw={600}
           underline="hover"
-          style={{ whiteSpace: "nowrap" }}
+          style={
+            isPhone ? { overflowWrap: "anywhere" } : { whiteSpace: "nowrap" }
+          }
         >
           {entry.name || "No name yet"}
         </Anchor>
-        <Text size="xs" c="dimmed" hiddenFrom="md" truncate maw={220}>
-          {entry.address || "No address yet"}
-        </Text>
+        <Group gap="xs" wrap="nowrap" hiddenFrom="md">
+          <Box hiddenFrom="sm">
+            <EntryStatusBadge status={entry.status} size="xs" labelFrom="sm" />
+          </Box>
+          <Text size="xs" c="dimmed" truncate maw={220} miw={0}>
+            {entry.address || "No address yet"}
+          </Text>
+        </Group>
       </Table.Td>
       <Table.Td visibleFrom="md">
         <Text size="sm" c={entry.address ? undefined : "dimmed"}>
@@ -236,8 +256,8 @@ function EntryRow({ entry }: { entry: AdminEntryRow }) {
       <Table.Td visibleFrom="lg">
         <Text size="sm">{entry.submitterName || entry.submitterEmail}</Text>
       </Table.Td>
-      <Table.Td>
-        <EntryStatusBadge status={entry.status} labelFrom="sm" />
+      <Table.Td visibleFrom="sm">
+        <EntryStatusBadge status={entry.status} />
       </Table.Td>
       <Table.Td visibleFrom="sm">
         <Text size="sm" c="dimmed" style={{ whiteSpace: "nowrap" }}>

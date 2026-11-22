@@ -1,6 +1,10 @@
 import { Box, Group, Text } from "@mantine/core";
 import type { EntryStateKind } from "../../convex/features/entries/schema";
-import { ENTRY_STATUS_COLORS, ENTRY_STATUS_LABELS } from "./entryStatus";
+import {
+  ENTRY_STATUS_COLORS,
+  ENTRY_STATUS_LABELS,
+  ENTRY_STATUS_SHORT_LABELS,
+} from "./entryStatus";
 
 // A coloured dot and the status in plain words, quieter than a badge so a
 // list of them stays easy to read
@@ -11,7 +15,8 @@ export default function EntryStatusBadge({
 }: {
   status: EntryStateKind;
   size?: "xs" | "sm";
-  // Below this breakpoint only the dot shows, with the words in a tooltip
+  // Below this breakpoint the status is one short word ("Waiting"), with the
+  // full words in a tooltip
   labelFrom?: "sm";
 }) {
   return (
@@ -21,9 +26,6 @@ export default function EntryStatusBadge({
       title={labelFrom ? ENTRY_STATUS_LABELS[status] : undefined}
     >
       <Box
-        // When the words are hidden on a phone, the dot carries the status
-        role={labelFrom ? "img" : undefined}
-        aria-label={labelFrom ? ENTRY_STATUS_LABELS[status] : undefined}
         w={8}
         h={8}
         bg={`${ENTRY_STATUS_COLORS[status]}.6`}
@@ -36,6 +38,15 @@ export default function EntryStatusBadge({
       >
         {ENTRY_STATUS_LABELS[status]}
       </Text>
+      {labelFrom && (
+        <Text
+          size={size}
+          style={{ whiteSpace: "nowrap" }}
+          hiddenFrom={labelFrom}
+        >
+          {ENTRY_STATUS_SHORT_LABELS[status]}
+        </Text>
+      )}
     </Group>
   );
 }
