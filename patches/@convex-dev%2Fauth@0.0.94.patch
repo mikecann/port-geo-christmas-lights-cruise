@@ -1,0 +1,20 @@
+diff --git a/dist/server/cookies.js b/dist/server/cookies.js
+index b76dd055651c33595166c0e87afa104c0445b65b..d1061bc3939f23816d274efcb1a782795e221d72 100644
+--- a/dist/server/cookies.js
++++ b/dist/server/cookies.js
+@@ -1,10 +1,13 @@
+ import { isLocalHost } from "./utils.js";
+ export const SHARED_COOKIE_OPTIONS = {
+     httpOnly: true,
+-    sameSite: "none",
++    // Patched: iPhone browsers (WebKit) dropped the SameSite=None + Partitioned
++    // OAuth cookies on the way back from Google, so the PKCE verifier was
++    // missing and Google answered invalid_grant. Lax cookies are sent on
++    // Google's GET redirect to the callback.
++    sameSite: "lax",
+     secure: true,
+     path: "/",
+-    partitioned: true,
+ };
+ const REDIRECT_MAX_AGE = 60 * 15; // 15 minutes in seconds
+ export function redirectToParamCookie(providerId, redirectTo) {
