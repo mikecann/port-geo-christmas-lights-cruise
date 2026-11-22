@@ -48,8 +48,14 @@ export default function EntryGalleryCard({
       className={styles.card}
     >
       <Stack gap={0}>
-        {/* First Photo with Entry Number Overlay */}
-        <Box style={{ position: "relative" }}>
+        {/* First Photo with Entry Number Overlay. Without a photo, a phone
+            skips the placeholder and shows a short card instead: most
+            entries have no photo early in the season, and a screen-tall
+            "No photos" box each made the list very long. */}
+        <Box
+          style={{ position: "relative" }}
+          visibleFrom={firstPhoto ? undefined : "sm"}
+        >
           {firstPhoto ? (
             <AspectRatio ratio={16 / 12}>
               <Image
@@ -86,22 +92,34 @@ export default function EntryGalleryCard({
         </Box>
 
         {/* Entry Info */}
-        <Stack gap="md" p="lg">
-          <Text fw={700} size="xl" lineClamp={2} style={{ lineHeight: 1.3 }}>
-            {entry.name}
-          </Text>
-
-          <Group gap="xs" align="flex-start">
-            <IconMapPin
-              size={18}
-              color="var(--mantine-color-gray-6)"
-              style={{ marginTop: 2, flexShrink: 0 }}
-            />
-            <Text size="md" c="dimmed" lineClamp={2} style={{ flex: 1 }}>
-              {shortAddress(entry.houseAddress.address)}
+        <Group
+          gap="md"
+          wrap="nowrap"
+          align="flex-start"
+          p={firstPhoto ? "lg" : { base: "md", sm: "lg" }}
+        >
+          <Stack gap="md" miw={0} style={{ flex: 1 }}>
+            <Text fw={700} size="xl" lineClamp={2} style={{ lineHeight: 1.3 }}>
+              {entry.name}
             </Text>
-          </Group>
-        </Stack>
+
+            <Group gap="xs" align="flex-start" wrap="nowrap">
+              <IconMapPin
+                size={18}
+                color="var(--mantine-color-gray-6)"
+                style={{ marginTop: 2, flexShrink: 0 }}
+              />
+              <Text size="md" c="dimmed" lineClamp={2} style={{ flex: 1 }}>
+                {shortAddress(entry.houseAddress.address)}
+              </Text>
+            </Group>
+          </Stack>
+          {!firstPhoto && (
+            <Box hiddenFrom="sm" style={{ flexShrink: 0 }}>
+              <EntryNumber number={entry.entryNumber} size="md" />
+            </Box>
+          )}
+        </Group>
       </Stack>
     </Card>
   );

@@ -10,3 +10,23 @@
     animation: none !important;
   }
 }
+
+/* The quick links under the hero: a centred row from sm, and on a phone a
+   two-column grid of equal buttons, so they don't wrap three and one. There
+   are always three links after Vote, so the last one takes a row of its own,
+   as does Vote. */
+@mixin smaller-than $mantine-breakpoint-sm {
+  .quickLinks {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .quickLinks > * {
+    width: 100%;
+  }
+
+  .quickLinks > .wide,
+  .quickLinks > :last-child {
+    grid-column: 1 / -1;
+  }
+}

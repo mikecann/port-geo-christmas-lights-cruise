@@ -6,7 +6,7 @@ import {
 import EntryMarkerPopup from "./EntryMarkerPopup";
 import type { EntryWithFirstPhoto } from "../../convex/public/entries";
 import { usePhotoUrl } from "../common/hooks/usePhotoUrl";
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { ENTRY_NUMBER_BG, EntryNumber } from "../common/components/EntryNumber";
 
 interface EntryMarkerProps {
@@ -60,15 +60,17 @@ export const EntryMarker = memo(function EntryMarker({
           transition: "transform 0.2s ease-in-out",
         }}
       >
-        {showPhoto ? (
-          <PhotoPin
-            photoUrl={photoUrl}
-            name={entry.entry.name}
-            entryNumber={entryNumber}
-          />
-        ) : (
-          <NumberPin entryNumber={entryNumber} />
-        )}
+        <TapArea>
+          {showPhoto ? (
+            <PhotoPin
+              photoUrl={photoUrl}
+              name={entry.entry.name}
+              entryNumber={entryNumber}
+            />
+          ) : (
+            <NumberPin entryNumber={entryNumber} />
+          )}
+        </TapArea>
       </AdvancedMarker>
 
       {isSelected && marker && (
@@ -84,6 +86,28 @@ export const EntryMarker = memo(function EntryMarker({
     </>
   );
 });
+
+// The number pins are about 20pt tall, too small to hit with a finger, so
+// each pin sits in a see-through box at least 44pt square that takes the tap.
+// The pin stays at the bottom centre, so its point still marks the house.
+const MIN_TAP_SIZE = 44;
+
+function TapArea({ children }: { children: ReactNode }) {
+  return (
+    <div
+      style={{
+        minWidth: MIN_TAP_SIZE,
+        minHeight: MIN_TAP_SIZE,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 function Point({ size }: { size: number }) {
   return (

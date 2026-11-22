@@ -103,7 +103,8 @@ function PeopleTable({ people }: { people: Person[] }) {
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Person</Table.Th>
-            <Table.Th>Entry</Table.Th>
+            {/* On a phone the entry sits under the person instead */}
+            <Table.Th visibleFrom="sm">Entry</Table.Th>
             <Table.Th visibleFrom="sm">Votes</Table.Th>
             <Table.Th visibleFrom="md">Joined</Table.Th>
             <Table.Th visibleFrom="sm">Role</Table.Th>

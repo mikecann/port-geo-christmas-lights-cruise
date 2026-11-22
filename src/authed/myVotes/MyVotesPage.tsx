@@ -10,7 +10,7 @@ import {
 } from "@mantine/core";
 import { PageHeader } from "../PageHeader";
 import { useQuery } from "convex/react";
-import { IconDialpad } from "@tabler/icons-react";
+import { IconDialpad, IconTrophy } from "@tabler/icons-react";
 import { api } from "../../../convex/_generated/api";
 import { AuthRequired } from "../../auth/AuthRequired";
 import MyVoteRow from "./MyVoteEntryCard";
@@ -57,8 +57,8 @@ export default function MyVotesPage() {
               <Button
                 component="a"
                 {...routes.competitionDetails().link}
-                variant="subtle"
-                color="gray"
+                leftSection={<IconTrophy size={18} aria-hidden />}
+                variant="default"
                 size="sm"
               >
                 Prizes

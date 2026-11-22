@@ -10,6 +10,15 @@ export const ENTRY_STATUS_LABELS: Record<EntryStateKind, string> = {
   rejected: "Rejected",
 };
 
+// One word each, for a phone's narrow rows
+export const ENTRY_STATUS_SHORT_LABELS: Record<EntryStateKind, string> = {
+  draft: "Not sent",
+  submitting: "Not sent",
+  submitted: "Waiting",
+  approved: "Approved",
+  rejected: "Rejected",
+};
+
 export const ENTRY_STATUS_COLORS: Record<EntryStateKind, string> = {
   draft: "gray",
   submitting: "gray",

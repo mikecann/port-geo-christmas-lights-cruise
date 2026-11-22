@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useErrorCatchingMutation } from "../../../common/errors";
+import { useIsPhone } from "../../../common/hooks/useIsPhone";
 
 type Range = { min: number; max: number };
 
@@ -21,6 +22,13 @@ function RangeForm({ range }: { range: Range }) {
   const [saveRange, isSaving] = useErrorCatchingMutation(
     api.admin.competition.competitions.setEntryNumberRange,
   );
+  // The up and down arrows are too small to hit on a phone, which brings up
+  // a number pad anyway
+  const isPhone = useIsPhone();
+  const cannotSave =
+    typeof min !== "number" ||
+    typeof max !== "number" ||
+    (min === range.min && max === range.max);
 
   return (
     <Card padding="lg" radius="md" withBorder>
@@ -40,6 +48,7 @@ function RangeForm({ range }: { range: Range }) {
             value={min}
             onChange={setMin}
             w={100}
+            hideControls={isPhone}
           />
           <NumberInput
             label="To"
@@ -49,14 +58,16 @@ function RangeForm({ range }: { range: Range }) {
             value={max}
             onChange={setMax}
             w={100}
+            hideControls={isPhone}
           />
           <Button
             variant="light"
             loading={isSaving}
-            disabled={
-              typeof min !== "number" ||
-              typeof max !== "number" ||
-              (min === range.min && max === range.max)
+            disabled={cannotSave}
+            // Mantine's disabled grey is the card's own colour, which left
+            // Save looking like plain text rather than a button
+            bd={
+              cannotSave ? "1px solid var(--mantine-color-dark-4)" : undefined
             }
             onClick={() => {
               if (typeof min === "number" && typeof max === "number")

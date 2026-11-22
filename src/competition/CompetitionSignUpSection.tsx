@@ -42,7 +42,7 @@ export default function CompetitionSignUpSection() {
                   size="lg"
                   color="#FBAF5D"
                 >
-                  Sign In
+                  Sign in
                 </Button>
               </Stack>
             ) : (

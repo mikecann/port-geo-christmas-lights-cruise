@@ -43,6 +43,8 @@ import { useMe } from "../auth/useMeHooks";
 import { useErrorHandler } from "../common/errors";
 import { routes, type routeGroups } from "../routes";
 import { InfoTip } from "./PageHeader";
+import { MenuLink, SignOutLink } from "../common/layout/PhoneMenu";
+import { useSiteItems } from "../common/layout/useSiteItems";
 
 type AuthedRoute = Route<typeof routeGroups.authed>;
 type AuthedRouteName = AuthedRoute["name"];
@@ -105,7 +107,7 @@ export default function AccountShell({
             <Burger
               opened={opened}
               onClick={toggle}
-              size="sm"
+              size="md"
               aria-label="Menu"
             />
             <Logo width={120} />
@@ -282,6 +284,15 @@ function Sidebar({
         </>
       )}
 
+      {/* ...and the site's pages, which a computer reaches from View site */}
+      <Box hiddenFrom="sm">
+        <Divider my="sm" color="dark.5" />
+        <Text size="xs" fw={600} c="dimmed" px={10} pb={4}>
+          Site
+        </Text>
+        <PhoneSiteLinks />
+      </Box>
+
       <Box style={{ flex: 1 }} mih="md" />
 
       {isSystemAdmin && (
@@ -305,8 +316,22 @@ function Sidebar({
         </Stack>
       )}
 
-      <Divider color="dark.5" />
-      <Group justify="space-between" pt="sm" px={6} wrap="nowrap" gap="xs">
+      {/* On a phone this panel is the one menu, so it ends with a plain
+          Sign out, as PhoneMenu does */}
+      <Box hiddenFrom="sm">
+        <Divider my="sm" color="dark.5" />
+        <SignOutLink />
+      </Box>
+
+      <Divider color="dark.5" visibleFrom="sm" />
+      <Group
+        justify="space-between"
+        pt="sm"
+        px={6}
+        wrap="nowrap"
+        gap="xs"
+        visibleFrom="sm"
+      >
         <AccountMenu />
         <Anchor
           {...routes.home().link}
@@ -320,6 +345,17 @@ function Sidebar({
           </Group>
         </Anchor>
       </Group>
+    </Stack>
+  );
+}
+
+function PhoneSiteLinks() {
+  const site = useSiteItems();
+  return (
+    <Stack gap={2}>
+      {site.map((item) => (
+        <MenuLink key={item.label} item={item} />
+      ))}
     </Stack>
   );
 }

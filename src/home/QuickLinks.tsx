@@ -9,6 +9,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { routes } from "../routes";
 import type { HomeSeason } from "./season";
+import styles from "./HomePage.module.css";
 
 // The three things most visitors come for, straight under the hero so nobody
 // has to find the burger menu on a phone. Vote joins them while voting is open.
@@ -49,23 +50,37 @@ export default function QuickLinks({ season }: { season: HomeSeason }) {
     </Button>
   );
 
+  // Cruise season puts booking and finding the displays first
+  const links =
+    season === "cruises" ? [tickets, map, displays] : [displays, map, tickets];
+
   return (
-    <Container size="sm" py="lg">
-      <Group justify="center" gap="sm">
+    // Tucked up into the foot of the grass on a phone, so there's no empty
+    // band between the scene and the buttons. Above the grass and trees, which
+    // are stacked over the page.
+    <Container
+      size="sm"
+      pt={{ base: 0, sm: "lg" }}
+      pb="lg"
+      mt={{ base: -24, sm: 0 }}
+      pos="relative"
+      style={{ zIndex: 5 }}
+    >
+      {/* A row on wider screens; on a phone a grid of equal buttons, Vote
+          across the top while it's open */}
+      <Group justify="center" gap="sm" className={styles.quickLinks}>
         {competition?.votingOpen && (
           <Button
             component="a"
             {...routes.voteLanding().link}
             color="#FBAF5D"
             leftSection={<IconThumbUp size={18} />}
+            className={styles.wide}
           >
             Vote
           </Button>
         )}
-        {/* Cruise season puts booking and finding the displays first */}
-        {season === "cruises"
-          ? [tickets, map, displays]
-          : [displays, map, tickets]}
+        {links}
       </Group>
     </Container>
   );

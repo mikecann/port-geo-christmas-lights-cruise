@@ -72,11 +72,17 @@ function PhoneFooter() {
       {/* Every link carries a dot in front, and the row is pulled left by
           one dot so the first dot on each line sits outside the clipped box.
           That way a wrapped line never starts or ends on a dot. The padding
-          keeps the links' focus rings inside the clip. */}
-      <Box style={{ overflow: "hidden" }} ml={-4} pl={4}>
-        <Group gap={8} style={{ rowGap: 4, marginLeft: -(DOT_WIDTH + 8) }}>
+          keeps the links' focus rings inside the clip. Each line is a
+          finger's height, and tap-targets grows every link to fill it. */}
+      <Box
+        style={{ overflow: "hidden" }}
+        ml={-4}
+        pl={4}
+        className="tap-targets"
+      >
+        <Group gap={8} style={{ rowGap: 0, marginLeft: -(DOT_WIDTH + 8) }}>
           {links.map((link, i) => (
-            <Group key={i} gap={8} wrap="nowrap">
+            <Group key={i} gap={8} wrap="nowrap" mih={44}>
               <Text c="dimmed" size="sm" w={DOT_WIDTH} ta="center" aria-hidden>
                 ·
               </Text>
@@ -85,7 +91,12 @@ function PhoneFooter() {
           ))}
         </Group>
       </Box>
-      <Group justify="space-between" align="center" wrap="nowrap">
+      <Group
+        justify="space-between"
+        align="center"
+        wrap="nowrap"
+        className="tap-targets"
+      >
         <Copyright />
         <ContactIcons />
       </Group>

@@ -1,4 +1,5 @@
-import { Menu, Avatar, Text } from "@mantine/core";
+import { Menu, Text, UnstyledButton } from "@mantine/core";
+import { MeAvatar } from "./PhoneMenu";
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
   useMe,
@@ -21,26 +22,21 @@ export function UserAvatarDropdown() {
   return (
     <Menu shadow="md" width={200}>
       <Menu.Target>
-        <Avatar
-          src={me.image}
-          alt={me.name || "User"}
-          radius="xl"
-          style={{ cursor: "pointer" }}
-        />
+        <UnstyledButton aria-label="Your account">
+          <MeAvatar />
+        </UnstyledButton>
       </Menu.Target>
 
       <Menu.Dropdown>
         <Menu.Label>Signed in as</Menu.Label>
-        <Menu.Item disabled>
-          <Text size="sm" fw={500}>
-            {me.name || "Unknown User"}
+        <Text size="sm" fw={500} px="sm" truncate>
+          {me.name || "No name"}
+        </Text>
+        {me.email && (
+          <Text size="xs" c="dimmed" px="sm" pb={6} truncate>
+            {me.email}
           </Text>
-          {me.email && (
-            <Text size="xs" c="dimmed">
-              {me.email}
-            </Text>
-          )}
-        </Menu.Item>
+        )}
         <Menu.Divider />
         <Menu.Item component="a" {...routes.myEntries().link}>
           My entry
@@ -58,7 +54,7 @@ export function UserAvatarDropdown() {
         </Menu.Item>
         <Menu.Divider />
         <Menu.Item onClick={() => signOut().catch(onApiError)} color="red">
-          Sign Out
+          Sign out
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>
