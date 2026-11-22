@@ -7,7 +7,7 @@ import {
   Stack,
   Text,
   Anchor,
-  Box,
+  Flex,
   Alert,
   Divider,
 } from "@mantine/core";
@@ -22,14 +22,15 @@ import { GoogleSignInButton } from "./GoogleSignInButton";
 // reachable on a short phone screen with the keyboard up
 function SignInBackdrop({ children }: { children: ReactNode }) {
   return (
-    <Box
+    // Centred on wider screens; on a phone it sits near the top, under the
+    // thumb and clear of the keyboard, rather than below an empty band
+    <Flex
+      align={{ base: "flex-start", sm: "center" }}
+      justify="center"
       style={{
         minHeight: "calc(100svh - 60px)",
         background:
           "linear-gradient(135deg, #0b1c3b 0%, #1a2332 50%, #0a0f1a 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
       }}
     >
       <Container size="xs" py="xl" w="100%">
@@ -37,7 +38,7 @@ function SignInBackdrop({ children }: { children: ReactNode }) {
           {children}
         </Paper>
       </Container>
-    </Box>
+    </Flex>
   );
 }
 
@@ -101,7 +102,12 @@ export function SignInPage() {
         <EmailCodeSignIn />
 
         <Text ta="center">
-          <Anchor component="a" {...routes.home().link} size="sm">
+          <Anchor
+            component="a"
+            {...routes.home().link}
+            size="sm"
+            className="tap-target"
+          >
             ← Back to Home
           </Anchor>
         </Text>

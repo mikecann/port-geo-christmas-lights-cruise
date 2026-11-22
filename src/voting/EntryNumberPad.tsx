@@ -71,7 +71,7 @@ export default function EntryNumberPad({
         )}
         {match && <MatchedEntry entry={match.entry} photo={match.photos[0]} />}
       </div>
-      <Anchor size="sm" {...routes.entries().link}>
+      <Anchor size="sm" {...routes.entries().link} className="tap-target">
         Browse all displays
       </Anchor>
       <div className={classes.keys}>

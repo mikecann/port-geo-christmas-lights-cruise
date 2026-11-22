@@ -1,5 +1,10 @@
-import { Anchor, Button, Card, Group, Stack, Text, Title } from "@mantine/core";
-import { IconMap, IconMapPin, IconShare } from "@tabler/icons-react";
+import { Button, Card, Group, Stack, Text, Title } from "@mantine/core";
+import {
+  IconMap,
+  IconMapPin,
+  IconNavigation,
+  IconShare,
+} from "@tabler/icons-react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { routes } from "../routes";
 import { EntryNumber } from "../common/components/EntryNumber";
@@ -47,29 +52,33 @@ export default function EntryHeader({ entry, entryId }: EntryHeaderProps) {
               color="var(--mantine-color-dimmed)"
               style={{ flexShrink: 0, marginTop: 2 }}
             />
-            <Text c="dimmed">
-              {shortAddress(houseAddress.address)}
-              {" · "}
-              {/* Opens the Maps app on phones, ready to set off */}
-              <Anchor
-                href={directionsUrl(houseAddress)}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ whiteSpace: "nowrap" }}
-              >
-                Directions
-              </Anchor>
-            </Text>
+            <Text c="dimmed">{shortAddress(houseAddress.address)}</Text>
           </Group>
         </Stack>
 
+        {/* On a phone Directions gets a row of its own, as it's what people
+            out on the night reach for, and the other two share the next */}
         <Group gap="sm">
+          <Button
+            component="a"
+            // Opens the Maps app on phones, ready to set off
+            href={directionsUrl(houseAddress)}
+            target="_blank"
+            rel="noopener noreferrer"
+            leftSection={<IconNavigation size={16} />}
+            variant="light"
+            size="sm"
+            w={{ base: "100%", xs: "auto" }}
+          >
+            Directions
+          </Button>
           <Button
             component="a"
             {...routes.mapEntry({ entryId }).link}
             leftSection={<IconMap size={16} />}
             variant="light"
             size="sm"
+            flex={{ base: 1, xs: "initial" }}
           >
             View on map
           </Button>
@@ -77,6 +86,7 @@ export default function EntryHeader({ entry, entryId }: EntryHeaderProps) {
             leftSection={<IconShare size={16} />}
             variant="default"
             size="sm"
+            flex={{ base: 1, xs: "initial" }}
             onClick={() => void share()}
           >
             Share

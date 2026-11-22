@@ -14,6 +14,7 @@ export default function GalleryHeader() {
           {...routes.competitionDetails().link}
           size="sm"
           c="dimmed"
+          className="tap-target"
           style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
         >
           <IconTrophy size={16} />

@@ -33,3 +33,23 @@
     --mv-top: 56px;
   }
 }
+
+/* Grows a small link's tap area to at least 44px square without moving
+   anything: an invisible box centred on it takes the tap. `tap-target` is
+   for one link, `tap-targets` for every link and button inside. */
+.tap-target,
+.tap-targets a,
+.tap-targets button {
+  position: relative;
+}
+.tap-target::after,
+.tap-targets a::after,
+.tap-targets button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
