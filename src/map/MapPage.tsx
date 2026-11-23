@@ -1,18 +1,17 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { APIProvider, Map } from "@vis.gl/react-google-maps";
 import { CenterOnEntry } from "./CenterOnEntry";
 import { MapDebugInfo } from "./MapDebugInfo";
 import { CompetitionBoundaryOverlay } from "./CompetitionBoundaryOverlay";
-import { EntryMarker } from "./EntryMarker";
+import { EntryPins } from "./EntryPins";
 import MyLocationControls from "./myLocation/controls/MyLocationControls";
 import { UserLocationProvider } from "./myLocation/UserLocationProvider";
 import type { Id } from "../../convex/_generated/dataModel";
 import MyLocationMarker from "./myLocation/marker/MyLocationMarker";
 import { routes } from "../routes";
 import { FitBoundsToEntries } from "./FitBoundsToEntries";
-import { WatchZoom } from "./WatchZoom";
 
 export default function MapPage({
   selectedEntryId,
@@ -25,11 +24,6 @@ export default function MapPage({
   const targetEntry = entries?.find(
     (entry) => entry.entry._id === selectedEntryId,
   );
-
-  // State for managing marker interactions
-  const [hoveredEntryId, setHoveredEntryId] = useState<string | null>(null);
-  const endHover = useCallback(() => setHoveredEntryId(null), []);
-  const [isZoomedIn, setIsZoomedIn] = useState(false);
 
   // Replace rather than push, so the phone's Back button leaves the map
   // instead of stepping back through every popup that was opened. Both read
@@ -85,22 +79,14 @@ export default function MapPage({
                 should still open on every entry */}
             <FitBoundsToEntries entries={entries} skip={!!targetEntry} />
             {targetEntry ? <CenterOnEntry entry={targetEntry} /> : null}
-            <WatchZoom onChange={setIsZoomedIn} />
             <MapDebugInfo />
             <CompetitionBoundaryOverlay />
-            {entries.map((entry) => (
-              <EntryMarker
-                key={entry.entry._id}
-                entry={entry}
-                isHovered={hoveredEntryId === entry.entry._id}
-                isSelected={selectedEntryId === entry.entry._id}
-                compact={!isZoomedIn}
-                onHover={setHoveredEntryId}
-                onHoverEnd={endHover}
-                onClick={selectEntry}
-                onClose={deselect}
-              />
-            ))}
+            <EntryPins
+              entries={entries}
+              selectedEntryId={selectedEntryId}
+              onSelect={selectEntry}
+              onDeselect={deselect}
+            />
             <MyLocationMarker />
             <MyLocationControls />
           </Map>
