@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  GROUP_PIN,
+  groupPinSize,
   groupPins,
   MAX_SPLIT_ZOOM,
   NUMBER_PIN,
@@ -115,7 +115,7 @@ describe("group pins don't land on other pins", () => {
       at(id, -y * metresPerPoint, x * metresPerPoint);
     const a = point("a", -18, 0);
     const b = point("b", 18, 0);
-    const c = point("c", 0, -(GROUP_PIN.height - 2));
+    const c = point("c", 0, -(groupPinSize(2).height - 2));
     expect(ids(groupPins([a, c], zoom, NUMBER_PIN))).toEqual([["a"], ["c"]]);
     expect(ids(groupPins([a, b, c], zoom, NUMBER_PIN))).toEqual([
       ["a", "b", "c"],

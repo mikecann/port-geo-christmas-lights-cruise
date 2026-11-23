@@ -69,10 +69,10 @@ export function EntryPins({
         width: div.clientWidth,
         height: div.clientHeight,
       });
-      const openList = () => {
-        onDeselect();
-        setListHouse(group.members[0].id);
-      };
+      // Either way, an open house's popup closes, so it isn't left over the
+      // houses you're looking at
+      onDeselect();
+      const openList = () => setListHouse(group.members[0].id);
       if (target === null) return openList();
       setListHouse(null);
       const before = map.getZoom() ?? 0;
@@ -96,10 +96,12 @@ export function EntryPins({
   );
   const closeList = useCallback(() => setListHouse(null), []);
   // Zooming regroups the pins, so an open list closes rather than moving to
-  // whatever group its house ends up in
+  // whatever group its house ends up in. A hovered pin may have been folded
+  // into a group without hearing the mouse leave, so that's dropped too.
   const zoomChanged = useCallback((next: number) => {
     setZoom(next);
     setListHouse(null);
+    setHoveredEntryId(null);
   }, []);
 
   // A tap on the map away from the pins closes the list, as it does a popup
@@ -109,12 +111,23 @@ export function EntryPins({
     return () => listener.remove();
   }, [map, closeList]);
 
-  // A list stays open only while its house is still in a group
+  // A list stays open only while its house is still in a group. Once it
+  // isn't (the data changed), the list is gone for good, rather than coming
+  // back by itself if the house is grouped again later.
   const listKey = listHouse
     ? ([...groupsByKey.keys()].find((key) =>
         key.split(",").includes(listHouse),
       ) ?? null)
     : null;
+  if (listHouse && !listKey && zoom !== null) setListHouse(null);
+
+  // A house opened some other way (Back, a link) closes the list. Checked
+  // while rendering, as React suggests for state that follows a prop.
+  const [lastSelected, setLastSelected] = useState(selectedEntryId);
+  if (selectedEntryId !== lastSelected) {
+    setLastSelected(selectedEntryId);
+    if (selectedEntryId) setListHouse(null);
+  }
 
   const selected = entries.find((e) => e.entry._id === selectedEntryId);
   const marker = (entry: EntryWithFirstPhoto) => (

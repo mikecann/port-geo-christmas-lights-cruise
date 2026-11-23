@@ -24,13 +24,18 @@ export interface PinSize {
 }
 export const NUMBER_PIN: PinSize = { width: 40, height: 28 };
 export const PHOTO_PIN: PinSize = { width: 56, height: 62 };
-// The group pin: a number-sized pill, plus the edge of the pill behind it
-export const GROUP_PIN: PinSize = { width: 44, height: 32 };
+// The group pin: a number-sized pill with a house and the count, plus the
+// edge of the pill behind it. Two-digit counts make it wider.
+export const groupPinSize = (count: number): PinSize => ({
+  width: count >= 10 ? 56 : 48,
+  height: 32,
+});
 
 // Pins further up the screen go in front: a pin's tap area reaches up past
-// its number, and this keeps it under the number of the house above
+// its number, and this keeps it under the number of the house above. A
+// hovered pin keeps its place too, or its tap area would cover that number.
 export const stackOrder = (lat: number) => Math.round((lat + 90) * 10_000);
-// The opened or hovered pin, and an open list, go in front of everything
+// The opened pin, and an open list, go in front of everything
 export const RAISED_PIN = 10_000_000;
 
 // Past this zoom the satellite photos run out, so a group still too close to
@@ -95,7 +100,8 @@ export function groupPins<T extends PinPoint>(
     lat: p.lat,
     lng: p.lng,
   }));
-  const sizeOf = (g: PinGroup<T>) => (g.members.length > 1 ? GROUP_PIN : size);
+  const sizeOf = (g: PinGroup<T>) =>
+    g.members.length > 1 ? groupPinSize(g.members.length) : size;
   const overlap = (a: PinGroup<T>, b: PinGroup<T>) => {
     // Houses that overlap as pins always group, whatever their group pins do
     for (const ma of a.members)

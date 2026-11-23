@@ -51,7 +51,7 @@ export const EntryMarker = memo(function EntryMarker({
         ref={markerRef}
         position={{ lat, lng }}
         title={`${entry.entry.name}, number ${entryNumber}`}
-        zIndex={isSelected || isHovered ? RAISED_PIN : stackOrder(lat)}
+        zIndex={isSelected ? RAISED_PIN : stackOrder(lat)}
         onClick={() => onClick(entryId)}
         onMouseEnter={() => onHover(entryId)}
         onMouseLeave={onHoverEnd}
