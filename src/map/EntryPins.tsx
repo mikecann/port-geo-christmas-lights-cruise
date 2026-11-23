@@ -25,7 +25,9 @@ export function EntryPins({
   const [zoom, setZoom] = useState<number | null>(null);
   const [hoveredEntryId, setHoveredEntryId] = useState<string | null>(null);
   const endHover = useCallback(() => setHoveredEntryId(null), []);
-  const [openGroupKey, setOpenGroupKey] = useState<string | null>(null);
+  // The list is remembered by one of its houses rather than the group, as
+  // closing a popup to open it can change who's in the group
+  const [listHouse, setListHouse] = useState<string | null>(null);
 
   const isZoomedIn = (zoom ?? 0) >= PHOTO_ZOOM;
 
@@ -63,28 +65,32 @@ export function EntryPins({
         width: div.clientWidth,
         height: div.clientHeight,
       });
-      if (target === null) {
+      const openList = () => {
         onDeselect();
-        setOpenGroupKey(key);
-        return;
-      }
-      setOpenGroupKey(null);
+        setListHouse(group.members[0].id);
+      };
+      if (target === null) return openList();
+      setListHouse(null);
+      const before = map.getZoom() ?? 0;
       map.moveCamera({
         center: { lat: group.lat, lng: group.lng },
         zoom: target,
       });
+      // Somewhere the map won't zoom in that far, so a list rather than a
+      // tap that does nothing
+      if ((map.getZoom() ?? 0) <= before) openList();
     },
     [map, zoom, groupsByKey, onDeselect],
   );
 
-  const pick = useCallback(
+  const openHouse = useCallback(
     (entryId: string) => {
-      setOpenGroupKey(null);
+      setListHouse(null);
       onSelect(entryId);
     },
     [onSelect],
   );
-  const closeList = useCallback(() => setOpenGroupKey(null), []);
+  const closeList = useCallback(() => setListHouse(null), []);
 
   // A tap on the map away from the pins closes the list, as it does a popup
   useEffect(() => {
@@ -93,12 +99,12 @@ export function EntryPins({
     return () => listener.remove();
   }, [map, closeList]);
 
-  // A list stays open only while its group is still on the map, and not once
-  // a house is picked
-  const listKey =
-    openGroupKey && !selectedEntryId && groupsByKey.has(openGroupKey)
-      ? openGroupKey
-      : null;
+  // A list stays open only while its house is still in a group
+  const listKey = listHouse
+    ? ([...groupsByKey.keys()].find((key) =>
+        key.split(",").includes(listHouse),
+      ) ?? null)
+    : null;
 
   const selected = entries.find((e) => e.entry._id === selectedEntryId);
   const marker = (entry: EntryWithFirstPhoto) => (
@@ -110,7 +116,7 @@ export function EntryPins({
       compact={!isZoomedIn}
       onHover={setHoveredEntryId}
       onHoverEnd={endHover}
-      onClick={onSelect}
+      onClick={openHouse}
       onClose={onDeselect}
     />
   );
@@ -131,7 +137,7 @@ export function EntryPins({
             entries={group.members.map((m) => m.entry)}
             listOpen={listKey === key}
             onClick={tapGroup}
-            onPick={pick}
+            onPick={openHouse}
             onCloseList={closeList}
           />
         );
