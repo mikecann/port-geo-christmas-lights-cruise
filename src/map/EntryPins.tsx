@@ -43,15 +43,19 @@ export function EntryPins({
         lng: e.entry.houseAddress.lng,
         entry: e,
       }));
-    return groupPins(points, zoom, isZoomedIn ? PHOTO_PIN : NUMBER_PIN);
+    return groupPins(points, zoom, isZoomedIn ? PHOTO_PIN : NUMBER_PIN).map(
+      (group) => ({
+        ...group,
+        key: group.members.map((m) => m.id).join(","),
+        entries: group.members.map((m) => m.entry),
+      }),
+    );
   }, [entries, selectedEntryId, zoom, isZoomedIn]);
 
   const groupsByKey = useMemo(
     () =>
       new Map(
-        groups
-          .filter((g) => g.members.length > 1)
-          .map((g) => [g.members.map((m) => m.id).join(","), g]),
+        groups.filter((g) => g.members.length > 1).map((g) => [g.key, g]),
       ),
     [groups],
   );
@@ -91,6 +95,12 @@ export function EntryPins({
     [onSelect],
   );
   const closeList = useCallback(() => setListHouse(null), []);
+  // Zooming regroups the pins, so an open list closes rather than moving to
+  // whatever group its house ends up in
+  const zoomChanged = useCallback((next: number) => {
+    setZoom(next);
+    setListHouse(null);
+  }, []);
 
   // A tap on the map away from the pins closes the list, as it does a popup
   useEffect(() => {
@@ -121,27 +131,31 @@ export function EntryPins({
     />
   );
 
+  // One list of pins, so a house keeps the same marker when it's opened or
+  // closed rather than being drawn again
+  const pins = groups.map((group) =>
+    group.members.length === 1 ? (
+      marker(group.entries[0])
+    ) : (
+      <EntryGroupMarker
+        key={group.key}
+        groupKey={group.key}
+        lat={group.lat}
+        lng={group.lng}
+        entries={group.entries}
+        listOpen={listKey === group.key}
+        onClick={tapGroup}
+        onPick={openHouse}
+        onCloseList={closeList}
+      />
+    ),
+  );
+  if (selected) pins.push(marker(selected));
+
   return (
     <>
-      <WatchZoom onChange={setZoom} />
-      {selected ? marker(selected) : null}
-      {groups.map((group) => {
-        if (group.members.length === 1) return marker(group.members[0].entry);
-        const key = group.members.map((m) => m.id).join(",");
-        return (
-          <EntryGroupMarker
-            key={key}
-            groupKey={key}
-            lat={group.lat}
-            lng={group.lng}
-            entries={group.members.map((m) => m.entry)}
-            listOpen={listKey === key}
-            onClick={tapGroup}
-            onPick={openHouse}
-            onCloseList={closeList}
-          />
-        );
-      })}
+      <WatchZoom onChange={zoomChanged} />
+      {pins}
     </>
   );
 }

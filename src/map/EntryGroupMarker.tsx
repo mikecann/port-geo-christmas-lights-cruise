@@ -6,6 +6,9 @@ import {
 import { UnstyledButton, Stack, Text, Group } from "@mantine/core";
 import { memo } from "react";
 import type { EntryWithFirstPhoto } from "../../convex/public/entries";
+import { IconHome } from "@tabler/icons-react";
+import { RAISED_PIN, stackOrder } from "./groupPins";
+import { Point, TapArea } from "./EntryMarker";
 import {
   ENTRY_NUMBER_BG,
   ENTRY_NUMBER_FG,
@@ -45,33 +48,50 @@ export const EntryGroupMarker = memo(function EntryGroupMarker({
         ref={markerRef}
         position={{ lat, lng }}
         title={`${entries.length} houses here: ${numbers}`}
-        zIndex={listOpen ? 10 : 5}
+        zIndex={listOpen ? RAISED_PIN : stackOrder(lat)}
         onClick={() => onClick(groupKey)}
-        // Centred on the houses rather than standing on them like a pin
-        anchorLeft="-50%"
-        anchorTop="-50%"
       >
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: "50%",
-            background: ENTRY_NUMBER_FG,
-            border: `3px solid ${ENTRY_NUMBER_BG}`,
-            boxShadow:
-              "0 0 0 4px rgba(251, 175, 93, 0.35), 0 2px 8px rgba(0, 0, 0, 0.4)",
-            color: ENTRY_NUMBER_BG,
-            fontWeight: 800,
-            fontSize: 17,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {entries.length}
-        </div>
+        {/* The same size as a house's number pin, so a group never covers
+            more of the map than the pins it stands for. Dark with a
+            second pill behind it, so it reads as a stack, not a house. */}
+        <TapArea>
+          <div style={{ position: "relative", marginBottom: 6 }}>
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                transform: "translate(4px, -4px)",
+                borderRadius: 999,
+                background: ENTRY_NUMBER_FG,
+                border: `2px solid ${ENTRY_NUMBER_BG}`,
+                opacity: 0.7,
+              }}
+            />
+            <div
+              style={{
+                position: "relative",
+                zIndex: 2,
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+                padding: "1px 8px",
+                borderRadius: 999,
+                background: ENTRY_NUMBER_FG,
+                border: `2px solid ${ENTRY_NUMBER_BG}`,
+                color: ENTRY_NUMBER_BG,
+                fontWeight: 800,
+                fontSize: 13,
+                lineHeight: 1.3,
+                fontVariantNumeric: "tabular-nums",
+                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.4)",
+              }}
+            >
+              <IconHome size={13} stroke={2.5} />
+              {entries.length}
+            </div>
+            <Point size={7} />
+          </div>
+        </TapArea>
       </AdvancedMarker>
 
       {listOpen && marker && (

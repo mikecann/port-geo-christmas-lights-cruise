@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  GROUP_PIN,
   groupPins,
   MAX_SPLIT_ZOOM,
   NUMBER_PIN,
@@ -81,5 +82,43 @@ describe("tapping a group", () => {
   it("still zooms a spread group that has two houses on one spot", () => {
     const group = [h48, { ...h48, id: "48b" }, h43];
     expect(zoomForGroupTap(group, 12, phone)).toBeGreaterThan(12);
+  });
+
+  it("lists a chain too wide to zoom in on without losing houses", () => {
+    // Ten houses 30pt apart at zoom 12: 270pt wide, so one step in would
+    // push the ends off a phone screen
+    const chain = Array.from({ length: 10 }, (_, i) =>
+      at(`c${i}`, 0, i * 30 * 30),
+    );
+    expect(zoomForGroupTap(chain, 12, phone)).toBeNull();
+  });
+
+  it("always zooms to a whole step, even from a part-way zoom", () => {
+    const target = zoomForGroupTap([h8, h18], 15.4, phone) ?? 0;
+    expect(Number.isInteger(target)).toBe(true);
+  });
+
+  it("copes with a map that hasn't been laid out yet", () => {
+    const target = zoomForGroupTap([h8, h18], 15, { width: 0, height: 0 });
+    expect(target === null || Number.isFinite(target)).toBe(true);
+  });
+});
+
+describe("group pins don't land on other pins", () => {
+  it("pulls in a house the group's own pin would cover", () => {
+    // At zoom 18, A and B sit side by side and group. C, 30pt above their
+    // middle, is clear of both their pins but not of the taller group pin.
+    const zoom = 18;
+    const metresPerPoint =
+      (156_543.034 * Math.cos((base.lat * Math.PI) / 180)) / 2 ** zoom;
+    const point = (id: string, x: number, y: number) =>
+      at(id, -y * metresPerPoint, x * metresPerPoint);
+    const a = point("a", -18, 0);
+    const b = point("b", 18, 0);
+    const c = point("c", 0, -(GROUP_PIN.height - 2));
+    expect(ids(groupPins([a, c], zoom, NUMBER_PIN))).toEqual([["a"], ["c"]]);
+    expect(ids(groupPins([a, b, c], zoom, NUMBER_PIN))).toEqual([
+      ["a", "b", "c"],
+    ]);
   });
 });
