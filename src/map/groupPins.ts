@@ -14,10 +14,15 @@ export interface PinGroup<T extends PinPoint> {
   lng: number;
 }
 
-// How far apart two pins must be, in screen pixels, not to overlap: number
-// pins take a 44pt tap area, photo pins are about 60pt across
-export const NUMBER_PIN_GAP = 44;
-export const PHOTO_PIN_GAP = 60;
+// How much of the screen a pin covers, in points. Two pins whose boxes
+// overlap would hide each other. Only real overlaps count, so zoomed out
+// most houses still show their own number.
+export interface PinSize {
+  width: number;
+  height: number;
+}
+export const NUMBER_PIN: PinSize = { width: 40, height: 24 };
+export const PHOTO_PIN: PinSize = { width: 56, height: 60 };
 
 // Past this zoom the satellite photos run out, so a group still too close to
 // split shows a list of its houses instead of zooming in
@@ -38,18 +43,23 @@ export function toPixels(lat: number, lng: number, zoom: number) {
   };
 }
 
-function distance(a: PinPoint, b: PinPoint, zoom: number) {
+// How many times further apart two pins must get before they stop
+// overlapping: 1 or less means they don't overlap now
+function crowding(a: PinPoint, b: PinPoint, zoom: number, size: PinSize) {
   const pa = toPixels(a.lat, a.lng, zoom);
   const pb = toPixels(b.lat, b.lng, zoom);
-  return Math.hypot(pa.x - pb.x, pa.y - pb.y);
+  return Math.min(
+    size.width / Math.abs(pa.x - pb.x),
+    size.height / Math.abs(pa.y - pb.y),
+  );
 }
 
-// Pins closer than `gap` join a group, and so do their own close neighbours,
-// so no two pins left on screen overlap. Groups keep the input order.
+// Pins that overlap join a group, and so do the pins overlapping those, so
+// no two pins left on screen hide each other. Groups keep the input order.
 export function groupPins<T extends PinPoint>(
   points: T[],
   zoom: number,
-  gap: number,
+  size: PinSize,
 ): PinGroup<T>[] {
   const groupOf = points.map((_, i) => i);
   const root = (i: number): number =>
@@ -57,7 +67,7 @@ export function groupPins<T extends PinPoint>(
 
   for (let i = 0; i < points.length; i++)
     for (let j = i + 1; j < points.length; j++)
-      if (distance(points[i], points[j], zoom) < gap)
+      if (crowding(points[i], points[j], zoom, size) > 1)
         groupOf[root(j)] = root(i);
 
   const byRoot = new Map<number, T[]>();
@@ -74,15 +84,13 @@ export function groupPins<T extends PinPoint>(
   }));
 }
 
-// The zoom at which the group's two closest houses are a photo pin apart,
-// which splits the whole group
+// The zoom at which no two of the group's houses overlap as photo pins
 export function zoomToSplit(members: PinPoint[], zoom: number): number {
-  let closest = Infinity;
+  let most = 0;
   for (let i = 0; i < members.length; i++)
     for (let j = i + 1; j < members.length; j++)
-      closest = Math.min(closest, distance(members[i], members[j], zoom));
-  if (closest === 0) return Infinity;
-  return zoom + Math.log2(PHOTO_PIN_GAP / closest);
+      most = Math.max(most, crowding(members[i], members[j], zoom, PHOTO_PIN));
+  return zoom + Math.log2(most);
 }
 
 // Where a tap on a group pin takes the map: in far enough to split the group,
@@ -111,7 +119,7 @@ export function zoomForGroupTap(
     // Some of these houses can never be told apart, but if the group is
     // spread out, zooming in still opens up the rest of it
     const splitsAtAll =
-      groupPins(members, MAX_SPLIT_ZOOM, PHOTO_PIN_GAP).length > 1;
+      groupPins(members, MAX_SPLIT_ZOOM, PHOTO_PIN).length > 1;
     if (splitsAtAll && zoom < MAX_SPLIT_ZOOM)
       return Math.min(MAX_SPLIT_ZOOM, Math.max(zoom + 1, Math.floor(fits)));
     return null;

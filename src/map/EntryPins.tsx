@@ -4,12 +4,7 @@ import type { EntryWithFirstPhoto } from "../../convex/public/entries";
 import { EntryMarker } from "./EntryMarker";
 import { EntryGroupMarker } from "./EntryGroupMarker";
 import { WatchZoom, PHOTO_ZOOM } from "./WatchZoom";
-import {
-  groupPins,
-  NUMBER_PIN_GAP,
-  PHOTO_PIN_GAP,
-  zoomForGroupTap,
-} from "./groupPins";
+import { groupPins, NUMBER_PIN, PHOTO_PIN, zoomForGroupTap } from "./groupPins";
 
 interface EntryPinsProps {
   entries: EntryWithFirstPhoto[];
@@ -46,7 +41,7 @@ export function EntryPins({
         lng: e.entry.houseAddress.lng,
         entry: e,
       }));
-    return groupPins(points, zoom, isZoomedIn ? PHOTO_PIN_GAP : NUMBER_PIN_GAP);
+    return groupPins(points, zoom, isZoomedIn ? PHOTO_PIN : NUMBER_PIN);
   }, [entries, selectedEntryId, zoom, isZoomedIn]);
 
   const groupsByKey = useMemo(

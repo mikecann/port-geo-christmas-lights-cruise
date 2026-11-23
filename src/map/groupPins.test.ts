@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   groupPins,
   MAX_SPLIT_ZOOM,
-  NUMBER_PIN_GAP,
-  PHOTO_PIN_GAP,
+  NUMBER_PIN,
+  PHOTO_PIN,
   zoomForGroupTap,
   zoomToSplit,
 } from "./groupPins";
@@ -30,15 +30,15 @@ const ids = (groups: ReturnType<typeof groupPins>) =>
 
 describe("groupPins", () => {
   it("groups close houses zoomed out and splits them zoomed in", () => {
-    expect(ids(groupPins(all, 12, NUMBER_PIN_GAP))).toEqual([
+    expect(ids(groupPins(all, 12, NUMBER_PIN))).toEqual([
       ["48", "52", "8", "18", "43"],
     ]);
-    expect(ids(groupPins(all, 16, PHOTO_PIN_GAP))).toEqual([
+    expect(ids(groupPins(all, 16, PHOTO_PIN))).toEqual([
       ["48", "52"],
       ["8", "18"],
       ["43"],
     ]);
-    expect(ids(groupPins(all, 20, PHOTO_PIN_GAP))).toEqual([
+    expect(ids(groupPins(all, 20, PHOTO_PIN))).toEqual([
       ["48"],
       ["52"],
       ["8"],
@@ -48,7 +48,7 @@ describe("groupPins", () => {
   });
 
   it("puts a group pin in the middle of its houses", () => {
-    const [group] = groupPins([h48, h52], 15, PHOTO_PIN_GAP);
+    const [group] = groupPins([h48, h52], 15, PHOTO_PIN);
     expect(group.lat).toBeCloseTo(base.lat, 8);
     expect(group.lng).toBeCloseTo((h48.lng + h52.lng) / 2, 10);
   });
@@ -58,7 +58,7 @@ describe("tapping a group", () => {
   it("zooms in far enough that the group splits", () => {
     const target = zoomForGroupTap([h8, h18], 16, phone) ?? 0;
     expect(target).toBeGreaterThan(16);
-    expect(ids(groupPins([h8, h18], target, PHOTO_PIN_GAP))).toEqual([
+    expect(ids(groupPins([h8, h18], target, PHOTO_PIN))).toEqual([
       ["8"],
       ["18"],
     ]);
