@@ -8,6 +8,7 @@ import type { EntryWithFirstPhoto } from "../../convex/public/entries";
 import { usePhotoUrl } from "../common/hooks/usePhotoUrl";
 import { memo, type ReactNode } from "react";
 import { ENTRY_NUMBER_BG, EntryNumber } from "../common/components/EntryNumber";
+import { RAISED_PIN, stackOrder } from "./groupPins";
 
 interface EntryMarkerProps {
   entry: EntryWithFirstPhoto;
@@ -50,7 +51,7 @@ export const EntryMarker = memo(function EntryMarker({
         ref={markerRef}
         position={{ lat, lng }}
         title={`${entry.entry.name}, number ${entryNumber}`}
-        zIndex={isSelected || isHovered ? 10 : undefined}
+        zIndex={isSelected ? RAISED_PIN : stackOrder(lat)}
         onClick={() => onClick(entryId)}
         onMouseEnter={() => onHover(entryId)}
         onMouseLeave={onHoverEnd}
@@ -92,7 +93,7 @@ export const EntryMarker = memo(function EntryMarker({
 // The pin stays at the bottom centre, so its point still marks the house.
 const MIN_TAP_SIZE = 44;
 
-function TapArea({ children }: { children: ReactNode }) {
+export function TapArea({ children }: { children: ReactNode }) {
   return (
     <div
       style={{
@@ -109,7 +110,7 @@ function TapArea({ children }: { children: ReactNode }) {
   );
 }
 
-function Point({ size }: { size: number }) {
+export function Point({ size }: { size: number }) {
   return (
     <div
       style={{
