@@ -132,7 +132,7 @@ describe("pickEntryNumber", () => {
 });
 
 describe("new entrant numbers", () => {
-  it("are drawn from 1 to 60 by default", async () => {
+  it("are drawn from 1 to 55 by default", async () => {
     const t = createConvexTest();
     const entryIds = await t.run(async (ctx) => {
       const { current } = await ensureTestCompetitions(ctx);
@@ -153,7 +153,7 @@ describe("new entrant numbers", () => {
     expect(new Set(numbers).size).toBe(numbers.length);
     for (const n of numbers) {
       expect(n).toBeGreaterThanOrEqual(1);
-      expect(n).toBeLessThanOrEqual(60);
+      expect(n).toBeLessThanOrEqual(55);
     }
   });
 
@@ -706,7 +706,7 @@ describe("admin number tools", () => {
 
     expect(
       await admin.query(api.admin.competition.competitions.getEntryNumberRange),
-    ).toEqual({ min: 1, max: 60 });
+    ).toEqual({ min: 1, max: 55 });
     await admin.mutation(
       api.admin.competition.competitions.setEntryNumberRange,
       { min: 0, max: 80 },

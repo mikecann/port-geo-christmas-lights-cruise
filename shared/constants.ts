@@ -20,7 +20,9 @@ export const MAX_REJECTED_REASON_LENGTH = 1000;
 
 // New entrants get a random free number in the competition's range, inclusive.
 // A sign is printed per number, so admins can change it per competition.
-export const DEFAULT_ENTRY_NUMBER_RANGE = { min: 1, max: 60 };
+// Super Signs printed 1 to 55 for 2026. Once every free number in the range
+// is taken, the next entrant gets the lowest free number above it.
+export const DEFAULT_ENTRY_NUMBER_RANGE = { min: 1, max: 55 };
 
 // Where a voter's IP has to be for their vote to count as in person. Mobile
 // carriers sometimes place WA phones in other states, so it's Australia-wide
