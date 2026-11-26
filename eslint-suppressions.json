@@ -77,7 +77,7 @@
   },
   "convex/features/auth/model.ts": {
     "@convex-dev/explicit-table-ids": {
-      "count": 4
+      "count": 3
     },
     "@convex-dev/no-process-env": {
       "count": 3

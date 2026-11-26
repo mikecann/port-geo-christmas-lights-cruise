@@ -1,8 +1,20 @@
+import { ConvexError } from "convex/values";
 import type { Doc } from "../../_generated/dataModel";
 import type { DatabaseReader } from "../../_generated/server";
+import { MAX_USER_NAME_LENGTH } from "../../../shared/constants";
 
 export const ROLES = ["competitionAdmin", "systemAdmin"] as const;
 export type Role = (typeof ROLES)[number];
+
+export function cleanUserName(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) throw new ConvexError("Please enter your name.");
+  if (trimmed.length > MAX_USER_NAME_LENGTH)
+    throw new ConvexError(
+      `Name must be ${MAX_USER_NAME_LENGTH} characters or fewer.`,
+    );
+  return trimmed;
+}
 
 export const users = {
   listCompetitionAdmins: async (db: DatabaseReader) => {

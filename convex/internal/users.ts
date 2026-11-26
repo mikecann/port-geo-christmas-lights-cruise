@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { convex } from "../schema";
 import { mutation } from "../features/common/lib";
-import { ROLES, users } from "../features/users/model";
+import { cleanUserName, ROLES, users } from "../features/users/model";
 import { canonicalEmail, normalizeEmail } from "../../shared/auth";
 import { isLegacyVote } from "../features/votes/schema";
 import type { Id } from "../_generated/dataModel";
@@ -50,5 +50,38 @@ export const normalizeEmails = mutation
       votesUpdated++;
     }
     return { updated, votesUpdated };
+  })
+  .internal();
+
+// Fills in blank account names (e.g. for people who signed up with an email
+// code). Leaves anyone who already has a name alone so it never overwrites a
+// name they set themselves.
+export const backfillNames = mutation
+  .input({
+    updates: v.array(
+      v.object({
+        userId: v.id("users"),
+        name: v.string(),
+      }),
+    ),
+  })
+  .handler(async (context, input) => {
+    let updated = 0;
+    let skipped = 0;
+    let missing = 0;
+    for (const { userId, name } of input.updates) {
+      const user = await context.db.get("users", userId);
+      if (user === null) {
+        missing++;
+        continue;
+      }
+      if (user.name?.trim()) {
+        skipped++;
+        continue;
+      }
+      await context.db.patch("users", userId, { name: cleanUserName(name) });
+      updated++;
+    }
+    return { updated, skipped, missing };
   })
   .internal();
