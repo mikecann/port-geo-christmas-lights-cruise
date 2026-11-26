@@ -54,6 +54,7 @@ import type * as migrations_entryState from "../migrations/entryState.js";
 import type * as migrations_entryTimers from "../migrations/entryTimers.js";
 import type * as my_entries from "../my/entries.js";
 import type * as my_photos from "../my/photos.js";
+import type * as my_user from "../my/user.js";
 import type * as my_votes from "../my/votes.js";
 import type * as public_competitions from "../public/competitions.js";
 import type * as public_entries from "../public/entries.js";
@@ -114,6 +115,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/entryTimers": typeof migrations_entryTimers;
   "my/entries": typeof my_entries;
   "my/photos": typeof my_photos;
+  "my/user": typeof my_user;
   "my/votes": typeof my_votes;
   "public/competitions": typeof public_competitions;
   "public/entries": typeof public_entries;

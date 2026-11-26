@@ -255,7 +255,7 @@ describe("one user per email, whichever way they sign in", () => {
     expect(await countRows(t)).toEqual({ users: 1, accounts: 2 });
   });
 
-  it("links a Google sign-in to an earlier code sign-in", async () => {
+  it("links a Google sign-in to an earlier code sign-in and fills in a blank name", async () => {
     const t = createConvexTest();
     const userId = await signInWithCode(t, "resident@example.com");
 
@@ -263,6 +263,22 @@ describe("one user per email, whichever way they sign in", () => {
 
     expect((await allUsers(t)).map((user) => user._id)).toEqual([userId]);
     expect(await countRows(t)).toEqual({ users: 1, accounts: 2 });
+    const user = await t.run((ctx) => ctx.db.get(userId));
+    expect(user?.name).toBe("Test Person");
+  });
+
+  it("keeps an edited account name when the user signs in with Google again", async () => {
+    const t = createConvexTest();
+    await signInWithGoogle(t, "google-id", "resident@example.com");
+    const [user] = await allUsers(t);
+    await t.run((ctx) =>
+      ctx.db.patch(ensure(user)._id, { name: "Troy and Jennifer Evans" }),
+    );
+
+    await signInWithGoogle(t, "google-id", "resident@example.com");
+
+    const updated = await t.run((ctx) => ctx.db.get(ensure(user)._id));
+    expect(updated?.name).toBe("Troy and Jennifer Evans");
   });
 
   it("doesn't leave a second user behind when a code was asked for and never used", async () => {

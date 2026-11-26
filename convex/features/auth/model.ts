@@ -262,7 +262,15 @@ export async function createOrUpdateUser(
   } as WithoutSystemFields<Doc<"users">>;
 
   if (userId === null) userId = await ctx.db.insert("users", fields);
-  else await ctx.db.patch(userId, fields);
+  else {
+    const existing = await ctx.db.get("users", userId);
+    const { name, ...rest } = fields;
+    // Keep a name the user already has so OAuth sign-in doesn't overwrite edits
+    const patch = existing?.name?.trim()
+      ? rest
+      : { ...rest, ...(name ? { name } : {}) };
+    await ctx.db.patch("users", userId, patch);
+  }
 
   // Only ever adds the role. Taking someone off the list doesn't remove it;
   // that's done on the admin users page.
