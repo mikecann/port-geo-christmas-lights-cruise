@@ -1,12 +1,14 @@
 import { Stack } from "@mantine/core";
 import { VOTE_CATEGORIES } from "../../convex/features/votes/schema";
 import { useVoteFlow, votesOn, type VoteFlowEntry } from "./useVoteFlow";
+import { shouldShowInPersonSwitch } from "./voteButtons";
 import {
   AfterVoteLinks,
   CastVoteButton,
   CategoryVoteButtons,
   InPersonSlot,
   LocationFailedNotice,
+  NotInPersonLink,
   OwnEntryNotice,
   RemoveVoteConfirm,
   SignInSheet,
@@ -35,7 +37,7 @@ export default function VoteFlow({
   const flow = useVoteFlow(entry, { presumeSeen });
   const { state } = flow;
 
-  if (state.step === "loading") return <VoteBarLoading />;
+  if (state.step === "loading") return <VoteBarLoading compact={presumeSeen} />;
   if (state.step === "closed")
     return <VotingClosedNotice phase={state.phase} year={state.year} />;
   if (state.step === "ownEntry") return <OwnEntryNotice />;
@@ -47,6 +49,13 @@ export default function VoteFlow({
   // Most Jolly is only for people who've seen it, so only they get both
   const canVoteMostJolly =
     state.inPersonAllowed === true && flow.sawInPerson === true;
+  const showSwitch = shouldShowInPersonSwitch(
+    presumeSeen,
+    flow.sawInPerson,
+    flow.isSwitchRevealed,
+  );
+  const showNotInPersonLink =
+    state.inPersonAllowed === true && !showSwitch && !flow.locationFailed;
   const categories = canVoteMostJolly
     ? VOTE_CATEGORIES
     : (["best_display"] as const);
@@ -63,9 +72,11 @@ export default function VoteFlow({
         inPersonAllowed={state.inPersonAllowed}
         canRetryLocation={state.canRetryLocation}
         peoplesChoiceReason={state.peoplesChoiceReason}
+        showSwitch={showSwitch}
+        compact={presumeSeen}
         value={flow.sawInPerson}
         nudgedAt={flow.nudgedAt}
-        onChange={flow.setSawInPerson}
+        onChange={flow.chooseSawInPerson}
         onRetry={flow.retryLocation}
       />
       {canVoteMostJolly ? (
@@ -111,6 +122,9 @@ export default function VoteFlow({
         />
       )}
       {hasVotedHere && !flow.locationFailed && <AfterVoteLinks />}
+      {showNotInPersonLink && (
+        <NotInPersonLink onClick={flow.revealNotInPerson} />
+      )}
       <SignInSheet
         opened={flow.isSigningIn}
         entryNumber={entry.entryNumber}

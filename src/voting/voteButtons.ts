@@ -53,3 +53,11 @@ export function seenAnswerFromVotes(
   const bestDisplay = votes?.best_display;
   return bestDisplay?.entry._id === entryId ? bestDisplay.sawInPerson : null;
 }
+
+// Sign scans assume they've seen the house, so the switch stays out of the way
+// unless they've already voted "not seen" here or asked to change it.
+export const shouldShowInPersonSwitch = (
+  presumeSeen: boolean,
+  sawInPerson: boolean | null,
+  isSwitchRevealed: boolean,
+): boolean => !presumeSeen || isSwitchRevealed || sawInPerson === false;

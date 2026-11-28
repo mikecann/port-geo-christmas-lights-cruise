@@ -181,6 +181,11 @@
   min-height: 5rem;
 }
 
+/* Sign scans skip the switch, so loading and checking don't reserve room for it */
+.slot[data-compact] {
+  min-height: 1.75rem;
+}
+
 .sheet {
   border-top-left-radius: var(--mantine-radius-lg);
   border-top-right-radius: var(--mantine-radius-lg);

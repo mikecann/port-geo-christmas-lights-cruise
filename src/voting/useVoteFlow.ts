@@ -88,9 +88,9 @@ export type VoteFlowStep =
 
 export function useVoteFlow(
   entry: VoteFlowEntry,
-  // Start on "I've seen it" (they scanned the sign at the house). It's only a
-  // starting answer: it only counts as in person if the location check
-  // passes too, and they can switch it.
+  // Assume "I've seen it" (they scanned the sign at the house) and keep the
+  // switch hidden unless they open it. It still only counts as in person if
+  // the location check passes too.
   { presumeSeen = false }: { presumeSeen?: boolean } = {},
 ) {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
@@ -114,6 +114,10 @@ export function useVoteFlow(
     entryId: Id<"entries">;
     answer: boolean | null;
   } | null>(null);
+  // Entry for which they've opened or toggled the switch, so it stays visible
+  // even if they flip it back to "I've seen it"
+  const [revealedSwitchFor, setRevealedSwitchFor] =
+    useState<Id<"entries"> | null>(null);
   const setSawInPerson = (answer: boolean | null) => {
     setSeen({ entryId: entry._id, answer });
     setNudge(null);
@@ -338,7 +342,15 @@ export function useVoteFlow(
   return {
     state,
     sawInPerson,
-    setSawInPerson,
+    isSwitchRevealed: revealedSwitchFor === entry._id,
+    chooseSawInPerson: (answer: boolean | null) => {
+      setRevealedSwitchFor(entry._id);
+      setSawInPerson(answer);
+    },
+    revealNotInPerson: () => {
+      setRevealedSwitchFor(entry._id);
+      setSawInPerson(false);
+    },
     busy,
     justVoted,
     status: (category: VoteCategory) =>
