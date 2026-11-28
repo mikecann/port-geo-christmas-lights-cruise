@@ -22,7 +22,8 @@ export default function VoteScreen({
   entryNumber?: number;
   entry?: VoteFlowEntry;
   photo?: PublicPhoto;
-  // They scanned the sign on the house, so "I've seen it" starts picked
+  // They scanned the sign (or typed its number), so we assume they've seen it
+  // and keep the switch out of the way unless they ask for it
   presumeSeen?: boolean;
 }) {
   return (
@@ -32,7 +33,7 @@ export default function VoteScreen({
         {entry ? (
           <VoteFlow entry={entry} presumeSeen={presumeSeen} />
         ) : (
-          <VoteBarLoading />
+          <VoteBarLoading compact={presumeSeen} />
         )}
       </div>
     </div>

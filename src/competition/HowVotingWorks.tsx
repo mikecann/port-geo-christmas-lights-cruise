@@ -56,12 +56,14 @@ export default function HowVotingWorks() {
                 counts for People's Choice and you can't vote Most Jolly.
               </Text>
               <Text size="sm">
-                If the check passes, we'll ask whether you've seen the display
-                in person, with a switch that starts in the middle. Slide it to
-                "I've seen it" or "I haven't seen it" before you vote. It's on
-                your honour, so please only pick "I've seen it" if you have. We
-                keep the rough location with your vote so the organisers can
-                check for anything odd.
+                If the check passes and you scanned a sign or typed its number,
+                we assume you've seen the display in person (there's a link
+                below if you haven't). When you vote from a display's page on
+                this site, we'll ask with a switch that starts in the middle —
+                slide it to "I've seen it" or "I haven't seen it" before you
+                vote. It's on your honour, so please only count your vote as in
+                person if you've seen the lights. We keep the rough location
+                with your vote so the organisers can check for anything odd.
               </Text>
             </Stack>
           </Accordion.Panel>

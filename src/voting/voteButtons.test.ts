@@ -3,6 +3,7 @@ import type { VoteCategory } from "../../convex/features/votes/schema";
 import type { MyVote, MyVotes } from "./useVoteFlow";
 import {
   seenAnswerFromVotes,
+  shouldShowInPersonSwitch,
   voteButtonStatus,
   voteToSend,
 } from "./voteButtons";
@@ -142,5 +143,27 @@ describe("voteToSend", () => {
       sawInPerson: false,
       geoToken: undefined,
     });
+  });
+});
+
+describe("shouldShowInPersonSwitch", () => {
+  it("always shows on non-sign vote pages", () => {
+    expect(shouldShowInPersonSwitch(false, null, false)).toBe(true);
+    expect(shouldShowInPersonSwitch(false, true, false)).toBe(true);
+    expect(shouldShowInPersonSwitch(false, false, false)).toBe(true);
+  });
+
+  it("hides on sign scans when seen is assumed", () => {
+    expect(shouldShowInPersonSwitch(true, true, false)).toBe(false);
+    expect(shouldShowInPersonSwitch(true, null, false)).toBe(false);
+  });
+
+  it("shows on sign scans when they've said or voted not seen", () => {
+    expect(shouldShowInPersonSwitch(true, false, false)).toBe(true);
+    expect(shouldShowInPersonSwitch(true, false, true)).toBe(true);
+  });
+
+  it("stays visible once revealed even if flipped back to seen", () => {
+    expect(shouldShowInPersonSwitch(true, true, true)).toBe(true);
   });
 });

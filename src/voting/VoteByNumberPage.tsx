@@ -19,7 +19,7 @@ export default function VoteByNumberPage({
 
   // The number from the sign shows straight away, before the entry loads
   if (number !== null && found === undefined)
-    return <VoteScreen entryNumber={number} />;
+    return <VoteScreen presumeSeen entryNumber={number} />;
 
   // The keypad says there's no display with that number
   if (!found)

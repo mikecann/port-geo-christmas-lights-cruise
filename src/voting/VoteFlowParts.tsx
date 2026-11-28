@@ -61,10 +61,10 @@ export function SignNumber({
   );
 }
 
-export function VoteBarLoading() {
+export function VoteBarLoading({ compact = false }: { compact?: boolean }) {
   return (
     <Stack gap="sm">
-      <div className={classes.slot}>
+      <div className={classes.slot} data-compact={compact || undefined}>
         <Loader size="sm" />
       </div>
       <Button size="xl" fullWidth disabled loading>
@@ -128,11 +128,14 @@ export function VotedForOtherEntries({ votes }: { votes: MyVote[] }) {
 }
 
 // Above the Vote button: the seen-it switch, or why there isn't one. It keeps
-// its height whichever it shows.
+// its height whichever it shows, except on sign scans where the switch is
+// skipped until asked for.
 export function InPersonSlot({
   inPersonAllowed,
   canRetryLocation,
   peoplesChoiceReason,
+  showSwitch = true,
+  compact = false,
   value,
   nudgedAt,
   onChange,
@@ -141,13 +144,16 @@ export function InPersonSlot({
   inPersonAllowed: boolean | null;
   canRetryLocation: boolean;
   peoplesChoiceReason: string | null;
+  showSwitch?: boolean;
+  compact?: boolean;
   value: boolean | null;
   nudgedAt: number | null;
   onChange: (value: boolean | null) => void;
   onRetry: () => void;
 }) {
+  if (inPersonAllowed === true && !showSwitch) return null;
   return (
-    <div className={classes.slot}>
+    <div className={classes.slot} data-compact={compact || undefined}>
       {inPersonAllowed === null && (
         <Group gap="xs">
           <Loader size="xs" />
@@ -239,6 +245,27 @@ export function InPersonSwitch({
         />
       </Box>
     </Stack>
+  );
+}
+
+// Quiet escape hatch on sign scans, where the switch is hidden because most
+// people there are looking at the house. Tapping it reveals the switch set to
+// "I haven't seen it".
+export function NotInPersonLink({ onClick }: { onClick: () => void }) {
+  return (
+    <Group justify="center">
+      <Anchor
+        component="button"
+        type="button"
+        size="sm"
+        c="dimmed"
+        className="tap-target"
+        data-testid="not-in-person"
+        onClick={onClick}
+      >
+        Haven't seen it in person?
+      </Anchor>
+    </Group>
   );
 }
 
